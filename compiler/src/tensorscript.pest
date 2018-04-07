@@ -1,0 +1,185 @@
+whitespace = _{ space | newline  }
+comment = _{ line_comment }
+line_comment = _{  "#" ~ (!newline ~ any)* }
+
+newline = _{ "\n" | "\r\n" }
+space   = _{ " " | "\t" }
+
+// keyword
+node_lit = { "node" }
+weights_lit = { "weights" }
+graph_lit = { "graph" }
+as_lit = { "as" }
+break_lit = { "break" }
+const_lit = { "const" }
+continue_lit = { "continue" }
+crate_lit = { "crate" }
+else_lit = { "else" }
+enum_lit = { "enum" }
+false_lit = { "false" }
+fn_lit = { "fn" }
+for_lit = { "for" }
+if_lit = { "if" }
+let_lit = { "let" }
+match_lit = { "match" }
+mod_lit = { "mod" }
+move_lit = { "move" }
+return_lit = { "return" }
+Self_lit = { "Self" }
+self_lit = { "self" }
+true_lit = { "true" }
+type_lit = { "type" }
+use_lit = { "use" }
+where_lit = { "where" }
+while_lit = { "while" }
+print_lit = { "print" }
+keyword = { node_lit | weights_lit | graph_lit | as_lit | break_lit | const_lit | 
+             continue_lit | crate_lit | else_lit | enum_lit | true_lit | false_lit |
+             fn_lit | for_lit | if_lit | let_lit | match_lit | mod_lit | move_lit | 
+             return_lit | Self_lit | self_lit | type_lit | use_lit | 
+             where_lit | while_lit | print_lit }
+
+
+binary_op = _{
+  op_expo   |
+  op_mult   |
+  op_div    |
+  op_mod    |
+  op_add    |
+  op_sub    |
+  op_bsl    |
+  op_bsr    |
+  op_and    |
+  op_band   |
+  op_or     |
+  op_bor    |
+  op_bxor   |
+  op_lte    |
+  op_lt     |
+  op_gte    |
+  op_gt     |
+  op_eq     |
+  op_ne     |
+  op_assign
+}
+op_expo   = { "**" }
+op_mult   = { "*" }
+op_div    = { "/" }
+op_mod    = { "%" }
+op_add    = { "+" }
+op_sub    = { "-" }
+op_bsl    = { "<<" }
+op_bsr    = { ">>" }
+op_band   = { "&" }
+op_bor    = { "|" }
+op_bxor   = { "^" }
+op_lt     = { "<" }
+op_lte    = { "<=" }
+op_gt     = { ">" }
+op_gte    = { ">=" }
+op_eq     = { "==" }
+op_ne     = { "!=" }
+op_and    = { "&&" }
+op_or     = { "||" }
+op_assign = { "=" }
+
+
+literal = _{
+  float_lit    |
+  int_lit  |
+  bool_lit 
+}
+
+// bool
+bool_lit = { true_lit | false_lit }
+// int
+digit   = _{ '0'..'9' }
+int_lit =  @{ digit ~ (digit | "_")* }
+plus  = _{ "+" }
+// float
+minus = _{ "-" }
+exp   = _{ ^"e" ~ (plus | minus)? ~ int_lit }
+float_lit = @{
+    int_lit ~ "." ~ int_lit? ~ exp? |
+    int_lit ~ exp
+}
+num_lit = { float_lit | int_lit }
+
+// ident
+lower = _{ 'a'..'z' }
+upper = _{ 'A'..'Z' }
+alpha = _{ lower | upper }
+ident = @{ (alpha | digit | "_")+ }
+ident_list = { !digit ~ ident ~ ("," ~ ident)+ }
+cap_ident = @{ upper ~ (alpha|digit)* }
+upper_ident = @{ (upper|digit)* }
+
+use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident )}
+
+// type signature
+type_ident = @{  (alpha | digit | "?" | "_")+ }
+type_ident_list = { type_ident ~ ("," ~ type_ident)+ }
+type_sig = {"<" ~ type_ident_list ~ "->" ~ type_ident_list ~ ">"}
+
+// node defn
+node_macro_assign = { upper_ident ~ op_assign ~ int_lit ~ ";" }
+node_decl_body = { "{" ~ node_macro_assign+ ~ "}" }
+node_decl_head = { node_lit ~ cap_ident ~ type_sig }
+node_decl = { node_decl_head ~ node_decl_body }
+
+fn_signature = {
+  ( "(" ~ keyword_list ~ ")" ) |
+  ( "(" ~ ")" )
+}
+keyword_list = { keyword_pair ~ ("," ~ keyword_pair)* }
+keyword_pair = { keyword_ident ~ lit }
+keyword_ident = @{ ident ~ "=" }
+
+
+// node defn
+weights_assign = { ident ~ op_assign ~
+                   cap_ident ~ "::" ~ type_sig ~ "::" ~ ident ~ 
+                   fn_signature ~ ";"
+                 }
+weights_decl_body = { "{" ~ weights_assign+ ~ "}" }
+weights_decl_head = { weights_lit ~ cap_ident ~ type_sig }
+weights_decl = { weights_decl_head ~ weights_decl_body }
+
+// use conv::{Conv2d, Dropout2d, maxpool2d};
+// use nonlin::relu;
+// use lin::Linear;
+
+// node Mnist<?,c,h,w -> ?,OUT> {
+//     FC1 = 320;
+//     FC2 = 50;
+//     OUT = 10;
+// };
+
+// weights Mnist<?,c,h,w -> ?,OUT> {
+//     conv1 = Conv2d::<?,c,h,w -> ?,c,h,w>::new(in_ch=1, out_ch=10, kernel_size=5);
+//     conv2 = Conv2d::<?,c,h,w -> ?,c,h,w>::new(in_ch=10, out_ch=20, kernel_size=5);
+//     dropout = Dropout2d::<?,c,h,w -> ?,c,h,w>::new(p=0.5);
+//     fc1 = Linear::<?,FC1 -> ?,FC2>::new();
+//     fc2 = Linear::<?,FC2 -> ?,OUT>::new();
+// }
+
+// graph Mnist<?,c,h,w -> ?,OUT> {
+//     fn new() {
+//         fc1.init_normal(std=1.);
+//         fc2.init_normal(std=1.);
+//     }
+
+//     fn forward(self, x) {
+//         x
+//         |> conv1            |> maxpool2d(kernel_size=2)
+//         |> conv2 |> dropout |> maxpool2d(kernel_size=2)
+//         |> view(?, FC1)
+//         |> fc1 |> relu
+//         |> self.fc2()
+//         |> log_softmax(dim=1)
+//     }
+
+//     fn fc2(self, x: <?,FC2>) -> <?,OUT> {
+//         x |> fc2 |> relu
+//     }
+// }
