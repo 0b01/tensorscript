@@ -9,8 +9,10 @@ use pest::Parser;
 #[grammar = "./tensorscript.pest"]
 struct TensorScriptParser;
 
+const test_str: &str = include_str!("../test.tss");
+
 fn main() {
-    let pairs = TensorScriptParser::parse(Rule::stmt, "while 1 { print(); } ");
+    let pairs = TensorScriptParser::parse(Rule::expr, "blah |> test() |> foo() ");
     println!("{}", pairs.unwrap());
 }
 
@@ -383,7 +385,7 @@ mod test {
     }
 
     #[test]
-    fn parse_stmt() {
+    fn parse_stmt_assign() {
         parses_to! {
             parser: TensorScriptParser,
             input: "blah = 1;",
@@ -393,14 +395,17 @@ mod test {
                     assignment(0, 9, [
                         ident(0, 4),
                         op_assign(5, 6),
-                        expr(7, 8, [
+                        expr_item(7, 8, [
                             ident(7, 8)]
                         )]
                     )]
                 )
             ]
         }
+    }
 
+    #[test]
+    fn parse_stmt_while_loop() {
         parses_to! {
             parser: TensorScriptParser,
             input: "while 1 { print(text=1); }",
@@ -409,17 +414,17 @@ mod test {
                 stmt(0, 26, [
                     while_loop(0, 26, [
                         while_lit(0, 5),
-                        expr(6, 7, [
+                        expr_item(6, 7, [
                             ident(6, 7)]
                         ),
                         stmt(10, 24, [
-                            expr(10, 23, [
+                            expr_item(10, 23, [
                                 fn_call(10, 23, [
                                     ident(10, 15),
                                     fn_arg(16, 22, [
                                         ident(16, 20),
                                         op_assign(20, 21),
-                                        expr(21, 22, [
+                                        expr_item(21, 22, [
                                             ident(21, 22)]
                                         )]
                                     )]
@@ -432,4 +437,32 @@ mod test {
         }
     }
 
+    #[test]
+    fn parse_expr_pipes() {
+        parses_to! {
+            parser: TensorScriptParser,
+            input: "blah |> test() |> foo() ",
+            rule: Rule::expr,
+            tokens: [
+                pipes(0, 24, [
+                    expr_item(0, 4, [
+                        ident(0, 4)]
+                    ),
+                    pipes(8, 24, [
+                        expr_item(8, 14, [
+                            fn_call(8, 14, [
+                                ident(8, 12)]
+                            )]
+                        ),
+                        expr_item(18, 23, [
+                            fn_call(18, 23, [
+                                ident(18, 21)]
+                            )]
+                        )]
+                    )]
+                )
+            ]
+        }
+    }
 }
+

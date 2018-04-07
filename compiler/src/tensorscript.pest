@@ -196,10 +196,11 @@ fn_call = { ident ~ "(" ~ fn_args? ~ ")" }
 fn_args = _{ fn_arg ~ (fn_arg ~ ",")* }
 fn_arg = { ident ~ op_assign ~ expr }
 
+pipes = { expr_item ~ ("|>" ~ expr)+ }
 
-expr = {
-    bool_not | fn_call | bool_lit | ident | conditional | num_lit
-}
+expr_item = { bool_not | fn_call | bool_lit | ident | conditional | num_lit  }
+expr = _{ pipes | expr_item }
+
 bool_not = _{ op_not ~ expr }
 
 // This allows {} and {statement; statement; statement;} and {statement; expr} and {expr}
@@ -208,3 +209,4 @@ block = _{ "{" ~ stmt* ~ expr? ~ "}" }
 stmt = { assignment | while_loop | conditional | (expr ~ ";") | comment }
 
 assignment = { ident ~ op_assign ~ expr ~ ";" }
+
