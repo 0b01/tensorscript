@@ -5,7 +5,7 @@ node Mnist<?,c,h,w -> ?,OUT> {
     FC1 = 320;
     FC2 = 50;
     OUT = 10;
-};
+}
 weights Mnist<?,c,h,w -> ?,OUT> {
     conv1 = Conv2d::<?,c,h,w -> ?,c,h,w>::new(in_ch=1, out_ch=10, kernel_size=5);
     conv2 = Conv2d::<?,c,h,w -> ?,c,h,w>::new(in_ch=10, out_ch=20, kernel_size=5);

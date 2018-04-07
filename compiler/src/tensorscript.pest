@@ -109,15 +109,15 @@ num_lit = { float_lit | int_lit }
 lower = _{ 'a'..'z' }
 upper = _{ 'A'..'Z' }
 alpha = _{ lower | upper }
-ident = @{ (alpha | digit | "_")+ }
-ident_list = { !digit ~ ident ~ ("," ~ ident)+ }
-cap_ident = @{ upper ~ (alpha|digit)* }
+ident = @{ !digit ~ (alpha | digit | "_")+ }
+ident_list = { ident ~ ("," ~ ident)+ }
+cap_ident = @{ upper ~ (alpha|digit| "_")* }
 upper_ident = @{ (upper|digit)* }
 
 // use conv::{Conv2d, Dropout2d, maxpool2d};
 // use nonlin::relu;
 // use lin::Linear;
-use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident )}
+use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident ) ~ ";"}
 
 // type signature
 type_ident = @{  (alpha | digit | "?" | "_")+ }
@@ -134,9 +134,6 @@ node_decl_body = { "{" ~ node_macro_assign* ~ "}" }
 node_decl_head = { node_lit ~ cap_ident ~ type_sig }
 node_decl = { node_decl_head ~ node_decl_body }
 
-fn_sig = { ("(" ~ ")") | ("(" ~ arg_list ~ ")") }
-arg_list = { arg_pair ~ ("," ~ arg_pair)* }
-arg_pair = { ident ~ op_assign ~ literal }
 
 // weights Mnist<?,c,h,w -> ?,OUT> {
 //     conv1 = Conv2d::<?,c,h,w -> ?,c,h,w>::new(in_ch=1, out_ch=10, kernel_size=5);
@@ -146,7 +143,7 @@ arg_pair = { ident ~ op_assign ~ literal }
 //     fc2 = Linear::<?,FC2 -> ?,OUT>::new();
 // }
 weights_assign = { ident ~ op_assign ~
-                   cap_ident ~ "::" ~ type_sig ~ "::" ~ ident ~ fn_sig ~ ";"
+                   cap_ident ~ "::" ~ type_sig ~ "::" ~ fn_call ~ ";"
                  }
 weights_decl_body = { "{" ~ weights_assign* ~ "}" }
 weights_decl_head = { weights_lit ~ cap_ident ~ type_sig }
@@ -173,10 +170,6 @@ weights_decl = { weights_decl_head ~ weights_decl_body }
 //     }
 // }
 
-fn_head = { fn_lit ~ ident ~ fn_sig }
-fn_body = { "{" ~ stmt* ~ "}" }
-
-fn_decl = { fn_head ~ fn_body }
 
 graph_decl_body = { "{" ~ fn_decl* ~ "}" }
 graph_decl_head = { graph_lit ~ cap_ident ~ type_sig }
@@ -190,15 +183,26 @@ conditional = { "if" ~ expr ~ block ~ (op_else_if ~ expr ~ block)* ~ (op_else ~ 
 op_else_if = { "else if" }
 op_else = { "else" }
 
-field_access = { ident ~ "::" ~ ident ~ fn_args? }
+field_access = { ident ~ "::" ~ ident }
 
-fn_call = { ident ~ "(" ~ fn_args? ~ ")" }
-fn_args = _{ fn_arg ~ (fn_arg ~ ",")* }
-fn_arg = { ident ~ op_assign ~ expr }
+fn_decl_param = { ("(" ~ ")") | ("(" ~ fn_decl_arg_list ~ ")") }
+fn_decl_sig = { fn_decl_param ~ ("->" ~ type_sig)? }
+fn_decl_arg_list = { fn_decl_arg_pair ~ ("," ~ fn_decl_arg_pair)* } // ...
+fn_decl_arg_pair = { ident ~ op_assign ~ expr } // ...
+fn_decl_head = { fn_lit ~ ident ~ fn_decl_sig }
+fn_decl = { fn_decl_head ~ block }
+
+fn_call_paren = { ("(" ~ ")") | ("(" ~ fn_call_arg_list ~ ")") }
+fn_call_arg_list = { fn_call_arg_pair ~ ("," ~ fn_call_arg_pair)* }
+fn_call_arg_pair = { ident ~ op_assign ~ expr }
+fn_call_args = _{ fn_call_arg ~ (fn_call_arg ~ ",")* }
+fn_call_arg = { ident ~ op_assign ~ expr }
+fn_call = { ident ~ "(" ~ fn_call_args? ~ ")" }
+
 
 pipes = { expr_item ~ ("|>" ~ expr)+ }
 
-expr_item = { bool_not | fn_call | bool_lit | ident | conditional | num_lit  }
+expr_item = _{ literal| bool_not | fn_call | ident | conditional   }
 expr = _{ pipes | expr_item }
 
 bool_not = _{ op_not ~ expr }
@@ -209,4 +213,10 @@ block = _{ "{" ~ stmt* ~ expr? ~ "}" }
 stmt = { assignment | while_loop | conditional | (expr ~ ";") | comment }
 
 assignment = { ident ~ op_assign ~ expr ~ ";" }
+
+
+
+input = _{ soi ~ items ~ eoi }
+items = _{ item* }
+item = _{ use_stmt | graph_decl | weights_decl | node_decl }
 

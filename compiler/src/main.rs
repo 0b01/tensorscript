@@ -5,6 +5,9 @@ extern crate pest_derive;
 
 use pest::Parser;
 
+#[cfg(debug_assertions)]
+const _TS: &str = include_str!("./tensorscript.pest");
+
 #[derive(Parser)]
 #[grammar = "./tensorscript.pest"]
 struct TensorScriptParser;
@@ -12,7 +15,8 @@ struct TensorScriptParser;
 const test_str: &str = include_str!("../test.tss");
 
 fn main() {
-    let pairs = TensorScriptParser::parse(Rule::expr, "blah |> test() |> foo() ");
+    // let pairs = TensorScriptParser::parse(Rule::input, test_str);
+    let pairs = TensorScriptParser::parse(Rule::graph_decl, "graph Mnist<?,c,h,w->?,OUT>{ fn new() { } }");
     println!("{}", pairs.unwrap());
 }
 
@@ -95,10 +99,10 @@ mod test {
     fn parse_use() {
         parses_to! {
             parser: TensorScriptParser,
-            input: "use conv::Conv2d",
+            input: "use conv::Conv2d;",
             rule: Rule::use_stmt,
             tokens: [
-                use_stmt(0, 16, [
+                use_stmt(0, 17, [
                     use_lit(0, 3),
                     ident(4, 8),
                     ident(10, 16)
@@ -111,10 +115,10 @@ mod test {
     fn parse_use_list() {
         parses_to! {
             parser: TensorScriptParser,
-            input: "use conv::{Test, Two}",
+            input: "use conv::{Test, Two};",
             rule: Rule::use_stmt,
             tokens: [
-                use_stmt(0, 21, [
+                use_stmt(0, 22, [
                     use_lit(0, 3),
                     ident(4, 8),
                     ident_list(11, 20, [
@@ -237,20 +241,20 @@ mod test {
     }
 
     #[test]
-    fn parse_fn_sig() {
+    fn parse_fn_decl_param() {
         parses_to! {
             parser: TensorScriptParser,
             input: "(name=1, out=false)",
-            rule: Rule::fn_sig,
+            rule: Rule::fn_decl_param,
             tokens: [
-                fn_sig(0, 19, [
-                    arg_list(1, 18, [
-                        arg_pair(1, 7, [
+                fn_decl_param(0, 19, [
+                    fn_decl_arg_list(1, 18, [
+                        fn_decl_arg_pair(1, 7, [
                             ident(1, 5),
                             op_assign(5, 6),
                             int_lit(6, 7)]
                         ),
-                        arg_pair(9, 18, [
+                        fn_decl_arg_pair(9, 18, [
                             ident(9, 12),
                             op_assign(12, 13),
                             bool_lit(13, 18, [
@@ -299,8 +303,9 @@ mod test {
                                     type_ident(51, 52)]
                                 )]
                             ),
-                            ident(55, 58),
-                            fn_sig(58, 60)]
+                            fn_call(55, 60, [
+                                ident(55, 58)]
+                            )]
                         )]
                     )]
                 )
@@ -333,15 +338,17 @@ mod test {
                     ),
                     graph_decl_body(27, 43, [
                         fn_decl(29, 41, [
-                            fn_head(29, 37, [
+                            fn_decl_head(29, 38, [
                                 ident(32, 35),
-                                fn_sig(35, 37)]
-                            ),
-                            fn_body(38, 41)]
+                                fn_decl_sig(35, 38, [
+                                    fn_decl_param(35, 37)]
+                                )]
+                            )]
                         )]
                     )]
                 )
             ]
+
         }
     }
 
@@ -390,17 +397,7 @@ mod test {
             parser: TensorScriptParser,
             input: "blah = 1;",
             rule: Rule::stmt,
-            tokens: [
-                stmt(0, 9, [
-                    assignment(0, 9, [
-                        ident(0, 4),
-                        op_assign(5, 6),
-                        expr_item(7, 8, [
-                            ident(7, 8)]
-                        )]
-                    )]
-                )
-            ]
+            tokens: [stmt(0, 9, [assignment(0, 9, [ident(0, 4), op_assign(5, 6), int_lit(7, 8)])])]
         }
     }
 
@@ -410,30 +407,9 @@ mod test {
             parser: TensorScriptParser,
             input: "while 1 { print(text=1); }",
             rule: Rule::stmt,
-            tokens: [
-                stmt(0, 26, [
-                    while_loop(0, 26, [
-                        while_lit(0, 5),
-                        expr_item(6, 7, [
-                            ident(6, 7)]
-                        ),
-                        stmt(10, 24, [
-                            expr_item(10, 23, [
-                                fn_call(10, 23, [
-                                    ident(10, 15),
-                                    fn_arg(16, 22, [
-                                        ident(16, 20),
-                                        op_assign(20, 21),
-                                        expr_item(21, 22, [
-                                            ident(21, 22)]
-                                        )]
-                                    )]
-                                )]
-                            )]
-                        )]
-                    )]
-                )
-            ]
+            tokens: [stmt(0, 26, [while_loop(0, 26, [while_lit(0, 5),
+                    int_lit(6, 7), stmt(10, 24, [fn_call(10, 23, [ident(10, 15),
+                    fn_call_arg(16, 22, [ident(16, 20), op_assign(20, 21), int_lit(21, 22)])])])])])]
         }
     }
 
@@ -445,20 +421,15 @@ mod test {
             rule: Rule::expr,
             tokens: [
                 pipes(0, 24, [
-                    expr_item(0, 4, [
-                        ident(0, 4)]
-                    ),
+                    ident(0, 4),
                     pipes(8, 24, [
-                        expr_item(8, 14, [
-                            fn_call(8, 14, [
-                                ident(8, 12)]
-                            )]
+                        fn_call(8, 14, [
+                            ident(8, 12)]
                         ),
-                        expr_item(18, 23, [
-                            fn_call(18, 23, [
-                                ident(18, 21)]
-                            )]
-                        )]
+                        fn_call(18, 23, [
+                            ident(18, 21)]
+                        )
+                        ]
                     )]
                 )
             ]
