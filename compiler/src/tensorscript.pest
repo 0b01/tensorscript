@@ -194,7 +194,7 @@ fn_call_param = { ("(" ~ ")") | ("(" ~ fn_call_arg_list ~ ")") }
 fn_call_arg_list = { fn_call_arg_pair ~ ("," ~ fn_call_arg_pair)* }
 fn_call_arg_pair = { ident ~ "=" ~ expr }
 fn_call_arg = { ident ~ "=" ~ expr }
-fn_call_args = _{ (fn_call_arg ~ ",")* ~ fn_call_arg }
+fn_call_args = { (fn_call_arg ~ ",")* ~ fn_call_arg }
 fn_call = { ident ~ "(" ~ fn_call_args? ~ ")" }
 
 
