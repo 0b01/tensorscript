@@ -6,10 +6,10 @@ newline = _{ "\n" | "\r\n" }
 space   = _{ " " | "\t" }
 
 // keyword
-node_lit = { "node" }
-weights_lit = { "weights" }
-graph_lit = { "graph" }
-as_lit = { "as" }
+node_lit = _{ "node" }
+weights_lit = _{ "weights" }
+graph_lit = _{ "graph" }
+fn_lit = _{ "fn" }
 break_lit = { "break" }
 const_lit = { "const" }
 continue_lit = { "continue" }
@@ -17,7 +17,6 @@ crate_lit = { "crate" }
 else_lit = { "else" }
 enum_lit = { "enum" }
 false_lit = { "false" }
-fn_lit = { "fn" }
 for_lit = { "for" }
 if_lit = { "if" }
 let_lit = { "let" }
@@ -33,7 +32,7 @@ use_lit = { "use" }
 where_lit = { "where" }
 while_lit = { "while" }
 print_lit = { "print" }
-keyword = { node_lit | weights_lit | graph_lit | as_lit | break_lit | const_lit | 
+keyword = { node_lit | weights_lit | graph_lit | break_lit | const_lit | 
              continue_lit | crate_lit | else_lit | enum_lit | true_lit | false_lit |
              fn_lit | for_lit | if_lit | let_lit | match_lit | mod_lit | move_lit | 
              return_lit | Self_lit | self_lit | type_lit | use_lit | 
@@ -64,6 +63,7 @@ binary_op = _{
 }
 op_expo   = { "**" }
 op_mult   = { "*" }
+op_not    = { "!" }
 op_div    = { "/" }
 op_mod    = { "%" }
 op_add    = { "+" }
@@ -114,46 +114,29 @@ ident_list = { !digit ~ ident ~ ("," ~ ident)+ }
 cap_ident = @{ upper ~ (alpha|digit)* }
 upper_ident = @{ (upper|digit)* }
 
+// use conv::{Conv2d, Dropout2d, maxpool2d};
+// use nonlin::relu;
+// use lin::Linear;
 use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident )}
 
 // type signature
 type_ident = @{  (alpha | digit | "?" | "_")+ }
-type_ident_list = { type_ident ~ ("," ~ type_ident)+ }
+type_ident_list = { type_ident ~ ("," ~ type_ident)* }
 type_sig = {"<" ~ type_ident_list ~ "->" ~ type_ident_list ~ ">"}
-
-// node defn
-node_macro_assign = { upper_ident ~ op_assign ~ int_lit ~ ";" }
-node_decl_body = { "{" ~ node_macro_assign+ ~ "}" }
-node_decl_head = { node_lit ~ cap_ident ~ type_sig }
-node_decl = { node_decl_head ~ node_decl_body }
-
-fn_signature = {
-  ( "(" ~ keyword_list ~ ")" ) |
-  ( "(" ~ ")" )
-}
-keyword_list = { keyword_pair ~ ("," ~ keyword_pair)* }
-keyword_pair = { keyword_ident ~ lit }
-keyword_ident = @{ ident ~ "=" }
-
-
-// node defn
-weights_assign = { ident ~ op_assign ~
-                   cap_ident ~ "::" ~ type_sig ~ "::" ~ ident ~ 
-                   fn_signature ~ ";"
-                 }
-weights_decl_body = { "{" ~ weights_assign+ ~ "}" }
-weights_decl_head = { weights_lit ~ cap_ident ~ type_sig }
-weights_decl = { weights_decl_head ~ weights_decl_body }
-
-// use conv::{Conv2d, Dropout2d, maxpool2d};
-// use nonlin::relu;
-// use lin::Linear;
 
 // node Mnist<?,c,h,w -> ?,OUT> {
 //     FC1 = 320;
 //     FC2 = 50;
 //     OUT = 10;
 // };
+node_macro_assign = { upper_ident ~ op_assign ~ int_lit ~ ";" }
+node_decl_body = { "{" ~ node_macro_assign* ~ "}" }
+node_decl_head = { node_lit ~ cap_ident ~ type_sig }
+node_decl = { node_decl_head ~ node_decl_body }
+
+fn_sig = { ("(" ~ ")") | ("(" ~ arg_list ~ ")") }
+arg_list = { arg_pair ~ ("," ~ arg_pair)* }
+arg_pair = { ident ~ op_assign ~ literal }
 
 // weights Mnist<?,c,h,w -> ?,OUT> {
 //     conv1 = Conv2d::<?,c,h,w -> ?,c,h,w>::new(in_ch=1, out_ch=10, kernel_size=5);
@@ -162,6 +145,12 @@ weights_decl = { weights_decl_head ~ weights_decl_body }
 //     fc1 = Linear::<?,FC1 -> ?,FC2>::new();
 //     fc2 = Linear::<?,FC2 -> ?,OUT>::new();
 // }
+weights_assign = { ident ~ op_assign ~
+                   cap_ident ~ "::" ~ type_sig ~ "::" ~ ident ~ fn_sig ~ ";"
+                 }
+weights_decl_body = { "{" ~ weights_assign* ~ "}" }
+weights_decl_head = { weights_lit ~ cap_ident ~ type_sig }
+weights_decl = { weights_decl_head ~ weights_decl_body }
 
 // graph Mnist<?,c,h,w -> ?,OUT> {
 //     fn new() {
@@ -183,3 +172,39 @@ weights_decl = { weights_decl_head ~ weights_decl_body }
 //         x |> fc2 |> relu
 //     }
 // }
+
+fn_head = { fn_lit ~ ident ~ fn_sig }
+fn_body = { "{" ~ stmt* ~ "}" }
+
+fn_decl = { fn_head ~ fn_body }
+
+graph_decl_body = { "{" ~ fn_decl* ~ "}" }
+graph_decl_head = { graph_lit ~ cap_ident ~ type_sig }
+graph_decl = { graph_decl_head ~ graph_decl_body }
+
+
+
+while_loop = { while_lit ~ expr ~ block }
+
+conditional = { "if" ~ expr ~ block ~ (op_else_if ~ expr ~ block)* ~ (op_else ~ block)? }
+op_else_if = { "else if" }
+op_else = { "else" }
+
+field_access = { ident ~ "::" ~ ident ~ fn_args? }
+
+fn_call = { ident ~ "(" ~ fn_args? ~ ")" }
+fn_args = _{ fn_arg ~ (fn_arg ~ ",")* }
+fn_arg = { ident ~ op_assign ~ expr }
+
+
+expr = {
+    bool_not | fn_call | bool_lit | ident | conditional | num_lit
+}
+bool_not = _{ op_not ~ expr }
+
+// This allows {} and {statement; statement; statement;} and {statement; expr} and {expr}
+block = _{ "{" ~ stmt* ~ expr? ~ "}" }
+
+stmt = { assignment | while_loop | conditional | (expr ~ ";") | comment }
+
+assignment = { ident ~ op_assign ~ expr ~ ";" }

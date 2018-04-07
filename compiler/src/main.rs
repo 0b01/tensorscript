@@ -10,9 +10,10 @@ use pest::Parser;
 struct TensorScriptParser;
 
 fn main() {
-    let pairs = TensorScriptParser::parse(Rule::node_decl, "weights Mnist<?,c,h,w->?,OUT>{ conv1 = Conv2d::<?->?>::new() }");
+    let pairs = TensorScriptParser::parse(Rule::stmt, "while 1 { print(); } ");
     println!("{}", pairs.unwrap());
 }
+
 
 #[cfg(test)]
 mod test {
@@ -145,6 +146,7 @@ mod test {
         };
     }
 
+
     #[test]
     fn parse_node_head() {
         parses_to! {
@@ -153,7 +155,6 @@ mod test {
             rule: Rule::node_decl_head,
             tokens: [
                 node_decl_head(0, 26, [
-                    node_lit(0, 4),
                     cap_ident(5, 10),
                     type_sig(10, 26, [
                         type_ident_list(11, 18, [
@@ -178,12 +179,12 @@ mod test {
             rule: Rule::node_decl_body,
             tokens: [
                 node_decl_body(0, 17, [
-                    macro_expr(2, 8, [
+                    node_macro_assign(2, 8, [
                         upper_ident(2, 3),
                         op_assign(4, 5),
                         int_lit(6, 7)
                     ]),
-                    macro_expr(9, 15, [
+                    node_macro_assign(9, 15, [
                         upper_ident(9, 10),
                         op_assign(11, 12),
                         int_lit(13, 14)
@@ -202,7 +203,6 @@ mod test {
             tokens: [
                 node_decl(0, 43, [
                     node_decl_head(0, 26, [
-                        node_lit(0, 4),
                         cap_ident(5, 10),
                         type_sig(10, 26, [
                             type_ident_list(11, 18, [
@@ -218,12 +218,12 @@ mod test {
                         )]
                     ),
                     node_decl_body(26, 43, [
-                        macro_expr(28, 34, [
+                        node_macro_assign(28, 34, [
                             upper_ident(28, 29),
                             op_assign(30, 31),
                             int_lit(32, 33)]
                         ),
-                        macro_expr(35, 41, [
+                        node_macro_assign(35, 41, [
                             upper_ident(35, 36),
                             op_assign(37, 38),
                             int_lit(39, 40)]
@@ -233,5 +233,203 @@ mod test {
 
         };
     }
-}
 
+    #[test]
+    fn parse_fn_sig() {
+        parses_to! {
+            parser: TensorScriptParser,
+            input: "(name=1, out=false)",
+            rule: Rule::fn_sig,
+            tokens: [
+                fn_sig(0, 19, [
+                    arg_list(1, 18, [
+                        arg_pair(1, 7, [
+                            ident(1, 5),
+                            op_assign(5, 6),
+                            int_lit(6, 7)]
+                        ),
+                        arg_pair(9, 18, [
+                            ident(9, 12),
+                            op_assign(12, 13),
+                            bool_lit(13, 18, [
+                                false_lit(13, 18)]
+                            )]
+                        )]
+                    )]
+                )
+            ]
+        }
+    }
+
+    #[test]
+    fn parse_weights() {
+        parses_to! {
+            parser: TensorScriptParser,
+            input: "weights Mnist<?,c,h,w->?,OUT>{ conv1 = Conv2d::<?->?>::new(); }",
+            rule: Rule::weights_decl,
+            tokens: [
+                weights_decl(0, 63, [
+                    weights_decl_head(0, 29, [
+                        cap_ident(8, 13),
+                        type_sig(13, 29, [
+                            type_ident_list(14, 21, [
+                                type_ident(14, 15),
+                                type_ident(16, 17),
+                                type_ident(18, 19),
+                                type_ident(20, 21)]
+                            ),
+                            type_ident_list(23, 28, [
+                                type_ident(23, 24),
+                                type_ident(25, 28)]
+                            )]
+                        )]
+                    ),
+                    weights_decl_body(29, 63, [
+                        weights_assign(31, 61, [
+                            ident(31, 36),
+                            op_assign(37, 38),
+                            cap_ident(39, 45),
+                            type_sig(47, 53, [
+                                type_ident_list(48, 49, [
+                                    type_ident(48, 49)]
+                                ),
+                                type_ident_list(51, 52, [
+                                    type_ident(51, 52)]
+                                )]
+                            ),
+                            ident(55, 58),
+                            fn_sig(58, 60)]
+                        )]
+                    )]
+                )
+            ]
+        }
+    }
+
+    #[test]
+    fn parse_graph() {
+        parses_to! {
+            parser: TensorScriptParser,
+            input: "graph Mnist<?,c,h,w->?,OUT>{ fn new() { } }",
+            rule: Rule::graph_decl,
+            tokens: [
+                graph_decl(0, 43, [
+                    graph_decl_head(0, 27, [
+                        cap_ident(6, 11),
+                        type_sig(11, 27, [
+                            type_ident_list(12, 19, [
+                                type_ident(12, 13),
+                                type_ident(14, 15),
+                                type_ident(16, 17),
+                                type_ident(18, 19)]
+                            ),
+                            type_ident_list(21, 26, [
+                                type_ident(21, 22),
+                                type_ident(23, 26)]
+                            )]
+                        )]
+                    ),
+                    graph_decl_body(27, 43, [
+                        fn_decl(29, 41, [
+                            fn_head(29, 37, [
+                                ident(32, 35),
+                                fn_sig(35, 37)]
+                            ),
+                            fn_body(38, 41)]
+                        )]
+                    )]
+                )
+            ]
+        }
+    }
+
+    #[test]
+    fn parse_graph_2() {
+        parses_to! {
+            parser: TensorScriptParser,
+            input: "graph Mnist<?,c,h,w->?,OUT>{}",
+            rule: Rule::graph_decl,
+            tokens: [
+                graph_decl(0, 29, [
+                    graph_decl_head(0, 27, [
+                        cap_ident(6, 11),
+                        type_sig(11, 27, [
+                            type_ident_list(12, 19, [
+                                type_ident(12, 13),
+                                type_ident(14, 15),
+                                type_ident(16, 17),
+                                type_ident(18, 19)]
+                            ),
+                            type_ident_list(21, 26, [
+                                type_ident(21, 22),
+                                type_ident(23, 26)]
+                            )]
+                        )]
+                    ),
+                    graph_decl_body(27, 29, [])]
+                )
+            ]
+        }
+    }
+
+    #[test]
+    fn parse_block() {
+        parses_to! {
+            parser: TensorScriptParser,
+            input: "{}",
+            rule: Rule::block,
+            tokens: []
+        }
+    }
+
+    #[test]
+    fn parse_stmt() {
+        parses_to! {
+            parser: TensorScriptParser,
+            input: "blah = 1;",
+            rule: Rule::stmt,
+            tokens: [
+                stmt(0, 9, [
+                    assignment(0, 9, [
+                        ident(0, 4),
+                        op_assign(5, 6),
+                        expr(7, 8, [
+                            ident(7, 8)]
+                        )]
+                    )]
+                )
+            ]
+        }
+
+        parses_to! {
+            parser: TensorScriptParser,
+            input: "while 1 { print(text=1); }",
+            rule: Rule::stmt,
+            tokens: [
+                stmt(0, 26, [
+                    while_loop(0, 26, [
+                        while_lit(0, 5),
+                        expr(6, 7, [
+                            ident(6, 7)]
+                        ),
+                        stmt(10, 24, [
+                            expr(10, 23, [
+                                fn_call(10, 23, [
+                                    ident(10, 15),
+                                    fn_arg(16, 22, [
+                                        ident(16, 20),
+                                        op_assign(20, 21),
+                                        expr(21, 22, [
+                                            ident(21, 22)]
+                                        )]
+                                    )]
+                                )]
+                            )]
+                        )]
+                    )]
+                )
+            ]
+        }
+    }
+
+}
