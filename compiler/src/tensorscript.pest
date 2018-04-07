@@ -1,12 +1,13 @@
 whitespace = _{ space | newline  }
 comment = _{ line_comment }
-line_comment = _{  "#" ~ (!newline ~ any)* }
+line_comment = _{  "//" ~ (!newline ~ any)* }
 
 newline = _{ "\n" | "\r\n" }
 space   = _{ " " | "\t" }
 
 // keyword
 node_lit = _{ "node" }
+view_lit = _{ "view" }
 weights_lit = _{ "weights" }
 graph_lit = _{ "graph" }
 fn_lit = _{ "fn" }
@@ -32,7 +33,7 @@ use_lit = { "use" }
 where_lit = { "where" }
 while_lit = { "while" }
 print_lit = { "print" }
-keyword = { node_lit | weights_lit | graph_lit | break_lit | const_lit | 
+keyword = { node_lit | weights_lit | graph_lit | view_lit | break_lit | const_lit | 
              continue_lit | crate_lit | else_lit | enum_lit | true_lit | false_lit |
              fn_lit | for_lit | if_lit | let_lit | match_lit | mod_lit | move_lit | 
              return_lit | Self_lit | self_lit | type_lit | use_lit | 
@@ -85,8 +86,7 @@ op_assign = { "=" }
 
 
 literal = _{
-  float_lit    |
-  int_lit  |
+  num_lit  |
   bool_lit 
 }
 
@@ -103,14 +103,14 @@ float_lit = @{
     int_lit ~ "." ~ int_lit? ~ exp? |
     int_lit ~ exp
 }
-num_lit = { float_lit | int_lit }
+num_lit = _{ float_lit | int_lit }
 
 // ident
 lower = _{ 'a'..'z' }
 upper = _{ 'A'..'Z' }
 alpha = _{ lower | upper }
-ident = @{ !digit ~ (alpha | digit | "_")+ }
-ident_list = { ident ~ ("," ~ ident)+ }
+ident = @{ (!digit ~ (alpha | digit | "_")+ ) | "?" }
+ident_list = { ident ~ ("," ~ ident)+ ~ ","? }
 cap_ident = @{ upper ~ (alpha|digit| "_")* }
 upper_ident = @{ (upper|digit)* }
 
@@ -122,7 +122,8 @@ use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident ) ~ ";"}
 // type signature
 type_ident = @{  (alpha | digit | "?" | "_")+ }
 type_ident_list = { type_ident ~ ("," ~ type_ident)* }
-type_sig = {"<" ~ type_ident_list ~ "->" ~ type_ident_list ~ ">"}
+fn_type_sig = {"<" ~ type_ident_list ~ "->" ~ type_ident_list ~ ">"}
+type_sig = {"<" ~ type_ident_list ~ ">"}
 
 // node Mnist<?,c,h,w -> ?,OUT> {
 //     FC1 = 320;
@@ -131,7 +132,7 @@ type_sig = {"<" ~ type_ident_list ~ "->" ~ type_ident_list ~ ">"}
 // };
 node_macro_assign = { upper_ident ~ op_assign ~ int_lit ~ ";" }
 node_decl_body = { "{" ~ node_macro_assign* ~ "}" }
-node_decl_head = { node_lit ~ cap_ident ~ type_sig }
+node_decl_head = { node_lit ~ cap_ident ~ fn_type_sig }
 node_decl = { node_decl_head ~ node_decl_body }
 
 
@@ -143,10 +144,10 @@ node_decl = { node_decl_head ~ node_decl_body }
 //     fc2 = Linear::<?,FC2 -> ?,OUT>::new();
 // }
 weights_assign = { ident ~ op_assign ~
-                   cap_ident ~ "::" ~ type_sig ~ "::" ~ fn_call ~ ";"
+                   cap_ident ~ "::" ~ fn_type_sig ~ "::" ~ fn_call ~ ";"
                  }
 weights_decl_body = { "{" ~ weights_assign* ~ "}" }
-weights_decl_head = { weights_lit ~ cap_ident ~ type_sig }
+weights_decl_head = { weights_lit ~ cap_ident ~ fn_type_sig }
 weights_decl = { weights_decl_head ~ weights_decl_body }
 
 // graph Mnist<?,c,h,w -> ?,OUT> {
@@ -169,10 +170,8 @@ weights_decl = { weights_decl_head ~ weights_decl_body }
 //         x |> fc2 |> relu
 //     }
 // }
-
-
 graph_decl_body = { "{" ~ fn_decl* ~ "}" }
-graph_decl_head = { graph_lit ~ cap_ident ~ type_sig }
+graph_decl_head = { graph_lit ~ cap_ident ~ fn_type_sig }
 graph_decl = { graph_decl_head ~ graph_decl_body }
 
 
@@ -183,27 +182,30 @@ conditional = { "if" ~ expr ~ block ~ (op_else_if ~ expr ~ block)* ~ (op_else ~ 
 op_else_if = { "else if" }
 op_else = { "else" }
 
-field_access = { ident ~ "::" ~ ident }
 
 fn_decl_param = { ("(" ~ ")") | ("(" ~ fn_decl_arg_list ~ ")") }
 fn_decl_sig = { fn_decl_param ~ ("->" ~ type_sig)? }
-fn_decl_arg_list = { fn_decl_arg_pair ~ ("," ~ fn_decl_arg_pair)* } // ...
-fn_decl_arg_pair = { ident ~ op_assign ~ expr } // ...
+fn_decl_arg_list = _{ fn_decl_arg ~ ("," ~ fn_decl_arg)* }
+fn_decl_arg = { ident ~ (":" ~ type_sig)? }
 fn_decl_head = { fn_lit ~ ident ~ fn_decl_sig }
 fn_decl = { fn_decl_head ~ block }
 
-fn_call_paren = { ("(" ~ ")") | ("(" ~ fn_call_arg_list ~ ")") }
+fn_call_param = { ("(" ~ ")") | ("(" ~ fn_call_arg_list ~ ")") }
 fn_call_arg_list = { fn_call_arg_pair ~ ("," ~ fn_call_arg_pair)* }
-fn_call_arg_pair = { ident ~ op_assign ~ expr }
-fn_call_args = _{ fn_call_arg ~ (fn_call_arg ~ ",")* }
-fn_call_arg = { ident ~ op_assign ~ expr }
+fn_call_arg_pair = { ident ~ "=" ~ expr }
+fn_call_arg = { ident ~ "=" ~ expr }
+fn_call_args = _{ (fn_call_arg ~ ",")* ~ fn_call_arg }
 fn_call = { ident ~ "(" ~ fn_call_args? ~ ")" }
 
 
 pipes = { expr_item ~ ("|>" ~ expr)+ }
 
-expr_item = _{ literal| bool_not | fn_call | ident | conditional   }
-expr = _{ pipes | expr_item }
+field_access = { ident ~ "." ~ ident ~ fn_call_param? }
+
+view_fn = { view_lit ~ "(" ~ ("?"| expr)? ~ ("," ~ ("?"|expr))* ~ ","? ~ ")" }
+
+expr_item = _{ view_fn | field_access | literal | bool_not | fn_call | ident | conditional }
+expr = _{ expr_item ~ !"|>" | pipes }
 
 bool_not = _{ op_not ~ expr }
 

@@ -15,8 +15,8 @@ struct TensorScriptParser;
 const test_str: &str = include_str!("../test.tss");
 
 fn main() {
-    // let pairs = TensorScriptParser::parse(Rule::input, test_str);
-    let pairs = TensorScriptParser::parse(Rule::graph_decl, "graph Mnist<?,c,h,w->?,OUT>{ fn new() { } }");
+    let pairs = TensorScriptParser::parse(Rule::input, test_str);
+    // let pairs = TensorScriptParser::parse(Rule::stmt, "blah = 1;");
     println!("{}", pairs.unwrap());
 }
 
@@ -59,9 +59,7 @@ mod test {
             input: "0.",
             rule: Rule::num_lit,
             tokens: [
-                num_lit(0, 2, [
-                    float_lit(0, 2)
-                ])
+                float_lit(0, 2)
             ]
         };
     }
@@ -73,9 +71,7 @@ mod test {
             input: "1e10",
             rule: Rule::num_lit,
             tokens: [
-                num_lit(0, 4, [
-                    float_lit(0, 4, [
-                    ])
+                float_lit(0, 4, [
                 ])
             ]
         };
@@ -88,9 +84,7 @@ mod test {
             input: "1",
             rule: Rule::num_lit,
             tokens: [
-                num_lit(0, 1, [
-                    int_lit(0, 1),
-                ])
+                int_lit(0, 1),
             ]
         };
     }
@@ -131,13 +125,13 @@ mod test {
     }
 
     #[test]
-    fn parse_type_signature() {
+    fn parse_fn_type_signature() {
         parses_to! {
             parser: TensorScriptParser,
             input: "<?,h,w -> 10, h>",
-            rule: Rule::type_sig,
+            rule: Rule::fn_type_sig,
             tokens: [
-                type_sig(0, 16, [
+                fn_type_sig(0, 16, [
                     type_ident_list(1, 6, [
                         type_ident(1, 2),
                         type_ident(3, 4),
@@ -162,7 +156,7 @@ mod test {
             tokens: [
                 node_decl_head(0, 26, [
                     cap_ident(5, 10),
-                    type_sig(10, 26, [
+                    fn_type_sig(10, 26, [
                         type_ident_list(11, 18, [
                             type_ident(11, 12),
                             type_ident(13, 14),
@@ -210,7 +204,7 @@ mod test {
                 node_decl(0, 43, [
                     node_decl_head(0, 26, [
                         cap_ident(5, 10),
-                        type_sig(10, 26, [
+                        fn_type_sig(10, 26, [
                             type_ident_list(11, 18, [
                                 type_ident(11, 12),
                                 type_ident(13, 14),
@@ -240,32 +234,6 @@ mod test {
         };
     }
 
-    #[test]
-    fn parse_fn_decl_param() {
-        parses_to! {
-            parser: TensorScriptParser,
-            input: "(name=1, out=false)",
-            rule: Rule::fn_decl_param,
-            tokens: [
-                fn_decl_param(0, 19, [
-                    fn_decl_arg_list(1, 18, [
-                        fn_decl_arg_pair(1, 7, [
-                            ident(1, 5),
-                            op_assign(5, 6),
-                            int_lit(6, 7)]
-                        ),
-                        fn_decl_arg_pair(9, 18, [
-                            ident(9, 12),
-                            op_assign(12, 13),
-                            bool_lit(13, 18, [
-                                false_lit(13, 18)]
-                            )]
-                        )]
-                    )]
-                )
-            ]
-        }
-    }
 
     #[test]
     fn parse_weights() {
@@ -277,7 +245,7 @@ mod test {
                 weights_decl(0, 63, [
                     weights_decl_head(0, 29, [
                         cap_ident(8, 13),
-                        type_sig(13, 29, [
+                        fn_type_sig(13, 29, [
                             type_ident_list(14, 21, [
                                 type_ident(14, 15),
                                 type_ident(16, 17),
@@ -295,7 +263,7 @@ mod test {
                             ident(31, 36),
                             op_assign(37, 38),
                             cap_ident(39, 45),
-                            type_sig(47, 53, [
+                            fn_type_sig(47, 53, [
                                 type_ident_list(48, 49, [
                                     type_ident(48, 49)]
                                 ),
@@ -314,45 +282,6 @@ mod test {
     }
 
     #[test]
-    fn parse_graph() {
-        parses_to! {
-            parser: TensorScriptParser,
-            input: "graph Mnist<?,c,h,w->?,OUT>{ fn new() { } }",
-            rule: Rule::graph_decl,
-            tokens: [
-                graph_decl(0, 43, [
-                    graph_decl_head(0, 27, [
-                        cap_ident(6, 11),
-                        type_sig(11, 27, [
-                            type_ident_list(12, 19, [
-                                type_ident(12, 13),
-                                type_ident(14, 15),
-                                type_ident(16, 17),
-                                type_ident(18, 19)]
-                            ),
-                            type_ident_list(21, 26, [
-                                type_ident(21, 22),
-                                type_ident(23, 26)]
-                            )]
-                        )]
-                    ),
-                    graph_decl_body(27, 43, [
-                        fn_decl(29, 41, [
-                            fn_decl_head(29, 38, [
-                                ident(32, 35),
-                                fn_decl_sig(35, 38, [
-                                    fn_decl_param(35, 37)]
-                                )]
-                            )]
-                        )]
-                    )]
-                )
-            ]
-
-        }
-    }
-
-    #[test]
     fn parse_graph_2() {
         parses_to! {
             parser: TensorScriptParser,
@@ -362,7 +291,7 @@ mod test {
                 graph_decl(0, 29, [
                     graph_decl_head(0, 27, [
                         cap_ident(6, 11),
-                        type_sig(11, 27, [
+                        fn_type_sig(11, 27, [
                             type_ident_list(12, 19, [
                                 type_ident(12, 13),
                                 type_ident(14, 15),
@@ -409,7 +338,7 @@ mod test {
             rule: Rule::stmt,
             tokens: [stmt(0, 26, [while_loop(0, 26, [while_lit(0, 5),
                     int_lit(6, 7), stmt(10, 24, [fn_call(10, 23, [ident(10, 15),
-                    fn_call_arg(16, 22, [ident(16, 20), op_assign(20, 21), int_lit(21, 22)])])])])])]
+                    fn_call_arg(16, 22, [ident(16, 20), int_lit(21, 22)])])])])])]
         }
     }
 
