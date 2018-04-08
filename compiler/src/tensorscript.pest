@@ -170,7 +170,8 @@ weights_decl = { weights_decl_head ~ weights_decl_body }
 //         x |> fc2 |> relu
 //     }
 // }
-graph_decl_body = { "{" ~ fn_decl* ~ "}" }
+fn_decls = { fn_decl* }
+graph_decl_body = { "{" ~ fn_decls ~ "}" }
 graph_decl_head = { graph_lit ~ cap_ident ~ fn_type_sig }
 graph_decl = { graph_decl_head ~ graph_decl_body }
 
@@ -183,34 +184,34 @@ op_else_if = { "else if" }
 op_else = { "else" }
 
 
-fn_decl_param = { ("(" ~ ")") | ("(" ~ fn_decl_arg_list ~ ")") }
+fn_decl_param = { ("(" ~ ")") | ("(" ~ fn_decl_args ~ ")") }
 fn_decl_sig = { fn_decl_param ~ ("->" ~ type_sig)? }
-fn_decl_arg_list = _{ fn_decl_arg ~ ("," ~ fn_decl_arg)* }
+fn_decl_args = { fn_decl_arg ~ ("," ~ fn_decl_arg)* }
 fn_decl_arg = { ident ~ (":" ~ type_sig)? }
 fn_decl_head = { fn_lit ~ ident ~ fn_decl_sig }
 fn_decl = { fn_decl_head ~ block }
 
-fn_call_param = { ("(" ~ ")") | ("(" ~ fn_call_arg_list ~ ")") }
-fn_call_arg_list = { fn_call_arg_pair ~ ("," ~ fn_call_arg_pair)* }
+fn_call_param = { ("(" ~ ")") | ("(" ~ fn_call_args ~ ")") }
 fn_call_arg_pair = { ident ~ "=" ~ expr }
 fn_call_arg = { ident ~ "=" ~ expr }
 fn_call_args = { (fn_call_arg ~ ",")* ~ fn_call_arg }
 fn_call = { ident ~ "(" ~ fn_call_args? ~ ")" }
 
 
-pipes = { expr_item ~ ("|>" ~ expr)+ }
+pipes = { expr_item  ~ ("|>" ~ expr)+ }
 
 field_access = { ident ~ "." ~ ident ~ fn_call_param? }
 
 view_fn = { view_lit ~ "(" ~ ("?"| expr)? ~ ("," ~ ("?"|expr))* ~ ","? ~ ")" }
 
 expr_item = _{ view_fn | field_access | literal | bool_not | fn_call | ident | conditional }
-expr = _{ expr_item ~ !"|>" | pipes }
+expr = { expr_item ~ !"|>" | pipes }
 
 bool_not = _{ op_not ~ expr }
 
 // This allows {} and {statement; statement; statement;} and {statement; expr} and {expr}
-block = _{ "{" ~ stmt* ~ expr? ~ "}" }
+block = { "{" ~ stmts ~ expr? ~ "}" }
+stmts = { stmt* }
 
 stmt = { assignment | while_loop | conditional | (expr ~ ";") | comment }
 

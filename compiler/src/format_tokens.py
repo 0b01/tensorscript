@@ -22,13 +22,15 @@ def up_indent(tok):
     print tok+'\n' + ' '*4*indent,
 
 for i in tokens:
-    if i in ['[']:
+    if i in ['[', '{']:
         up_indent(i)
     elif i == ']' and peek('['):
         down_indent(i)
+    elif i == '}' and peek('{'):
+        down_indent(i)
     elif i == ')' and peek('('):
         down_indent(i)
-    elif i == ',' and last in [']', ')', '(', '[']:
+    elif i == ',' and last in [']', ')', '(', '[', '{', '}']:
         print i+'\n' + ' '*(4*indent-1),
     else:
         sys.stdout.write(i)

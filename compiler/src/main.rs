@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
@@ -10,6 +9,6 @@ mod builder;
 const TEST_STR: &str = include_str!("../test.tss");
 
 fn main() {
-    let result = builder::parse_str(TEST_STR);
+    let result = builder::parse_str(TEST_STR).unwrap();
     println!("{:?}", result);
 }

@@ -7,8 +7,6 @@ const _TS: &str = include_str!("./tensorscript.pest");
 #[grammar = "./tensorscript.pest"]
 pub struct TensorScriptParser;
 
-
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -326,7 +324,8 @@ mod test {
             rule: Rule::stmt,
             tokens: [stmt(0, 26, [while_loop(0, 26, [while_lit(0, 5),
                     int_lit(6, 7), stmt(10, 24, [fn_call(10, 23, [ident(10, 15),
-                    fn_call_arg(16, 22, [ident(16, 20), int_lit(21, 22)])])])])])]
+                    fn_call_args(16, 22, [fn_call_arg(16, 22, [ident(16, 20), int_lit(21, 22
+                    )])])])])])])]
         }
     }
 

@@ -1,5 +1,8 @@
+use std::fmt::{ Formatter, Display, Error };
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum AST {
+  None,
   Integer(i64),
   Float(f64),
   String(String),
@@ -17,16 +20,37 @@ pub enum AST {
   List(Vec<AST>),
   Function(Vec<AST>),
   Clause(Vec<(AST, AST)>, Box<AST>),
-  Block(Vec<AST>),
+
+  Ident(String),
+  Block {
+    stmts: Box<AST>,
+    ret: Box<AST>,
+  },
   WeightsDecl {
     name: String,
     type_sig: Box<AST>,
     initialization: Box<AST>,
   },
+  Expr {
+    items: Box<AST>,
+  },
+  Stmt {
+    items: Box<AST>,
+  },
+  FieldAccess {
+      var_name: String,
+      field_name: String,
+      func_call: Box<AST>,
+  },
   NodeDecl {
     name: String,
     type_sig: Box<AST>,
     initialization: Box<AST>,
+  },
+  GraphDecl {
+    name: String,
+    type_sig: Box<AST>,
+    fns: Box<AST>,
   },
   WeightsAssign {
     name: String,
@@ -42,10 +66,48 @@ pub enum AST {
     name: String,
     arg: Box<AST>,
   },
-  UseStmt(String, Vec<String>),
+  FnDecl {
+    name: String,
+    fn_params: Box<AST>,
+    return_type: Vec<String>,
+    func_block: Box<AST>,
+  },
+  FnDeclArg {
+    name: String,
+    type_sig: Vec<String>,
+  },
+  UseStmt {
+    mod_name: String,
+    imported_names: Vec<String>
+  },
   Start,
-  TypeSig(Vec<String>, Vec<String>),
+  FnTypeSig(Vec<String>, Vec<String>),
   MacroAssign(String, Box<AST>),
+}
+
+impl AST {
+  /// args is List(Arg)
+  pub fn extend_arg_list(args: Box<AST>, init: AST) -> Box<AST> {
+      if let AST::List(vec) = *args {
+          let mut new_arg_vec = vec![AST::FnCallArg {
+                  name: format!("x"),
+                  arg: Box::new(init),
+              }];
+          new_arg_vec.extend(vec);
+
+          Box::new(AST::List(new_arg_vec))
+      } else { 
+        println!("{:?}", args);
+        unimplemented!();
+      }
+  }
+}
+
+impl Display for AST {
+  fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+    let txt = format!("{:?}", self);
+    write!(f, "{}", txt)
+  }
 }
 
 #[derive(Debug, PartialEq, Clone)]

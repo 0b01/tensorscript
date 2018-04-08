@@ -23,9 +23,9 @@ graph Mnist<?,c,h,w -> ?,OUT> {
         x
         |> conv1            |> maxpool2d(kernel_size=2)
         |> conv2 |> dropout |> maxpool2d(kernel_size=2)
-        |> view(?, FC1)
+        // |> view(?, FC1)
         |> fc1 |> relu
-        |> self.fc2()
+        // |> self.fc2()
         |> log_softmax(dim=1)
     }
 
