@@ -170,7 +170,6 @@ weights_decl = { weights_decl_head ~ weights_decl_body }
 //         x |> fc2 |> relu
 //     }
 // }
-fn_decls = { fn_decl* }
 graph_decl_body = { "{" ~ fn_decls ~ "}" }
 graph_decl_head = { graph_lit ~ cap_ident ~ fn_type_sig }
 graph_decl = { graph_decl_head ~ graph_decl_body }
@@ -184,6 +183,7 @@ op_else_if = { "else if" }
 op_else = { "else" }
 
 
+fn_decls = { fn_decl* }
 fn_decl_param = { ("(" ~ ")") | ("(" ~ fn_decl_args ~ ")") }
 fn_decl_sig = { fn_decl_param ~ ("->" ~ type_sig)? }
 fn_decl_args = { fn_decl_arg ~ ("," ~ fn_decl_arg)* }

@@ -1,5 +1,25 @@
 use std::fmt::{ Formatter, Display, Error };
 
+// struct Program {
+//   module: Module
+// }
+
+// struct Module {
+//   decls: Vec<Decl>
+// }
+
+// struct Decl {
+//   decl_type: DeclType
+// }
+
+// enum DeclType {
+//   Node,
+//   Weights,
+//   Graph
+// }
+
+
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum AST {
   None,
@@ -9,27 +29,13 @@ pub enum AST {
   Atom(String),
   True,
   False,
-  UnaryNot(Box<AST>),
-  UnaryComplement(Box<AST>),
-  UnaryPlus(Box<AST>),
-  UnaryMinus(Box<AST>),
   Braced(Box<AST>),
-  Constant(String),
-  LocalAccess(String),
-  CallWithImplicitSelf(Box<AST>, Vec<(AST, AST)>),
   List(Vec<AST>),
-  Function(Vec<AST>),
-  Clause(Vec<(AST, AST)>, Box<AST>),
-
   Ident(String),
+  FieldAccess(FieldAccess),
   Block {
     stmts: Box<AST>,
     ret: Box<AST>,
-  },
-  WeightsDecl {
-    name: String,
-    type_sig: Box<AST>,
-    initialization: Box<AST>,
   },
   Expr {
     items: Box<AST>,
@@ -37,69 +43,111 @@ pub enum AST {
   Stmt {
     items: Box<AST>,
   },
-  FieldAccess {
-      var_name: String,
-      field_name: String,
-      func_call: Box<AST>,
-  },
+  FnCall(FnCall),
   NodeDecl {
     name: String,
-    type_sig: Box<AST>,
-    initialization: Box<AST>,
+    type_sig: FnTypeSig,
+    initialization: Vec<MacroAssign>,
   },
   GraphDecl {
     name: String,
-    type_sig: Box<AST>,
-    fns: Box<AST>,
+    type_sig: FnTypeSig,
+    fns: Vec<FnDecl>,
   },
-  WeightsAssign {
+  WeightsDecl {
     name: String,
-    mod_name: String,
-    mod_sig: Box<AST>,
-    func: Box<AST>,
+    type_sig: FnTypeSig,
+    initialization: Vec<WeightsAssign>,
   },
-  FnCall {
-    name: String,
-    args: Box<AST>,
-  },
-  FnCallArg {
-    name: String,
-    arg: Box<AST>,
-  },
-  FnDecl {
-    name: String,
-    fn_params: Box<AST>,
-    return_type: Vec<String>,
-    func_block: Box<AST>,
-  },
-  FnDeclArg {
-    name: String,
-    type_sig: Vec<String>,
-  },
+  Pipes(Vec<AST>),
   UseStmt {
     mod_name: String,
     imported_names: Vec<String>
   },
-  Start,
-  FnTypeSig(Vec<String>, Vec<String>),
-  MacroAssign(String, Box<AST>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct FnDeclArg {
+  pub name: String,
+  pub type_sig: Vec<String>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct FieldAccess {
+    pub var_name: String,
+    pub field_name: String,
+    pub func_call: Option<Vec<FnCallArg>>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct FnCall {
+  pub name: String,
+  pub args: Vec<FnCallArg>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct FnCallArg {
+  pub name: String,
+  pub arg: Box<AST>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct WeightsAssign {
+  pub name: String,
+  pub mod_name: String,
+  pub mod_sig: FnTypeSig,
+  pub func: FnCall,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct FnTypeSig{
+  pub from: Vec<String>,
+  pub to: Vec<String>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct FnDecl {
+  pub name: String,
+  pub fn_params: Vec<FnDeclArg>,
+  pub return_type: Vec<String>,
+  pub func_block: Box<AST>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct MacroAssign {
+  pub ident: String,
+  pub rhs: Box<AST>
 }
 
 impl AST {
-  /// args is List(Arg)
-  pub fn extend_arg_list(args: Box<AST>, init: AST) -> Box<AST> {
-      if let AST::List(vec) = *args {
-          let mut new_arg_vec = vec![AST::FnCallArg {
-                  name: format!("x"),
-                  arg: Box::new(init),
-              }];
-          new_arg_vec.extend(vec);
 
-          Box::new(AST::List(new_arg_vec))
-      } else { 
-        println!("{:?}", args);
-        unimplemented!();
-      }
+  pub fn is(&self, var: &Self) -> bool {
+    ::std::mem::discriminant(self) == ::std::mem::discriminant(var)
+  }
+
+  pub fn is_UseStmt(&self) -> bool {
+    self.is(&AST::UseStmt {
+      mod_name: format!(""),
+      imported_names: vec![],
+    })
+  }
+
+  pub fn to_list(&self) -> Option<Vec<AST>> {
+    if let &AST::List(ref vs) = self {
+      Some(vs.to_vec())
+    } else {
+      None
+    }
+  }
+
+  /// args is List(Arg)
+  pub fn extend_arg_list(func: FnCall, init: AST) -> Vec<FnCallArg> {
+    let mut new_arg_vec = vec![FnCallArg {
+            name: format!("x"),
+            arg: Box::new(init),
+        }];
+    new_arg_vec.extend(func.args);
+    new_arg_vec
   }
 }
 
@@ -110,26 +158,26 @@ impl Display for AST {
   }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum Op {
-  Expo,
-  Mult,
-  Div,
-  Mod,
-  Add,
-  Sub,
-  ShL,
-  ShR,
-  BAnd,
-  BOr,
-  BXor,
-  Lt,
-  LtE,
-  Gt,
-  GtE,
-  Eq,
-  NotEq,
-  And,
-  Or,
-  Assign,
-}
+// #[derive(Debug, PartialEq, Clone)]
+// pub enum Op {
+//   Expo,
+//   Mult,
+//   Div,
+//   Mod,
+//   Add,
+//   Sub,
+//   ShL,
+//   ShR,
+//   BAnd,
+//   BOr,
+//   BXor,
+//   Lt,
+//   LtE,
+//   Gt,
+//   GtE,
+//   Eq,
+//   NotEq,
+//   And,
+//   Or,
+//   Assign,
+// }

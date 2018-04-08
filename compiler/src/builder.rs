@@ -48,7 +48,17 @@ macro_rules! to_idents {
     };
 }
 
-use ast::AST;
+use ast::{
+    AST,
+    MacroAssign,
+    FnDecl,
+    FnTypeSig,
+    WeightsAssign,
+    FnCallArg,
+    FnDeclArg,
+    FnCall,
+    FieldAccess,
+};
 use grammar::{Rule, TensorScriptParser};
 use pest::iterators::Pair;
 use pest::Parser;
@@ -71,36 +81,23 @@ pub fn parse_str(source: &str) -> Result<AST, TSSParseError> {
 }
 
 pub fn consume(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
-    // println!("{}", pair);
+    println!("{}", pair);
     match pair.as_rule() {
         use_stmt => build_use_stmt(pair),
         node_decl => build_node_decl(pair),
-        fn_type_sig => build_fn_type_sig(pair),
-        node_decl_body => build_node_decl_body(pair),
-        node_macro_assign => build_node_macro_assign(pair),
+        // node_decl_body => build_node_decl_body(pair),
         int_lit => build_int_lit(pair),
         float_lit => build_float_lit(pair),
         weights_decl => build_weights_decl(pair),
-        weights_decl_body => build_weights_decl_body(pair),
-        weights_assign => build_weights_assign(pair),
-        fn_call => build_fn_call(pair),
-        fn_call_args => build_fn_call_args(pair),
-        fn_call_arg => build_fn_call_arg(pair),
         graph_decl => build_graph_decl(pair),
         graph_decl_body => build_graph_decl_body(pair),
 
         fn_decls => build_fn_decls(pair),
-        fn_decl_args => build_fn_decl_args(pair),
-        fn_decl_arg => build_fn_decl_arg(pair),
-        fn_decl => build_fn_decl(pair),
-        fn_decl_param => build_fn_decl_param(pair),
         fn_decl_sig => build_fn_decl_sig(pair),
         stmts => build_stmts(pair),
 
         stmt => build_stmt(pair),
         expr => build_expr(pair),
-        field_access => build_field_access(pair),
-        fn_call_param => build_fn_call_param(pair),
         block => build_block(pair),
         pipes => build_pipes(pair),
 
@@ -149,37 +146,43 @@ fn build_block(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     })
 }
 
-fn build_fn_call_param(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_fn_call_param(pair: Pair<Rule>) -> Result<Vec<FnCallArg>, TSSParseError> {
     let mut tokens = pair.into_inner();
     let args = eat!(tokens, fn_call_args, "Does not have args");
     if args.is_err() {
-        Ok(AST::List(vec![]))
+        Ok(vec![])
     } else {
-        consume(args?)
+        build_fn_call_args(args?)
     }
 }
 
-fn build_field_access(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_field_access(pair: Pair<Rule>) -> Result<FieldAccess, TSSParseError> {
     let mut tokens = pair.into_inner();
     let var_name = eat!(tokens, ident, "Failed to parse variable name")?;
     let field_name = eat!(tokens, ident, "Failed to parse field name")?;
     let func_call = eat!(tokens, fn_call_param, "Is not a function call");
     let func_call = if func_call.is_err() {
-        AST::None
+        None
     } else {
-        consume(func_call?)?
+        Some(build_fn_call_param(func_call?)?)
     };
 
-    Ok(AST::FieldAccess {
+    Ok(FieldAccess {
         var_name: var_name.as_str().to_owned(),
         field_name: field_name.as_str().to_owned(),
-        func_call: Box::new(func_call),
+        func_call: func_call,
     })
 }
 
 fn build_expr(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     let tokens = pair.into_inner();
-    let vals = tokens.map(|p| consume(p).unwrap()).collect();
+    let vals = tokens.map(|p| {
+        match p.as_rule() {
+            field_access => AST::FieldAccess(build_field_access(p).unwrap()),
+            fn_call => AST::FnCall(build_fn_call(p).unwrap()),
+            _ => consume(p).unwrap(),
+        }
+    }).collect();
     Ok(AST::Expr {
         items: Box::new(AST::List(vals)),
     })
@@ -193,13 +196,7 @@ fn build_stmt(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     })
 }
 
-fn build_fn_decl_param(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
-    let tokens = pair.into_inner();
-    let vals = tokens.map(|p| consume(p).unwrap()).collect();
-    Ok(AST::List(vals))
-}
-
-fn build_fn_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_fn_decl(pair: Pair<Rule>) -> Result<FnDecl, TSSParseError> {
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, fn_decl_head, "Failed to parse fn_decl_head")?.into_inner();
     let name = eat!(head, ident, "Failed to parse fn_decl_head ident")?;
@@ -217,9 +214,15 @@ fn build_fn_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
         }
     };
 
-    Ok(AST::FnDecl {
+    let params = if let Some(args) = param.into_inner().next() {
+        build_fn_decl_args(args)?
+    } else {
+        vec![]
+    };
+
+    Ok(FnDecl {
         name: name.as_str().to_owned(),
-        fn_params: Box::new(consume(param)?),
+        fn_params: params,
         return_type: return_type,
         func_block: Box::new(consume(func_block)?),
     })
@@ -241,7 +244,7 @@ fn build_fn_decls(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     Ok(AST::List(vals))
 }
 
-fn build_fn_decl_arg(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_fn_decl_arg(pair: Pair<Rule>) -> Result<FnDeclArg, TSSParseError> {
     let mut tokens = pair.into_inner();
     let param = eat!(tokens, ident, "Failed to parse function parameter")?;
     let typ = eat!(tokens, type_sig, "Failed to parse type signature");
@@ -251,49 +254,48 @@ fn build_fn_decl_arg(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
         to_idents!(typ)
     };
 
-    Ok(AST::FnDeclArg {
+    Ok(FnDeclArg {
         name: param.as_str().to_owned(),
         type_sig: typ,
     })
 }
 
-fn build_fn_decl_args(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_fn_decl_args(pair: Pair<Rule>) -> Result<Vec<FnDeclArg>, TSSParseError> {
     let tokens = pair.into_inner();
-    let vals = tokens.map(|p| consume(p).unwrap()).collect();
-    Ok(AST::List(vals))
+    let vals = tokens.map(|p| build_fn_decl_arg(p).unwrap()).collect();
+    Ok(vals)
 }
 
-fn build_fn_call(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_fn_call(pair: Pair<Rule>) -> Result<FnCall, TSSParseError> {
     let mut tokens = pair.into_inner();
     let name = eat!(tokens, ident, "Cannot parse function call identifier")?;
     let args = if let Some(args) = tokens.next() {
-        consume(args)?
+        build_fn_call_args(args)?
     } else {
-        AST::List(vec![])
+        vec![]
     };
 
-    Ok(AST::FnCall {
+    Ok(FnCall {
         name: name.as_str().to_owned(),
-        args: Box::new(args),
+        args: args,
     })
 }
 
-fn build_fn_call_arg(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_fn_call_arg(pair: Pair<Rule>) -> Result<FnCallArg, TSSParseError> {
     let mut tokens = pair.into_inner();
     let param = eat!(tokens, ident, "Failed to parse function call argument")?;
     let param_val = eat!(tokens, expr, "Failed to parse function call parameter")?;
 
-    Ok(AST::FnCallArg {
+    Ok(FnCallArg {
         name: param.as_str().to_owned(),
         arg: Box::new(consume(param_val)?),
     })
 }
 
-fn build_fn_call_args(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_fn_call_args(pair: Pair<Rule>) -> Result<Vec<FnCallArg>, TSSParseError> {
     let tokens = pair.into_inner();
-    let vals = tokens.map(|p| consume(p).unwrap()).collect();
-
-    Ok(AST::List(vals))
+    let vals = tokens.map(|p| build_fn_call_arg(p).unwrap()).collect();
+    Ok(vals)
 }
 
 fn build_weights_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
@@ -305,23 +307,16 @@ fn build_weights_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
         tokens,
         weights_decl_body,
         "Failed to parse `weights_decl_body`"
-    )?;
+    )?.into_inner().map(|p| build_weights_assign(p).unwrap()).collect();
 
     Ok(AST::WeightsDecl {
         name: weights_name.to_owned(),
-        type_sig: Box::new(consume(type_decl)?),
-        initialization: Box::new(consume(weights_body)?),
+        type_sig: build_fn_type_sig(type_decl)?,
+        initialization: weights_body,
     })
 }
 
-fn build_weights_decl_body(body: Pair<Rule>) -> Result<AST, TSSParseError> {
-    let tokens = body.into_inner();
-    let vals = tokens.map(|p| consume(p).unwrap()).collect();
-
-    Ok(AST::List(vals))
-}
-
-fn build_weights_assign(body: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_weights_assign(body: Pair<Rule>) -> Result<WeightsAssign, TSSParseError> {
     let mut tokens = body.into_inner();
     let name = eat!(tokens, ident, "Failed to parse ident")?;
     let _assign = eat!(tokens, op_assign, "Failed to parse `=`")?;
@@ -329,17 +324,19 @@ fn build_weights_assign(body: Pair<Rule>) -> Result<AST, TSSParseError> {
     let fn_sig = eat!(tokens, fn_type_sig, "Failed to parse `fn_sig`")?;
     let func = eat!(tokens, fn_call, "Failed to parse `fn_call`")?;
 
-    Ok(AST::WeightsAssign {
+    Ok(WeightsAssign {
         name: name.as_str().to_owned(),
         mod_name: mod_name.as_str().to_owned(),
-        mod_sig: Box::new(consume(fn_sig)?),
-        func: Box::new(consume(func)?),
+        mod_sig: build_fn_type_sig(fn_sig)?,
+        func: build_fn_call(func)?,
     })
 }
 
 fn _process_level(curr: Pair<Rule>) -> AST {
-    if curr.as_rule() == fn_call || curr.as_rule() == field_access {
-        consume(curr).unwrap()
+    if curr.as_rule() == fn_call {
+        AST::FnCall(build_fn_call(curr).unwrap())
+    } else if curr.as_rule() == field_access {
+        AST::FieldAccess(build_field_access(curr).unwrap())
     } else if curr.as_rule() == ident {
         AST::Ident(curr.as_str().to_owned())
     } else {
@@ -370,33 +367,33 @@ fn build_pipes(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
         }
     }
 
-    // construct a deep fn_call recursively
-    let mut iter = exprs.iter();
-    let mut init = iter.next().unwrap().to_owned();
+    // // construct a deep fn_call recursively
+    // let mut iter = exprs.iter();
+    // let mut init = iter.next().unwrap().to_owned();
 
-    while let Some(node) = iter.next() {
-        init = match node {
-            &AST::Ident(ref name) => AST::FnCall {
-                name: name.clone(),
-                args: Box::new(AST::List(vec![
-                    AST::FnCallArg {
-                        name: format!("x"),
-                        arg: Box::new(init),
-                    }
-                ]))
-            },
-            &AST::FnCall{ref name, ref args} => AST::FnCall {
-                name: name.clone(),
-                args: AST::extend_arg_list(args.clone(), init),
-            },
-            _ => {
-                println!("{:?}", node);
-                unimplemented!()
-            }
-        };
-    }
+    // while let Some(node) = iter.next() {
+    //     init = match node {
+    //         &AST::Ident(ref name) => AST::FnCall {
+    //             name: name.clone(),
+    //             args: Box::new(AST::List(vec![
+    //                 AST::FnCallArg {
+    //                     name: format!("x"),
+    //                     arg: Box::new(init),
+    //                 }
+    //             ]))
+    //         },
+    //         &AST::FnCall{ref name, ref args} => AST::FnCall {
+    //             name: name.clone(),
+    //             args: AST::extend_arg_list(args.clone(), init),
+    //         },
+    //         _ => {
+    //             println!("{:?}", node);
+    //             unimplemented!()
+    //         }
+    //     };
+    // }
 
-    Ok(init)
+    Ok(AST::Pipes(exprs))
 }
 
 fn build_graph_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
@@ -405,11 +402,16 @@ fn build_graph_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     let node_name = eat!(head, cap_ident, "Does not have a graph name")?.as_str();
     let type_decl = eat!(head, fn_type_sig, "Failed to parse `fn_type_sig`")?;
     let graph_body = eat!(tokens, graph_decl_body, "Failed to parse `graph_decl_body`")?;
+    let func_decls = graph_body.into_inner()
+        .next().unwrap()
+        .into_inner()
+        .map(|f| build_fn_decl(f).unwrap())
+        .collect();
 
     Ok(AST::GraphDecl {
         name: node_name.to_owned(),
-        type_sig: Box::new(consume(type_decl)?),
-        fns: Box::new(consume(graph_body)?),
+        type_sig: build_fn_type_sig(type_decl)?,
+        fns: func_decls,
     })
 }
 
@@ -427,21 +429,24 @@ fn build_node_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     let type_decl = eat!(head, fn_type_sig, "Failed to parse `fn_type_sig`")?;
     let node_body = eat!(tokens, node_decl_body, "Failed to parse `node_decl_body`")?;
 
+    let macros = node_body.into_inner();
+    let macros = macros.map(|p| build_node_macro_assign(p).unwrap()).collect();
+
     Ok(AST::NodeDecl {
         name: node_name.to_owned(),
-        type_sig: Box::new(consume(type_decl)?),
-        initialization: Box::new(consume(node_body)?),
+        type_sig: build_fn_type_sig(type_decl)?,
+        initialization: macros,
     })
 }
 
-fn build_node_decl_body(body: Pair<Rule>) -> Result<AST, TSSParseError> {
-    let tokens = body.into_inner();
-    let vals = tokens.map(|p| consume(p).unwrap()).collect();
+// fn build_node_decl_body(body: Pair<Rule>) -> Result<AST, TSSParseError> {
+//     let tokens = body.into_inner();
+//     let vals = tokens.map(|p| build_node_macro_assign(p).unwrap()).collect();
 
-    Ok(AST::List(vals))
-}
+//     Ok(AST::List(vals))
+// }
 
-fn build_node_macro_assign(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_node_macro_assign(pair: Pair<Rule>) -> Result<MacroAssign, TSSParseError> {
     if pair.as_rule() != node_macro_assign {
         return Err(err!(format!("Type mismatch: {:?}", node_macro_assign)));
     }
@@ -453,7 +458,10 @@ fn build_node_macro_assign(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     let identifier = identifier.as_str().to_owned();
     let lit = consume(lit)?;
 
-    Ok(AST::MacroAssign(identifier, Box::new(lit)))
+    Ok(MacroAssign { 
+        ident: identifier,
+        rhs: Box::new(lit),
+    })
 }
 
 fn build_float_lit(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
@@ -466,14 +474,17 @@ fn build_int_lit(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     Ok(AST::Integer(ret))
 }
 
-fn build_fn_type_sig(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_fn_type_sig(pair: Pair<Rule>) -> Result<FnTypeSig, TSSParseError> {
     let mut tokens = pair.into_inner();
     let ident_list_from = eat!(tokens, type_ident_list, "Cannot parse type_ident_list");
     let from_type = to_idents!(ident_list_from);
     let ident_list_to = eat!(tokens, type_ident_list, "Cannot parse type_ident_list");
     let to_type = to_idents!(ident_list_to);
 
-    Ok(AST::FnTypeSig(from_type, to_type))
+    Ok(FnTypeSig {
+        from: from_type,
+        to: to_type
+    })
 }
 
 fn build_use_stmt(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
