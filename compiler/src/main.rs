@@ -6,11 +6,15 @@ mod ast;
 mod target;
 mod grammar;
 mod builder;
+mod scope;
+
+use scope::ScopeStack;
 
 const TEST_STR: &str = include_str!("../test.tss");
 
 fn main() {
-    let result = builder::parse_str(TEST_STR).unwrap();
-    println!("{:?}", result);
-    target::pytorch::gen(result);
+    let program = builder::parse_str(TEST_STR).unwrap();
+    println!("{:?}", program);
+    let mut global_scope = ScopeStack::new();
+    target::pytorch::gen(program);
 }

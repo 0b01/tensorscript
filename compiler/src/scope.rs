@@ -1,0 +1,227 @@
+use std::collections::{VecDeque, HashMap};
+
+type Identifier = String;
+type TypeId = usize;
+
+
+
+/// Possible types for function arguments
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FuncArgType {
+    /// A single value of the specified type
+    Arg(TypeId),
+    Args(Vec<TypeId>),
+}
+
+/// An item is anything that can be declared
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ItemType {
+    /// Unit type
+    /// The unit type is a type with a single zero-size value.
+    /// Both the type and the value are specified: ()
+    Unit,
+
+    /// A struct has a single definition with any number of
+    /// fields and generics
+    /// Structs can have impls which contain methods for that
+    /// struct
+    Struct {
+        //TODO: fields, generics, etc.
+    },
+
+    /// Definition of a function's type
+    Function {
+        args: Vec<FuncArgType>,
+        //TODO: Support array return types
+        return_type: TypeId,
+    },
+}
+
+impl ItemType {
+    /// Returns true if this item type matches the given function signature (args, return type)
+    /// Returns false if this item type is not a function
+    /// Note: Variadic matching is only done one-way
+    ///
+    /// That means that this will return false:
+    ///     self = Function {args: [Arg(1)], return_type: 0}
+    ///     expected_args = [Variadic(1)]
+    ///     return_type = 0
+    ///
+    /// However, this will return true (as expected):
+    ///     self = Function {args: [Variadic(1)], return_type: 0}
+    ///     expected_args = [Arg(1)]
+    ///     return_type = 0
+    pub fn matches_signature(&self, expected_args: &Vec<FuncArgType>, expected_return_type: TypeId) -> bool {
+        let mut expected_args = expected_args.iter().peekable();
+        match *self {
+            ItemType::Function {ref args, return_type} => (
+                return_type == expected_return_type &&
+                // All the args must match an argument in expected_args
+                args.iter().all(|arg| match *arg {
+                    FuncArgType::Arg(type_id) => match expected_args.peek() {
+                        Some(&&FuncArgType::Arg(arg_id)) if type_id == arg_id => {
+                            expected_args.next();
+                            true
+                        },
+                        _ => false,
+                    },
+                    _ => unimplemented!(),
+                })
+            ),
+            _ => false,
+        }
+    }
+}
+
+
+/// Represents a single item in a scope
+#[derive(Clone)]
+pub enum ScopeItem {
+    /// A constant set of bytes inlined whenever used
+    /// These items have no memory address
+    /// The bytes of the constant are stored directly
+    Matrix {
+        type_id: TypeId,
+        /// Size of bytes must match the required size of type_id
+        bytes: Vec<u8>,
+    },
+
+}
+
+/// Represents a type declared in a scope
+pub enum ScopeType {
+    /// A type, not associated with any memory
+    /// Used for a struct/type declaration, not the declaration
+    /// of a variable with a type (TypedBlock should be used for that)
+    Type(TypeId),
+
+    //TODO: Generic types, etc. will all go here
+}
+
+
+/// Represents a single level of scope
+pub struct Scope {
+    types: HashMap<Identifier, ScopeType>,
+    items: HashMap<Identifier, ScopeItem>,
+}
+
+impl Scope {
+    pub fn new() -> Scope {
+        Scope {
+            types: HashMap::new(),
+            items: HashMap::new(),
+        }
+    }
+}
+
+pub struct ScopeStack {
+    stack: VecDeque<Scope>,
+    /// A vector of all the declared types used to produce unique identities
+    /// for all types so that types are static and not dependent on the context
+    /// in which they are used.
+    /// Basically, if we declare a type Foo and a variable with that type,
+    /// we don't want a later declaration of Foo change the type of the variable
+    /// Also used in functions/closures to uniquely refer to types in that context
+    types: Vec<(Identifier, ItemType)>,
+}
+
+impl ScopeStack {
+    pub fn new() -> ScopeStack {
+        ScopeStack {
+            stack: {
+                let mut queue = VecDeque::new();
+                queue.push_back(Scope::new());
+                queue
+            },
+            types: vec![(Identifier::from("()"), ItemType::Unit)],
+        }
+    }
+
+    /// Pushes a new level of scope onto the stack
+    /// This scope will become the current scope
+    pub fn push_scope(&mut self) {
+        self.stack.push_back(Scope::new());
+    }
+
+    /// Removes and returns the top level scope (current scope)
+    ///
+    /// # Panics
+    /// Panics if there is no scope in the stack
+    pub fn pop_scope(&mut self) -> Scope {
+        self.stack.pop_back().unwrap()
+    }
+
+    /// Returns the type name associated with the given TypeId
+    pub fn get_type_name(&self, type_id: TypeId) -> &Identifier {
+        // We just unwrap here because this isn't an error that can be generated by the user's
+        // mistake. If this fails, it has to be a bug in the compiler.
+        &self.types.get(type_id).expect("Invalid TypeId used to lookup type").0
+    }
+
+    /// Returns the type associated with the given TypeId
+    pub fn get_type(&self, type_id: TypeId) -> &ItemType {
+        // We just unwrap here because this isn't an error that can be generated by the user's
+        // mistake. If this fails, it has to be a bug in the compiler.
+        &self.types.get(type_id).expect("Invalid TypeId used to lookup type").1
+    }
+
+    /// Looks up a name starting at the current scope
+    /// Returns ALL matches so that the caller can determine which definition is
+    /// the correct one
+    /// Definitions are returned in order from latest definition to oldest
+    /// Always use the first definition that matches the type you are looking for
+    pub fn lookup(&self, name: &Identifier) -> Vec<&ScopeItem> {
+        self.search_stack(name, |sc| &sc.items)
+    }
+
+    pub fn lookup_type(&self, name: &Identifier) -> Vec<&ScopeType> {
+        self.search_stack(name, |sc| &sc.types)
+    }
+
+    fn search_stack<T, F>(&self, name: &Identifier, scope_table: F) -> Vec<&T>
+        where F: Fn(&Scope) -> &HashMap<Identifier, T> {
+        self.stack.iter().rev().map(|sc| scope_table(sc).get(name)).fold(Vec::new(), |mut acc, r| match r {
+            Some(def) => {
+                acc.push(def);
+                acc
+            },
+            None => acc,
+        })
+    }
+
+    /// Declares a type with the given name
+    /// Returns the unique identifier of that type
+    pub fn declare_type(&mut self, name: Identifier, typ: ItemType) -> TypeId {
+        let type_id = self.insert_type(name, typ);
+
+        type_id
+    }
+
+    /// Inserts a type defintion into the types field and returns its new TypeId
+    fn insert_type(&mut self, name: Identifier, typ: ItemType) -> TypeId {
+        self.types.push((name.clone(), typ));
+
+        let type_id = self.types.len() - 1;
+        self.insert_type_into_current(name, ScopeType::Type(type_id));
+
+        type_id
+    }
+
+    /// Inserts a ScopeItem into the current scope
+    fn insert_item_into_current(&mut self, name: Identifier, item: ScopeItem) {
+        // Notice that we insert directly without caring about whether the name already exists
+        // It's OK to overwrite existing names because we support rebinding
+        let scope = self.stack.back_mut()
+            .expect("Attempt to declare item despite having no current scope");
+        scope.items.insert(name, item);
+    }
+
+    /// Inserts a ScopeType into the current scope
+    fn insert_type_into_current(&mut self, name: Identifier, item: ScopeType) {
+        // Notice that we insert directly without caring about whether the name already exists
+        // It's OK to overwrite existing names because we support rebinding
+        let scope = self.stack.back_mut()
+            .expect("Attempt to declare type despite having no current scope");
+        scope.types.insert(name, item);
+    }
+}
