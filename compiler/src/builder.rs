@@ -50,6 +50,8 @@ macro_rules! to_idents {
 
 use ast::{
     AST,
+    Program,
+    Module,
     MacroAssign,
     FnDecl,
     FnTypeSig,
@@ -58,6 +60,11 @@ use ast::{
     FnDeclArg,
     FnCall,
     FieldAccess,
+    WeightsDecl,
+    GraphDecl,
+    NodeDecl,
+    UseStmt,
+    Decl,
 };
 use grammar::{Rule, TensorScriptParser};
 use pest::iterators::Pair;
@@ -70,26 +77,34 @@ pub struct TSSParseError {
 
 use grammar::Rule::*;
 
-pub fn parse_str(source: &str) -> Result<AST, TSSParseError> {
+pub fn parse_str(source: &str) -> Result<Program, TSSParseError> {
     let parser = TensorScriptParser::parse(Rule::input, source);
     if parser.is_err() {
         panic!(format!("{:#}", parser.err().unwrap()));
     }
 
-    let top_levels = parser.unwrap().map(|pair| consume(pair).unwrap()).collect();
-    Ok(AST::List(top_levels))
+    let decls = parser.unwrap().map(|pair|{
+        match pair.as_rule() {
+            use_stmt => build_use_stmt(pair).unwrap(),
+            weights_decl => build_weights_decl(pair).unwrap(),
+            graph_decl => build_graph_decl(pair).unwrap(),
+            node_decl => build_node_decl(pair).unwrap(),
+            _ => panic!("Only node, graph, weights, use supported at top level"),
+        }
+    }).collect();
+    Ok(Program{
+        module: Module {
+            decls: decls
+        }
+    })
 }
 
 pub fn consume(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
-    println!("{}", pair);
+    // println!("{}", pair);
     match pair.as_rule() {
-        use_stmt => build_use_stmt(pair),
-        node_decl => build_node_decl(pair),
         // node_decl_body => build_node_decl_body(pair),
         int_lit => build_int_lit(pair),
         float_lit => build_float_lit(pair),
-        weights_decl => build_weights_decl(pair),
-        graph_decl => build_graph_decl(pair),
         graph_decl_body => build_graph_decl_body(pair),
 
         fn_decls => build_fn_decls(pair),
@@ -298,7 +313,7 @@ fn build_fn_call_args(pair: Pair<Rule>) -> Result<Vec<FnCallArg>, TSSParseError>
     Ok(vals)
 }
 
-fn build_weights_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_weights_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, weights_decl_head, "Parsing `weight_head` error")?.into_inner();
     let weights_name = eat!(head, cap_ident, "Does not have a weight name")?.as_str();
@@ -309,11 +324,11 @@ fn build_weights_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
         "Failed to parse `weights_decl_body`"
     )?.into_inner().map(|p| build_weights_assign(p).unwrap()).collect();
 
-    Ok(AST::WeightsDecl {
+    Ok(Decl::WeightsDecl(WeightsDecl {
         name: weights_name.to_owned(),
         type_sig: build_fn_type_sig(type_decl)?,
         initialization: weights_body,
-    })
+    }))
 }
 
 fn build_weights_assign(body: Pair<Rule>) -> Result<WeightsAssign, TSSParseError> {
@@ -396,7 +411,7 @@ fn build_pipes(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     Ok(AST::Pipes(exprs))
 }
 
-fn build_graph_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_graph_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, graph_decl_head, "Parsing `graph_head` error")?.into_inner();
     let node_name = eat!(head, cap_ident, "Does not have a graph name")?.as_str();
@@ -408,11 +423,11 @@ fn build_graph_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
         .map(|f| build_fn_decl(f).unwrap())
         .collect();
 
-    Ok(AST::GraphDecl {
+    Ok(Decl::GraphDecl(GraphDecl {
         name: node_name.to_owned(),
         type_sig: build_fn_type_sig(type_decl)?,
         fns: func_decls,
-    })
+    }))
 }
 
 fn build_graph_decl_body(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
@@ -422,7 +437,7 @@ fn build_graph_decl_body(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     Ok(AST::List(vals))
 }
 
-fn build_node_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_node_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, node_decl_head, "Parsing `node_head` error")?.into_inner();
     let node_name = eat!(head, cap_ident, "Does not have a node name")?.as_str();
@@ -432,11 +447,11 @@ fn build_node_decl(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     let macros = node_body.into_inner();
     let macros = macros.map(|p| build_node_macro_assign(p).unwrap()).collect();
 
-    Ok(AST::NodeDecl {
+    Ok(Decl::NodeDecl(NodeDecl {
         name: node_name.to_owned(),
         type_sig: build_fn_type_sig(type_decl)?,
         initialization: macros,
-    })
+    }))
 }
 
 // fn build_node_decl_body(body: Pair<Rule>) -> Result<AST, TSSParseError> {
@@ -487,7 +502,7 @@ fn build_fn_type_sig(pair: Pair<Rule>) -> Result<FnTypeSig, TSSParseError> {
     })
 }
 
-fn build_use_stmt(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn build_use_stmt(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let mut tokens = pair.into_inner();
     let value = eat!(tokens, use_lit, "Parsing `use` error")?;
     let module_name = eat!(tokens, ident, "module name not defined")?.as_str();
@@ -503,10 +518,10 @@ fn build_use_stmt(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
         _ => unexpected_token(imported),
     };
 
-    Ok(AST::UseStmt {
+    Ok(Decl::UseStmt(UseStmt {
         mod_name: module_name.to_owned(),
         imported_names: imported_tokens,
-    })
+    }))
 }
 
 fn unexpected_token(pair: Pair<Rule>) -> ! {

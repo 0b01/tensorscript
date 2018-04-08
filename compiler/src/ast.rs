@@ -1,16 +1,14 @@
 use std::fmt::{ Formatter, Display, Error };
 
-// struct Program {
-//   module: Module
-// }
+#[derive(Debug, PartialEq, Clone)]
+pub struct Program {
+  pub module: Module,
+}
 
-// struct Module {
-//   decls: Vec<Decl>
-// }
-
-// struct Decl {
-//   decl_type: DeclType
-// }
+#[derive(Debug, PartialEq, Clone)]
+pub struct Module {
+  pub decls: Vec<Decl>
+}
 
 // enum DeclType {
 //   Node,
@@ -25,14 +23,10 @@ pub enum AST {
   None,
   Integer(i64),
   Float(f64),
-  String(String),
-  Atom(String),
-  True,
-  False,
-  Braced(Box<AST>),
   List(Vec<AST>),
   Ident(String),
   FieldAccess(FieldAccess),
+  FnCall(FnCall),
   Block {
     stmts: Box<AST>,
     ret: Box<AST>,
@@ -43,27 +37,42 @@ pub enum AST {
   Stmt {
     items: Box<AST>,
   },
-  FnCall(FnCall),
-  NodeDecl {
-    name: String,
-    type_sig: FnTypeSig,
-    initialization: Vec<MacroAssign>,
-  },
-  GraphDecl {
-    name: String,
-    type_sig: FnTypeSig,
-    fns: Vec<FnDecl>,
-  },
-  WeightsDecl {
-    name: String,
-    type_sig: FnTypeSig,
-    initialization: Vec<WeightsAssign>,
-  },
   Pipes(Vec<AST>),
-  UseStmt {
-    mod_name: String,
-    imported_names: Vec<String>
-  },
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Decl {
+  NodeDecl(NodeDecl),
+  WeightsDecl(WeightsDecl),
+  GraphDecl(GraphDecl),
+  UseStmt(UseStmt),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct UseStmt {
+  pub mod_name: String,
+  pub imported_names: Vec<String>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct NodeDecl {
+  pub name: String,
+  pub type_sig: FnTypeSig,
+  pub initialization: Vec<MacroAssign>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct GraphDecl {
+  pub name: String,
+  pub type_sig: FnTypeSig,
+  pub fns: Vec<FnDecl>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct WeightsDecl {
+  pub name: String,
+  pub type_sig: FnTypeSig,
+  pub initialization: Vec<WeightsAssign>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -121,24 +130,24 @@ pub struct MacroAssign {
 
 impl AST {
 
-  pub fn is(&self, var: &Self) -> bool {
-    ::std::mem::discriminant(self) == ::std::mem::discriminant(var)
-  }
+  // pub fn is(&self, var: &Self) -> bool {
+  //   ::std::mem::discriminant(self) == ::std::mem::discriminant(var)
+  // }
 
-  pub fn is_UseStmt(&self) -> bool {
-    self.is(&AST::UseStmt {
-      mod_name: format!(""),
-      imported_names: vec![],
-    })
-  }
+  // pub fn is_UseStmt(&self) -> bool {
+  //   self.is(&AST::UseStmt {
+  //     mod_name: format!(""),
+  //     imported_names: vec![],
+  //   })
+  // }
 
-  pub fn to_list(&self) -> Option<Vec<AST>> {
-    if let &AST::List(ref vs) = self {
-      Some(vs.to_vec())
-    } else {
-      None
-    }
-  }
+  // pub fn to_list(&self) -> Option<Vec<AST>> {
+  //   if let &AST::List(ref vs) = self {
+  //     Some(vs.to_vec())
+  //   } else {
+  //     None
+  //   }
+  // }
 
   /// args is List(Arg)
   pub fn extend_arg_list(func: FnCall, init: AST) -> Vec<FnCallArg> {

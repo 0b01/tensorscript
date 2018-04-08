@@ -1,4 +1,4 @@
-use ast::AST;
+use ast::{ Program, AST };
 use std::collections::HashMap;
 
 macro_rules! map(
@@ -28,7 +28,7 @@ macro_rules! map(
 // }
 
 
-pub fn gen(ast: AST) -> String {
+pub fn gen(ast: Program) -> String {
     let mut buf = String::new();
 
     gen_imports(&mut buf, &ast);
@@ -36,7 +36,7 @@ pub fn gen(ast: AST) -> String {
     buf
 }
 
-pub fn gen_imports(buf: &mut String, ast: &AST) {
+pub fn gen_imports(buf: &mut String, ast: &Program) {
     // let out = vec![];
     // let uses: Vec<AST> = ast
     //     .to_list().unwrap()
