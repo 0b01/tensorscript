@@ -54,7 +54,7 @@ use ast::{
     Module,
     MacroAssign,
     FnDecl,
-    FnTypeSig,
+    FnTySig,
     WeightsAssign,
     FnCallArg,
     FnDeclArg,
@@ -65,7 +65,7 @@ use ast::{
     NodeDecl,
     UseStmt,
     Decl,
-    TensorType,
+    TensorTy,
 };
 use grammar::{Rule, TensorScriptParser};
 use pest::iterators::{Pairs, Pair};
@@ -79,7 +79,7 @@ pub struct TSSParseError {
 use grammar::Rule::*;
 
 pub fn parse_str(source: &str) -> Result<Program, TSSParseError> {
-    // let program = TensorScriptParser::parse(Rule::fn_type_sig, "<image->labels>");
+    // let program = TensorScriptParser::parse(Rule::fn_ty_sig, "<image->labels>");
     // println!("{}", program.unwrap());
     // unimplemented!();
 
@@ -225,12 +225,12 @@ fn build_fn_decl(pair: Pair<Rule>) -> Result<FnDecl, TSSParseError> {
 
     let mut tokens = fn_sig.into_inner();
     let param = eat!(tokens, fn_decl_param, "Failed to parse fn_decl_param")?;
-    let return_type = {
-        let temp = eat!(tokens, type_sig, "Function does not have a type signature");
+    let return_ty = {
+        let temp = eat!(tokens, ty_sig, "Function does not have a type signature");
         if temp.is_err() {
-            TensorType::Generic(vec![])
+            TensorTy::Generic(vec![])
         } else {
-            TensorType::Generic(to_idents!(temp?))
+            TensorTy::Generic(to_idents!(temp?))
         }
     };
 
@@ -243,7 +243,7 @@ fn build_fn_decl(pair: Pair<Rule>) -> Result<FnDecl, TSSParseError> {
     Ok(FnDecl {
         name: name.as_str().to_owned(),
         fn_params: params,
-        return_type: return_type,
+        return_ty: return_ty,
         func_block: Box::new(consume(func_block)?),
     })
 }
@@ -267,16 +267,16 @@ fn build_fn_decls(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
 fn build_fn_decl_arg(pair: Pair<Rule>) -> Result<FnDeclArg, TSSParseError> {
     let mut tokens = pair.into_inner();
     let param = eat!(tokens, ident, "Failed to parse function parameter")?;
-    let typ = eat!(tokens, type_sig, "Failed to parse type signature");
+    let typ = eat!(tokens, ty_sig, "Failed to parse type signature");
     let typ = if typ.is_err() {
-        TensorType::Generic(vec![])
+        TensorTy::Generic(vec![])
     } else {
-        TensorType::Generic(to_idents!(typ?))
+        TensorTy::Generic(to_idents!(typ?))
     };
 
     Ok(FnDeclArg {
         name: param.as_str().to_owned(),
-        type_sig: typ,
+        ty_sig: typ,
     })
 }
 
@@ -322,7 +322,7 @@ fn build_weights_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, weights_decl_head, "Parsing `weight_head` error")?.into_inner();
     let weights_name = eat!(head, cap_ident, "Does not have a weight name")?.as_str();
-    let type_decl = eat!(head, fn_type_sig, "Failed to parse `fn_type_sig`")?;
+    let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`")?;
     let weights_body = eat!(
         tokens,
         weights_decl_body,
@@ -331,7 +331,7 @@ fn build_weights_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
 
     Ok(Decl::WeightsDecl(WeightsDecl {
         name: weights_name.to_owned(),
-        type_sig: build_fn_type_sig(type_decl)?,
+        ty_sig: build_fn_ty_sig(ty_decl)?,
         initialization: weights_body,
     }))
 }
@@ -341,13 +341,13 @@ fn build_weights_assign(body: Pair<Rule>) -> Result<WeightsAssign, TSSParseError
     let name = eat!(tokens, ident, "Failed to parse ident")?;
     let _assign = eat!(tokens, op_assign, "Failed to parse `=`")?;
     let mod_name = eat!(tokens, cap_ident, "Failed to parse `mod_name`")?;
-    let fn_sig = eat!(tokens, fn_type_sig, "Failed to parse `fn_sig`")?;
+    let fn_sig = eat!(tokens, fn_ty_sig, "Failed to parse `fn_sig`")?;
     let func = eat!(tokens, fn_call, "Failed to parse `fn_call`")?;
 
     Ok(WeightsAssign {
         name: name.as_str().to_owned(),
         mod_name: mod_name.as_str().to_owned(),
-        mod_sig: build_fn_type_sig(fn_sig)?,
+        mod_sig: build_fn_ty_sig(fn_sig)?,
         func: build_fn_call(func)?,
     })
 }
@@ -420,7 +420,7 @@ fn build_graph_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, graph_decl_head, "Parsing `graph_head` error")?.into_inner();
     let node_name = eat!(head, cap_ident, "Does not have a graph name")?.as_str();
-    let type_decl = eat!(head, fn_type_sig, "Failed to parse `fn_type_sig`")?;
+    let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`")?;
     let graph_body = eat!(tokens, graph_decl_body, "Failed to parse `graph_decl_body`")?;
     let func_decls = graph_body.into_inner()
         .next().unwrap()
@@ -430,7 +430,7 @@ fn build_graph_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
 
     Ok(Decl::GraphDecl(GraphDecl {
         name: node_name.to_owned(),
-        type_sig: build_fn_type_sig(type_decl)?,
+        ty_sig: build_fn_ty_sig(ty_decl)?,
         fns: func_decls,
     }))
 }
@@ -446,17 +446,17 @@ fn build_node_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, node_decl_head, "Parsing `node_head` error")?.into_inner();
     let node_name = eat!(head, cap_ident, "Does not have a node name")?.as_str();
-    let type_decl = eat!(head, fn_type_sig, "Failed to parse `fn_type_sig`")?;
+    let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`")?;
     let node_body = eat!(tokens, node_decl_body, "Failed to parse `node_decl_body`")?;
 
-    let type_signature = build_fn_type_sig(type_decl)?;
+    let ty_signature = build_fn_ty_sig(ty_decl)?;
 
     let macros = node_body.into_inner();
     let macros = macros.map(|p| build_node_macro_assign(p).unwrap()).collect();
 
     Ok(Decl::NodeDecl(NodeDecl {
         name: node_name.to_owned(),
-        type_sig: type_signature,
+        ty_sig: ty_signature,
         initialization: macros,
     }))
 }
@@ -470,7 +470,7 @@ fn build_node_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
 
 fn build_node_macro_assign(pair: Pair<Rule>) -> Result<MacroAssign, TSSParseError> {
     if pair.as_rule() != node_macro_assign {
-        return Err(err!(format!("Type mismatch: {:?}", node_macro_assign)));
+        return Err(err!(format!("ty mismatch: {:?}", node_macro_assign)));
     }
     let mut tokens = pair.into_inner();
     let identifier = eat!(tokens, upper_ident, "Failed to parse `upper_ident`")?;
@@ -488,9 +488,9 @@ fn build_node_macro_assign(pair: Pair<Rule>) -> Result<MacroAssign, TSSParseErro
 
     let handle_ty = move |ty: Pair<Rule>, id: String| {
         let ty = to_idents!(ty);
-        Ok(MacroAssign::TypeAlias {
+        Ok(MacroAssign::TyAlias {
             ident: id,
-            rhs: TensorType::Generic(ty), 
+            rhs: TensorTy::Generic(ty), 
         })
     };
 
@@ -499,7 +499,7 @@ fn build_node_macro_assign(pair: Pair<Rule>) -> Result<MacroAssign, TSSParseErro
     match tok.as_rule() {
         int_lit => handle_lit(tok, identifier),
         float_lit => handle_lit(tok, identifier),
-        type_ident_list => handle_ty(tok, identifier),
+        ty_ident_list => handle_ty(tok, identifier),
         _ => unimplemented!()
     }
 }
@@ -514,13 +514,13 @@ fn build_int_lit(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     Ok(AST::Integer(ret))
 }
 
-fn build_fn_type_sig(pair: Pair<Rule>) -> Result<FnTypeSig, TSSParseError> {
+fn build_fn_ty_sig(pair: Pair<Rule>) -> Result<FnTySig, TSSParseError> {
     let mut tokens = pair.into_inner();
 
-    let handle_tensor_type = |token: Pair<Rule>| TensorType::Generic(to_idents!(token));
-    let handle_alias = |token: Pair<Rule>| TensorType::TypeAlias(token.as_str().to_owned());
+    let handle_tensor_ty = |token: Pair<Rule>| TensorTy::Generic(to_idents!(token));
+    let handle_alias = |token: Pair<Rule>| TensorTy::TyAlias(token.as_str().to_owned());
     let handle = |tok: Pair<Rule>| match tok.as_rule() {
-        type_ident_list => handle_tensor_type(tok),
+        ty_ident_list => handle_tensor_ty(tok),
         cap_ident => handle_alias(tok),
         _ => unimplemented!()
     };
@@ -532,7 +532,7 @@ fn build_fn_type_sig(pair: Pair<Rule>) -> Result<FnTypeSig, TSSParseError> {
     let tok = tokens.next().unwrap();
     let to_ty = handle(tok);
 
-    Ok(FnTypeSig {
+    Ok(FnTySig {
         from: from_ty,
         to: to_ty,
     })

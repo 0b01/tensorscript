@@ -28,7 +28,7 @@ return_lit = { "return" }
 Self_lit = { "Self" }
 self_lit = { "self" }
 true_lit = { "true" }
-type_lit = { "type" }
+ty_lit = { "type" }
 use_lit = { "use" }
 where_lit = { "where" }
 while_lit = { "while" }
@@ -36,7 +36,7 @@ print_lit = { "print" }
 keyword = { node_lit | weights_lit | graph_lit | view_lit | break_lit | const_lit | 
              continue_lit | crate_lit | else_lit | enum_lit | true_lit | false_lit |
              fn_lit | for_lit | if_lit | let_lit | match_lit | mod_lit | move_lit | 
-             return_lit | Self_lit | self_lit | type_lit | use_lit | 
+             return_lit | Self_lit | self_lit | ty_lit | use_lit | 
              where_lit | while_lit | print_lit }
 
 
@@ -119,29 +119,29 @@ use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident ) ~ ";"}
 // type signature
 
 // type identifier cannot be just an integer
-type_ident = @{ !int_lit ~  (alpha | digit | "?" | "_")+ }
-type_ident_list = { type_ident ~ ("," ~ type_ident)* }
-fn_type_sig = { "<" ~ tensor_type ~ "->" ~ tensor_type ~ ">" }
-type_sig = { "<"? ~ tensor_type ~ ">"? }
-tensor_type_sig = _{ "[" ~ type_ident_list ~ "]" }
-tensor_type = _{ tensor_alias_type | tensor_type_sig }
-tensor_alias_type = _{ cap_ident }
+ty_ident = @{ !int_lit ~  (alpha | digit | "?" | "_")+ }
+ty_ident_list = { ty_ident ~ ("," ~ ty_ident)* }
+fn_ty_sig = { "<" ~ tensor_ty ~ "->" ~ tensor_ty ~ ">" }
+ty_sig = { "<"? ~ tensor_ty ~ ">"? }
+tensor_ty_sig = _{ "[" ~ ty_ident_list ~ "]" }
+tensor_ty = _{ tensor_alias_ty | tensor_ty_sig }
+tensor_alias_ty = _{ cap_ident }
 
-node_macro_assign = { upper_ident ~ op_assign ~ ( int_lit | tensor_type ) ~ ";" }
+node_macro_assign = { upper_ident ~ op_assign ~ ( int_lit | tensor_ty ) ~ ";" }
 node_decl_body = { "{" ~ node_macro_assign* ~ "}" }
-node_decl_head = { node_lit ~ cap_ident ~ fn_type_sig }
+node_decl_head = { node_lit ~ cap_ident ~ fn_ty_sig }
 node_decl = { node_decl_head ~ node_decl_body }
 
 
 weights_assign = { ident ~ op_assign ~
-                   cap_ident ~ "::" ~ fn_type_sig ~ "::" ~ fn_call ~ ";"
+                   cap_ident ~ "::" ~ fn_ty_sig ~ "::" ~ fn_call ~ ";"
                  }
 weights_decl_body = { "{" ~ weights_assign* ~ "}" }
-weights_decl_head = { weights_lit ~ cap_ident ~ fn_type_sig }
+weights_decl_head = { weights_lit ~ cap_ident ~ fn_ty_sig }
 weights_decl = { weights_decl_head ~ weights_decl_body }
 
 graph_decl_body = { "{" ~ fn_decls ~ "}" }
-graph_decl_head = { graph_lit ~ cap_ident ~ fn_type_sig }
+graph_decl_head = { graph_lit ~ cap_ident ~ fn_ty_sig }
 graph_decl = { graph_decl_head ~ graph_decl_body }
 
 
@@ -155,9 +155,9 @@ op_else = { "else" }
 
 fn_decls = { fn_decl* }
 fn_decl_param = { ("(" ~ ")") | ("(" ~ fn_decl_args ~ ")") }
-fn_decl_sig = { fn_decl_param ~ ("->" ~ type_sig)? }
+fn_decl_sig = { fn_decl_param ~ ("->" ~ ty_sig)? }
 fn_decl_args = { fn_decl_arg ~ ("," ~ fn_decl_arg)* }
-fn_decl_arg = { ident ~ (":" ~ type_sig)? }
+fn_decl_arg = { ident ~ (":" ~ ty_sig)? }
 fn_decl_head = { fn_lit ~ ident ~ fn_decl_sig }
 fn_decl = { fn_decl_head ~ block }
 

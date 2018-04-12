@@ -10,7 +10,7 @@ pub struct Module {
   pub decls: Vec<Decl>
 }
 
-// enum DeclType {
+// enum DeclTy {
 //   Node,
 //   Weights,
 //   Graph
@@ -57,28 +57,28 @@ pub struct UseStmt {
 #[derive(Debug, PartialEq, Clone)]
 pub struct NodeDecl {
   pub name: String,
-  pub type_sig: FnTypeSig,
+  pub ty_sig: FnTySig,
   pub initialization: Vec<MacroAssign>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct GraphDecl {
   pub name: String,
-  pub type_sig: FnTypeSig,
+  pub ty_sig: FnTySig,
   pub fns: Vec<FnDecl>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct WeightsDecl {
   pub name: String,
-  pub type_sig: FnTypeSig,
+  pub ty_sig: FnTySig,
   pub initialization: Vec<WeightsAssign>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FnDeclArg {
   pub name: String,
-  pub type_sig: TensorType,
+  pub ty_sig: TensorTy,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -104,21 +104,21 @@ pub struct FnCallArg {
 pub struct WeightsAssign {
   pub name: String,
   pub mod_name: String,
-  pub mod_sig: FnTypeSig,
+  pub mod_sig: FnTySig,
   pub func: FnCall,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct FnTypeSig{
-  pub from: TensorType,
-  pub to: TensorType,
+pub struct FnTySig{
+  pub from: TensorTy,
+  pub to: TensorTy,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FnDecl {
   pub name: String,
   pub fn_params: Vec<FnDeclArg>,
-  pub return_type: TensorType,
+  pub return_ty: TensorTy,
   pub func_block: Box<AST>,
 }
 
@@ -130,15 +130,15 @@ pub enum MacroAssign {
     rhs: Box<AST>
   },
 
-  TypeAlias {
+  TyAlias {
     ident: String,
-    rhs: TensorType,
+    rhs: TensorTy,
   },
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum TensorType {
-  TypeAlias(String),
+pub enum TensorTy {
+  TyAlias(String),
   Generic(Vec<String>),
 }
 
