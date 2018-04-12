@@ -2,19 +2,19 @@ use conv::{Conv2d, Dropout2d, maxpool2d};
 use nonlin::relu;
 use lin::Linear;
 
-node Mnist<?,c,h,w -> ?,OUT> {
+node Mnist<[?,c,h,w] -> [?,OUT]> {
     FC1 = 320;
     FC2 = 50;
     OUT = 10;
 }
-weights Mnist<?,c,h,w -> ?,OUT> {
-    conv1 = Conv2d::<?,c,h,w -> ?,c,h,w>::new(in_ch=1, out_ch=10, kernel_size=5);
-    conv2 = Conv2d::<?,c,h,w -> ?,c,h,w>::new(in_ch=10, out_ch=20, kernel_size=5);
-    dropout = Dropout2d::<?,c,h,w -> ?,c,h,w>::new(p=0.5);
-    fc1 = Linear::<?,FC1 -> ?,FC2>::new();
-    fc2 = Linear::<?,FC2 -> ?,OUT>::new();
+weights Mnist<[?,c,h,w] -> [?,OUT]> {
+    conv1 = Conv2d::<[?,c,h,w] -> [?,c,h,w]>::new(in_ch=1, out_ch=10, kernel_size=5);
+    conv2 = Conv2d::<[?,c,h,w] -> [?,c,h,w]>::new(in_ch=10, out_ch=20, kernel_size=5);
+    dropout = Dropout2d::<[?,c,h,w] -> [?,c,h,w]>::new(p=0.5);
+    fc1 = Linear::<[?,FC1] -> [?,FC2]>::new();
+    fc2 = Linear::<[?,FC2] -> [?,OUT]>::new();
 }
-graph Mnist<?,c,h,w -> ?,OUT> {
+graph Mnist<[?,c,h,w] -> [?,OUT]> {
     fn new() {
         fc1.init_normal(std=1.);
         fc2.init_normal(std=1.);
@@ -30,7 +30,7 @@ graph Mnist<?,c,h,w -> ?,OUT> {
         |> log_softmax(dim=1)
     }
 
-    fn fc2(x: <?,FC2>) -> <?,OUT> {
+    fn fc2(x: [?,FC2]) -> [?,OUT] {
         x |> fc2 |> relu
     }
 }

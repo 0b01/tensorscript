@@ -18,8 +18,8 @@ const TEST_STR: &str = include_str!("../test.tss");
 fn main() {
     let program = builder::parse_str(TEST_STR).unwrap();
     println!("{:?}", program);
-    let mut global_scope = ScopeStack::new();
-    target::pytorch::gen(program);
+    // let mut global_scope = ScopeStack::new();
+    // target::pytorch::gen(program);
 }
 
 // 1. initialize global scope
