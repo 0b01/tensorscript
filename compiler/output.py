@@ -1,3 +1,4 @@
+from torch import nn, F
 from nn import Conv2d, Dropout2d
 
 class Mnist(nn.Module):

@@ -1,6 +1,7 @@
 use conv::{Conv2d, Dropout2d, maxpool2d};
 use nonlin::relu;
 use lin::Linear;
+
 node Mnist<?,c,h,w -> ?,OUT> {
     FC1 = 320;
     FC2 = 50;
@@ -19,9 +20,9 @@ graph Mnist<?,c,h,w -> ?,OUT> {
         fc2.init_normal(std=1.);
     }
 
-    fn forward(self, x) {
+    fn forward(x) {
         x
-        |> conv1            |> maxpool2d(kernel_size=2)
+        |> conv1            |> maxpool2d(xkernel_size=2)
         |> conv2 |> dropout |> maxpool2d(kernel_size=2)
         // |> view(?, FC1)
         |> fc1 |> relu
@@ -29,7 +30,7 @@ graph Mnist<?,c,h,w -> ?,OUT> {
         |> log_softmax(dim=1)
     }
 
-    fn fc2(self, x: <?,FC2>) -> <?,OUT> {
+    fn fc2(x: <?,FC2>) -> <?,OUT> {
         x |> fc2 |> relu
     }
 }
