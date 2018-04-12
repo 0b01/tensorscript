@@ -121,12 +121,13 @@ use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident ) ~ ";"}
 // type identifier cannot be just an integer
 type_ident = @{ !int_lit ~  (alpha | digit | "?" | "_")+ }
 type_ident_list = { type_ident ~ ("," ~ type_ident)* }
-fn_type_sig = { "<" ~ tensor_type_sig ~ "->" ~ tensor_type_sig ~ ">" }
-type_sig = { "<"? ~ tensor_type_sig ~ ">"? }
+fn_type_sig = { "<" ~ tensor_type ~ "->" ~ tensor_type ~ ">" }
+type_sig = { "<"? ~ tensor_type ~ ">"? }
+tensor_type_sig = _{ "[" ~ type_ident_list ~ "]" }
+tensor_type = _{ tensor_alias_type | tensor_type_sig }
+tensor_alias_type = _{ cap_ident }
 
-tensor_type_sig = _{ "["? ~ type_ident_list ~ "]"? }
-
-node_macro_assign = { upper_ident ~ op_assign ~ int_lit ~ ";" }
+node_macro_assign = { upper_ident ~ op_assign ~ ( int_lit | tensor_type ) ~ ";" }
 node_decl_body = { "{" ~ node_macro_assign* ~ "}" }
 node_decl_head = { node_lit ~ cap_ident ~ fn_type_sig }
 node_decl = { node_decl_head ~ node_decl_body }

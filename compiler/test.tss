@@ -2,10 +2,12 @@ use conv::{Conv2d, Dropout2d, maxpool2d};
 use nonlin::relu;
 use lin::Linear;
 
-node Mnist<[?,c,h,w] -> [?,OUT]> {
+node Mnist<IMAGE -> [?,OUT]> {
     FC1 = 320;
     FC2 = 50;
     OUT = 10;
+    IMAGE = [?,c,h,w];
+    TEST = [?,FC2];
 }
 weights Mnist<[?,c,h,w] -> [?,OUT]> {
     conv1 = Conv2d::<[?,c,h,w] -> [?,c,h,w]>::new(in_ch=1, out_ch=10, kernel_size=5);
@@ -30,7 +32,7 @@ graph Mnist<[?,c,h,w] -> [?,OUT]> {
         |> log_softmax(dim=1)
     }
 
-    fn fc2(x: [?,FC2]) -> [?,OUT] {
+    fn fc2(x: TEST) -> [?,OUT] {
         x |> fc2 |> relu
     }
 }

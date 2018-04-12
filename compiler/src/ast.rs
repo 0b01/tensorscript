@@ -78,7 +78,7 @@ pub struct WeightsDecl {
 #[derive(Debug, PartialEq, Clone)]
 pub struct FnDeclArg {
   pub name: String,
-  pub type_sig: Vec<String>,
+  pub type_sig: TensorType,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -110,22 +110,36 @@ pub struct WeightsAssign {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FnTypeSig{
-  pub from: Vec<String>,
-  pub to: Vec<String>,
+  pub from: TensorType,
+  pub to: TensorType,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FnDecl {
   pub name: String,
   pub fn_params: Vec<FnDeclArg>,
-  pub return_type: Vec<String>,
+  pub return_type: TensorType,
   pub func_block: Box<AST>,
 }
 
+
 #[derive(Debug, PartialEq, Clone)]
-pub struct MacroAssign {
-  pub ident: String,
-  pub rhs: Box<AST>
+pub enum MacroAssign {
+  ValueAlias {
+    ident: String,
+    rhs: Box<AST>
+  },
+
+  TypeAlias {
+    ident: String,
+    rhs: TensorType,
+  },
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum TensorType {
+  TypeAlias(String),
+  Generic(Vec<String>),
 }
 
 impl AST {
