@@ -257,7 +257,7 @@ mod test {
                                     type_ident(51, 52)]
                                 )]
                             ),
-                            fn_call(55, 60, [
+                            fn_app(55, 60, [
                                 ident(55, 58)]
                             )]
                         )]
@@ -323,8 +323,8 @@ mod test {
             input: "while 1 { print(text=1); }",
             rule: Rule::stmt,
             tokens: [stmt(0, 26, [while_loop(0, 26, [while_lit(0, 5),
-                    int_lit(6, 7), stmt(10, 24, [fn_call(10, 23, [ident(10, 15),
-                    fn_call_args(16, 22, [fn_call_arg(16, 22, [ident(16, 20), int_lit(21, 22
+                    int_lit(6, 7), stmt(10, 24, [fn_app(10, 23, [ident(10, 15),
+                    fn_app_args(16, 22, [fn_app_arg(16, 22, [ident(16, 20), int_lit(21, 22
                     )])])])])])])]
         }
     }
@@ -339,10 +339,10 @@ mod test {
                 pipes(0, 24, [
                     ident(0, 4),
                     pipes(8, 24, [
-                        fn_call(8, 14, [
+                        fn_app(8, 14, [
                             ident(8, 12)]
                         ),
-                        fn_call(18, 23, [
+                        fn_app(18, 23, [
                             ident(18, 21)]
                         )
                         ]

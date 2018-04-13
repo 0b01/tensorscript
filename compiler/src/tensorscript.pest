@@ -134,7 +134,7 @@ node_decl = { node_decl_head ~ node_decl_body }
 
 
 weights_assign = { ident ~ op_assign ~
-                   cap_ident ~ "::" ~ fn_ty_sig ~ "::" ~ fn_call ~ ";"
+                   cap_ident ~ "::" ~ fn_ty_sig ~ "::" ~ fn_app ~ ";"
                  }
 weights_decl_body = { "{" ~ weights_assign* ~ "}" }
 weights_decl_head = { weights_lit ~ cap_ident ~ fn_ty_sig }
@@ -161,20 +161,20 @@ fn_decl_arg = { ident ~ (":" ~ ty_sig)? }
 fn_decl_head = { fn_lit ~ ident ~ fn_decl_sig }
 fn_decl = { fn_decl_head ~ block }
 
-fn_call_param = { ("(" ~ ")") | ("(" ~ fn_call_args ~ ")") }
-fn_call_arg_pair = { ident ~ "=" ~ expr }
-fn_call_arg = { ident ~ "=" ~ expr }
-fn_call_args = { (fn_call_arg ~ ",")* ~ fn_call_arg }
-fn_call = { ident ~ "(" ~ fn_call_args? ~ ")" }
+fn_app_param = { ("(" ~ ")") | ("(" ~ fn_app_args ~ ")") }
+fn_app_arg_pair = { ident ~ "=" ~ expr }
+fn_app_arg = { ident ~ "=" ~ expr }
+fn_app_args = { (fn_app_arg ~ ",")* ~ fn_app_arg }
+fn_app = { ident ~ "(" ~ fn_app_args? ~ ")" }
 
 
 pipes = { expr_item  ~ ("|>" ~ expr)+ }
 
-field_access = { ident ~ "." ~ ident ~ fn_call_param? }
+field_access = { ident ~ "." ~ ident ~ fn_app_param? }
 
 view_fn = { view_lit ~ "(" ~ ("?"| expr)? ~ ("," ~ ("?"|expr))* ~ ","? ~ ")" }
 
-expr_item = _{ view_fn | field_access | literal | bool_not | fn_call | ident | conditional }
+expr_item = _{ view_fn | field_access | literal | bool_not | fn_app | ident | conditional }
 expr = { expr_item ~ !"|>" | pipes }
 
 bool_not = _{ op_not ~ expr }

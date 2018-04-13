@@ -166,13 +166,13 @@ fn build_block(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     })
 }
 
-fn build_fn_call_param(pair: Pair<Rule>) -> Result<Vec<FnCallArg>, TSSParseError> {
+fn build_fn_app_param(pair: Pair<Rule>) -> Result<Vec<FnCallArg>, TSSParseError> {
     let mut tokens = pair.into_inner();
-    let args = eat!(tokens, fn_call_args, "Does not have args");
+    let args = eat!(tokens, fn_app_args, "Does not have args");
     if args.is_err() {
         Ok(vec![])
     } else {
-        build_fn_call_args(args?)
+        build_fn_app_args(args?)
     }
 }
 
@@ -180,11 +180,11 @@ fn build_field_access(pair: Pair<Rule>) -> Result<FieldAccess, TSSParseError> {
     let mut tokens = pair.into_inner();
     let var_name = eat!(tokens, ident, "Failed to parse variable name")?;
     let field_name = eat!(tokens, ident, "Failed to parse field name")?;
-    let func_call = eat!(tokens, fn_call_param, "Is not a function call");
+    let func_call = eat!(tokens, fn_app_param, "Is not a function call");
     let func_call = if func_call.is_err() {
         None
     } else {
-        Some(build_fn_call_param(func_call?)?)
+        Some(build_fn_app_param(func_call?)?)
     };
 
     Ok(FieldAccess {
@@ -199,7 +199,7 @@ fn build_expr(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     let vals = tokens.map(|p| {
         match p.as_rule() {
             field_access => AST::FieldAccess(build_field_access(p).unwrap()),
-            fn_call => AST::FnCall(build_fn_call(p).unwrap()),
+            fn_app => AST::FnCall(build_fn_app(p).unwrap()),
             _ => consume(p).unwrap(),
         }
     }).collect();
@@ -286,11 +286,11 @@ fn build_fn_decl_args(pair: Pair<Rule>) -> Result<Vec<FnDeclArg>, TSSParseError>
     Ok(vals)
 }
 
-fn build_fn_call(pair: Pair<Rule>) -> Result<FnCall, TSSParseError> {
+fn build_fn_app(pair: Pair<Rule>) -> Result<FnCall, TSSParseError> {
     let mut tokens = pair.into_inner();
     let name = eat!(tokens, ident, "Cannot parse function call identifier")?;
     let args = if let Some(args) = tokens.next() {
-        build_fn_call_args(args)?
+        build_fn_app_args(args)?
     } else {
         vec![]
     };
@@ -301,7 +301,7 @@ fn build_fn_call(pair: Pair<Rule>) -> Result<FnCall, TSSParseError> {
     })
 }
 
-fn build_fn_call_arg(pair: Pair<Rule>) -> Result<FnCallArg, TSSParseError> {
+fn build_fn_app_arg(pair: Pair<Rule>) -> Result<FnCallArg, TSSParseError> {
     let mut tokens = pair.into_inner();
     let param = eat!(tokens, ident, "Failed to parse function call argument")?;
     let param_val = eat!(tokens, expr, "Failed to parse function call parameter")?;
@@ -312,9 +312,9 @@ fn build_fn_call_arg(pair: Pair<Rule>) -> Result<FnCallArg, TSSParseError> {
     })
 }
 
-fn build_fn_call_args(pair: Pair<Rule>) -> Result<Vec<FnCallArg>, TSSParseError> {
+fn build_fn_app_args(pair: Pair<Rule>) -> Result<Vec<FnCallArg>, TSSParseError> {
     let tokens = pair.into_inner();
-    let vals = tokens.map(|p| build_fn_call_arg(p).unwrap()).collect();
+    let vals = tokens.map(|p| build_fn_app_arg(p).unwrap()).collect();
     Ok(vals)
 }
 
@@ -342,19 +342,19 @@ fn build_weights_assign(body: Pair<Rule>) -> Result<WeightsAssign, TSSParseError
     let _assign = eat!(tokens, op_assign, "Failed to parse `=`")?;
     let mod_name = eat!(tokens, cap_ident, "Failed to parse `mod_name`")?;
     let fn_sig = eat!(tokens, fn_ty_sig, "Failed to parse `fn_sig`")?;
-    let func = eat!(tokens, fn_call, "Failed to parse `fn_call`")?;
+    let func = eat!(tokens, fn_app, "Failed to parse `fn_app`")?;
 
     Ok(WeightsAssign {
         name: name.as_str().to_owned(),
         mod_name: mod_name.as_str().to_owned(),
         mod_sig: build_fn_ty_sig(fn_sig)?,
-        func: build_fn_call(func)?,
+        func: build_fn_app(func)?,
     })
 }
 
 fn _process_level(curr: Pair<Rule>) -> AST {
-    if curr.as_rule() == fn_call {
-        AST::FnCall(build_fn_call(curr).unwrap())
+    if curr.as_rule() == fn_app {
+        AST::FnCall(build_fn_app(curr).unwrap())
     } else if curr.as_rule() == field_access {
         AST::FieldAccess(build_field_access(curr).unwrap())
     } else if curr.as_rule() == ident {
@@ -373,12 +373,12 @@ fn build_pipes(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
         let curr = tokens.next();
         if curr.is_none() { break; }
         let curr = curr.unwrap();
-        if curr.as_rule() == expr { // { expr { pipe | ident | fn_call } }
+        if curr.as_rule() == expr { // { expr { pipe | ident | fn_app } }
             let temp = curr.into_inner().next();
             if temp.is_none() { break; }
             let temp = temp.unwrap();
             if temp.as_rule() == pipes {
-                tokens = temp.into_inner(); // { pipe | ident | fn_call }
+                tokens = temp.into_inner(); // { pipe | ident | fn_app }
                 continue;
             }
             exprs.push(_process_level(temp.clone()));
@@ -387,7 +387,7 @@ fn build_pipes(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
         }
     }
 
-    // // construct a deep fn_call recursively
+    // // construct a deep fn_app recursively
     // let mut iter = exprs.iter();
     // let mut init = iter.next().unwrap().to_owned();
 
