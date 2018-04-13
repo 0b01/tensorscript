@@ -48,27 +48,11 @@ macro_rules! to_idents {
     };
 }
 
-use ast::{
-    AST,
-    Program,
-    Module,
-    MacroAssign,
-    FnDecl,
-    FnTySig,
-    WeightsAssign,
-    FnCallArg,
-    FnDeclArg,
-    FnCall,
-    FieldAccess,
-    WeightsDecl,
-    GraphDecl,
-    NodeDecl,
-    UseStmt,
-    Decl,
-    TensorTy,
-};
+use ast::{Decl, FieldAccess, FnCall, FnCallArg, FnDecl, FnDeclArg, FnTySig, GraphDecl,
+          MacroAssign, Module, NodeDecl, Program, TensorTy, UseStmt, WeightsAssign, WeightsDecl,
+          AST};
 use grammar::{Rule, TensorScriptParser};
-use pest::iterators::{Pairs, Pair};
+use pest::iterators::{Pair, Pairs};
 use pest::Parser;
 
 #[derive(Debug)]
@@ -88,19 +72,18 @@ pub fn parse_str(source: &str) -> Result<Program, TSSParseError> {
         panic!(format!("{:#}", parser.err().unwrap()));
     }
 
-    let decls = parser.unwrap().map(|pair|{
-        match pair.as_rule() {
+    let decls = parser
+        .unwrap()
+        .map(|pair| match pair.as_rule() {
             use_stmt => build_use_stmt(pair).unwrap(),
             weights_decl => build_weights_decl(pair).unwrap(),
             graph_decl => build_graph_decl(pair).unwrap(),
             node_decl => build_node_decl(pair).unwrap(),
             _ => panic!("Only node, graph, weights, use supported at top level"),
-        }
-    }).collect();
-    Ok(Program{
-        module: Module {
-            decls: decls
-        }
+        })
+        .collect();
+    Ok(Program {
+        module: Module { decls: decls },
     })
 }
 
@@ -196,13 +179,13 @@ fn build_field_access(pair: Pair<Rule>) -> Result<FieldAccess, TSSParseError> {
 
 fn build_expr(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     let tokens = pair.into_inner();
-    let vals = tokens.map(|p| {
-        match p.as_rule() {
+    let vals = tokens
+        .map(|p| match p.as_rule() {
             field_access => AST::FieldAccess(build_field_access(p).unwrap()),
             fn_app => AST::FnCall(build_fn_app(p).unwrap()),
             _ => consume(p).unwrap(),
-        }
-    }).collect();
+        })
+        .collect();
     Ok(AST::Expr {
         items: Box::new(AST::List(vals)),
     })
@@ -327,7 +310,9 @@ fn build_weights_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
         tokens,
         weights_decl_body,
         "Failed to parse `weights_decl_body`"
-    )?.into_inner().map(|p| build_weights_assign(p).unwrap()).collect();
+    )?.into_inner()
+        .map(|p| build_weights_assign(p).unwrap())
+        .collect();
 
     Ok(Decl::WeightsDecl(WeightsDecl {
         name: weights_name.to_owned(),
@@ -371,11 +356,16 @@ fn build_pipes(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     let mut tokens = pair.into_inner(); // [ident, expr]
     loop {
         let curr = tokens.next();
-        if curr.is_none() { break; }
+        if curr.is_none() {
+            break;
+        }
         let curr = curr.unwrap();
-        if curr.as_rule() == expr { // { expr { pipe | ident | fn_app } }
+        if curr.as_rule() == expr {
+            // { expr { pipe | ident | fn_app } }
             let temp = curr.into_inner().next();
-            if temp.is_none() { break; }
+            if temp.is_none() {
+                break;
+            }
             let temp = temp.unwrap();
             if temp.as_rule() == pipes {
                 tokens = temp.into_inner(); // { pipe | ident | fn_app }
@@ -422,8 +412,10 @@ fn build_graph_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let node_name = eat!(head, cap_ident, "Does not have a graph name")?.as_str();
     let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`")?;
     let graph_body = eat!(tokens, graph_decl_body, "Failed to parse `graph_decl_body`")?;
-    let func_decls = graph_body.into_inner()
-        .next().unwrap()
+    let func_decls = graph_body
+        .into_inner()
+        .next()
+        .unwrap()
         .into_inner()
         .map(|f| build_fn_decl(f).unwrap())
         .collect();
@@ -452,7 +444,9 @@ fn build_node_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let ty_signature = build_fn_ty_sig(ty_decl)?;
 
     let macros = node_body.into_inner();
-    let macros = macros.map(|p| build_node_macro_assign(p).unwrap()).collect();
+    let macros = macros
+        .map(|p| build_node_macro_assign(p).unwrap())
+        .collect();
 
     Ok(Decl::NodeDecl(NodeDecl {
         name: node_name.to_owned(),
@@ -480,7 +474,7 @@ fn build_node_macro_assign(pair: Pair<Rule>) -> Result<MacroAssign, TSSParseErro
 
     let handle_lit = move |token: Pair<Rule>, id: String| {
         let lit = consume(token)?;
-        Ok(MacroAssign::ValueAlias { 
+        Ok(MacroAssign::ValueAlias {
             ident: id,
             rhs: Box::new(lit),
         })
@@ -490,17 +484,16 @@ fn build_node_macro_assign(pair: Pair<Rule>) -> Result<MacroAssign, TSSParseErro
         let ty = to_idents!(ty);
         Ok(MacroAssign::TyAlias {
             ident: id,
-            rhs: TensorTy::Generic(ty), 
+            rhs: TensorTy::Generic(ty),
         })
     };
-
 
     let tok = tokens.next().unwrap();
     match tok.as_rule() {
         int_lit => handle_lit(tok, identifier),
         float_lit => handle_lit(tok, identifier),
         ty_ident_list => handle_ty(tok, identifier),
-        _ => unimplemented!()
+        _ => unimplemented!(),
     }
 }
 
@@ -522,9 +515,8 @@ fn build_fn_ty_sig(pair: Pair<Rule>) -> Result<FnTySig, TSSParseError> {
     let handle = |tok: Pair<Rule>| match tok.as_rule() {
         ty_ident_list => handle_tensor_ty(tok),
         cap_ident => handle_alias(tok),
-        _ => unimplemented!()
+        _ => unimplemented!(),
     };
-
 
     let tok = tokens.next().unwrap();
     let from_ty = handle(tok);

@@ -132,7 +132,6 @@ mod test {
         };
     }
 
-
     #[test]
     fn parse_node_head() {
         parses_to! {
@@ -219,7 +218,6 @@ mod test {
 
         };
     }
-
 
     #[test]
     fn parse_weights() {
@@ -352,4 +350,3 @@ mod test {
         }
     }
 }
-

@@ -1,4 +1,4 @@
-use ast::{ Program, AST };
+use ast::{Program, AST};
 use std::collections::HashMap;
 
 macro_rules! map(
@@ -27,7 +27,6 @@ macro_rules! map(
 //     }
 // }
 
-
 pub fn gen(ast: Program) -> String {
     let mut buf = String::new();
 
@@ -45,7 +44,7 @@ pub fn gen_imports(buf: &mut String, ast: &Program) {
     //     .map(|node| {
     //         if let AST::UseStmt{mod_name, imported_names} = node {
     //             let dict = IMPORT_MAP.get(&mod_name);
-                
+
     //         }
     //     })
     //     .collect();

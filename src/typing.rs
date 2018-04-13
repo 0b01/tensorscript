@@ -48,11 +48,18 @@ impl ItemType {
     ///     self = Function {args: [Variadic(1)], return_type: 0}
     ///     expected_args = [Arg(1)]
     ///     return_type = 0
-    pub fn matches_signature(&self, expected_args: &Vec<FuncArgType>, expected_return_type: TypeId) -> bool {
+    pub fn matches_signature(
+        &self,
+        expected_args: &Vec<FuncArgType>,
+        expected_return_type: TypeId,
+    ) -> bool {
         let mut expected_args = expected_args.iter().peekable();
         match *self {
-            ItemType::Op {ref args, return_type} => (
-                return_type == expected_return_type &&
+            ItemType::Op {
+                ref args,
+                return_type,
+            } => {
+                (return_type == expected_return_type &&
                 // All the args must match an argument in expected_args
                 args.iter().all(|arg| match *arg {
                     FuncArgType::Arg(type_id) => match expected_args.peek() {
@@ -63,8 +70,8 @@ impl ItemType {
                         _ => false,
                     },
                     _ => unimplemented!(),
-                })
-            ),
+                }))
+            }
             _ => false,
         }
     }
