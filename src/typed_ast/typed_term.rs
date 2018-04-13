@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter, Error};
 use typed_ast::Type;
 
 pub trait Typed {
@@ -18,6 +19,12 @@ pub enum TypedTerm {
     TypedExpr { items: Box<TypedTerm> },
     TypedStmt { items: Box<TypedTerm> },
     TypedPipes(Vec<TypedTerm>),
+}
+
+impl Display for TypedTerm {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{:#?}", self)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

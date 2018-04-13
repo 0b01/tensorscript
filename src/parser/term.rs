@@ -146,7 +146,7 @@ impl Term {
 
 impl Display for Term {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{:#}", self)
+        write!(f, "{:#?}", self)
     }
 }
 
