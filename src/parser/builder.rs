@@ -48,11 +48,12 @@ macro_rules! to_idents {
     };
 }
 
-use ast::{Decl, FieldAccess, FnCall, FnCallArg, FnDecl, FnDeclArg, FnTySig, GraphDecl,
+use parser::ast::{Decl, FieldAccess, FnCall, FnCallArg, FnDecl, FnDeclArg, FnTySig, GraphDecl,
           MacroAssign, Module, NodeDecl, Program, TensorTy, UseStmt, WeightsAssign, WeightsDecl,
           AST};
-use grammar::{Rule, TensorScriptParser};
-use pest::iterators::{Pair, Pairs};
+use parser::grammar::{Rule, TensorScriptParser};
+use parser::grammar::Rule::*;
+use pest::iterators::{Pair};
 use pest::Parser;
 
 #[derive(Debug)]
@@ -60,7 +61,6 @@ pub struct TSSParseError {
     msg: String,
 }
 
-use grammar::Rule::*;
 
 pub fn parse_str(source: &str) -> Result<Program, TSSParseError> {
     // let program = TensorScriptParser::parse(Rule::fn_ty_sig, "<image->labels>");
@@ -87,7 +87,7 @@ pub fn parse_str(source: &str) -> Result<Program, TSSParseError> {
     })
 }
 
-pub fn consume(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
+fn consume(pair: Pair<Rule>) -> Result<AST, TSSParseError> {
     // println!("{}", pair);
     match pair.as_rule() {
         // node_decl_body => build_node_decl_body(pair),

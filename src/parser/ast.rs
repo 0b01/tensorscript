@@ -10,12 +10,6 @@ pub struct Module {
     pub decls: Vec<Decl>,
 }
 
-// enum DeclTy {
-//   Node,
-//   Weights,
-//   Graph
-// }
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum AST {
     None,
@@ -161,8 +155,7 @@ impl AST {
 
 impl Display for AST {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        let txt = format!("{:?}", self);
-        write!(f, "{}", txt)
+        write!(f, "{:#}", self)
     }
 }
 
