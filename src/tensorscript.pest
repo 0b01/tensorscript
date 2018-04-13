@@ -6,6 +6,8 @@ newline = _{ "\n" | "\r\n" }
 space   = _{ " " | "\t" }
 
 // keyword
+dim_lit = _{ "dim" }
+tsr_lit = _{ "tsr" }
 node_lit = _{ "node" }
 view_lit = _{ "view" }
 weights_lit = _{ "weights" }
@@ -33,7 +35,7 @@ use_lit = { "use" }
 where_lit = { "where" }
 while_lit = { "while" }
 print_lit = { "print" }
-keyword = { node_lit | weights_lit | graph_lit | view_lit | break_lit | const_lit | 
+keyword = { dim_lit | tsr_lit | node_lit | weights_lit | graph_lit | view_lit | break_lit | const_lit | 
              continue_lit | crate_lit | else_lit | enum_lit | true_lit | false_lit |
              fn_lit | for_lit | if_lit | let_lit | match_lit | mod_lit | move_lit | 
              return_lit | Self_lit | self_lit | ty_lit | use_lit | 
@@ -127,8 +129,10 @@ tensor_ty_sig = _{ "[" ~ ty_ident_list ~ "]" }
 tensor_ty = _{ tensor_alias_ty | tensor_ty_sig }
 tensor_alias_ty = _{ cap_ident }
 
-node_macro_assign = { upper_ident ~ op_assign ~ ( int_lit | tensor_ty ) ~ ";" }
-node_decl_body = { "{" ~ node_macro_assign* ~ "}" }
+dim_assign = _{ dim_lit ~ upper_ident ~ op_assign ~ int_lit ~ ";" }
+tsr_assign = _{ tsr_lit ~ upper_ident ~ op_assign ~ tensor_ty ~ ";" }
+node_assign = { dim_assign | tsr_assign }
+node_decl_body = { "{" ~ node_assign* ~ "}" }
 node_decl_head = { node_lit ~ cap_ident ~ fn_ty_sig }
 node_decl = { node_decl_head ~ node_decl_body }
 

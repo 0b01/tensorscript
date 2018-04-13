@@ -11,11 +11,6 @@ pub enum FuncArgType {
 /// An item is anything that can be declared
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ItemType {
-    /// Unit type
-    /// The unit type is a type with a single zero-size value.
-    /// Both the type and the value are specified: ()
-    Unit,
-
     Generic,
 
     /// A struct has a single definition with any number of

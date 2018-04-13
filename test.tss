@@ -1,38 +1,43 @@
-use conv::{Conv2d, Dropout2d, maxpool2d};
-use nonlin::relu;
-use lin::Linear;
-
+// use conv::{Conv2d, Dropout2d, maxpool2d};
+// use nonlin::relu;
+// use lin::Linear;
+// 
 node Mnist<IMAGE -> [?,OUT]> {
-    FC1 = 320;
-    FC2 = 50;
-    OUT = 10;
-    IMAGE = [?,c,h,w];
-    TEST = [?,FC2];
+    dim FC1 = 320;
+    dim FC2 = 50;
+    dim OUT = 10;
+    tsr IMAGE = [?,c,h,w];
+    tsr TEST = [?,FC2];
 }
-weights Mnist<[?,c,h,w] -> [?,OUT]> {
-    conv1 = Conv2d::<[?,c,h,w] -> [?,c,h,w]>::new(in_ch=1, out_ch=10, kernel_size=5);
-    conv2 = Conv2d::<[?,c,h,w] -> [?,c,h,w]>::new(in_ch=10, out_ch=20, kernel_size=5);
-    dropout = Dropout2d::<[?,c,h,w] -> [?,c,h,w]>::new(p=0.5);
-    fc1 = Linear::<[?,FC1] -> [?,FC2]>::new();
-    fc2 = Linear::<[?,FC2] -> [?,OUT]>::new();
-}
-graph Mnist<[?,c,h,w] -> [?,OUT]> {
-    fn new() {
-        fc1.init_normal(std=1.);
-        fc2.init_normal(std=1.);
-    }
 
-    fn forward(x) {
-        x
-        |> conv1            |> maxpool2d(xkernel_size=2)
-        |> conv2 |> dropout |> maxpool2d(kernel_size=2)
-        // |> view(?, FC1)
-        |> fc1 |> relu
-        |> self.fc2()
-        |> log_softmax(dim=1)
-    }
-
-    fn fc2(x: TEST) -> [?,OUT] {
-        x |> fc2 |> relu
-    }
-}
+// weights Mnist<[?,c,h,w] -> [?,OUT]> {
+//     conv1 = Conv2d::<[?,c,h,w] -> [?,c,h,w]>::new(in_ch=1, out_ch=10, kernel_size=5);
+//     conv2 = Conv2d::<[?,c,h,w] -> [?,c,h,w]>::new(in_ch=10, out_ch=20, kernel_size=5);
+//     dropout = Dropout2d::<[?,c,h,w] -> [?,c,h,w]>::new(p=0.5);
+//     fc1 = Linear::<[?,FC1] -> [?,FC2]>::new();
+//     fc2 = Linear::<[?,FC2] -> [?,OUT]>::new();
+// }
+// 
+// graph Mnist<[?,c,h,w] -> [?,OUT]> {
+// 
+//     fn new() {
+//         fc1.init_normal(std=1.);
+//         fc2.init_normal(std=1.);
+//     }
+// 
+//     fn forward(x) {
+//         x
+//         |> conv1            |> maxpool2d(xkernel_size=2)
+//         |> conv2 |> dropout |> maxpool2d(kernel_size=2)
+//         // |> view(?, FC1)
+//         |> fc1 |> relu
+//         |> self.fc2()
+//         |> log_softmax(dim=1)
+//     }
+// 
+//     fn fc2(x: TEST) -> [?,OUT] {
+//         x |> fc2 |> relu
+//     }
+// 
+// }
+// 

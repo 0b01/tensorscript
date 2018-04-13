@@ -4,12 +4,20 @@ extern crate pest;
 extern crate pest_derive;
 
 mod parser;
+mod typed_ast;
+use typed_ast::type_env::TypeEnv;
+use typed_ast::annotate::annotate;
 
 const TEST_STR: &str = include_str!("../test.tss");
 
 fn main() {
     let program = parser::parse_str(TEST_STR).unwrap();
-    println!("{:#?}", program);
+    // println!("{:#?}", program);
+
+    let mut tenv = TypeEnv::new();
+    let ast = annotate(program, &mut tenv);
+    println!("{:#?}", ast);
+    println!("{:#?}", tenv);
 }
 
 // 1. initialize global scope

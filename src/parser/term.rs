@@ -1,28 +1,20 @@
 use std::fmt::{Display, Error, Formatter};
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Program {
-    pub module: Module,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Module {
-    pub decls: Vec<Decl>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum AST {
+pub enum Term {
     None,
+    /// a vector of decls
+    Program(Vec<Decl>),
     Integer(i64),
     Float(f64),
-    List(Vec<AST>),
+    List(Vec<Term>),
     Ident(String),
     FieldAccess(FieldAccess),
     FnCall(FnCall),
-    Block { stmts: Box<AST>, ret: Box<AST> },
-    Expr { items: Box<AST> },
-    Stmt { items: Box<AST> },
-    Pipes(Vec<AST>),
+    Block { stmts: Box<Term>, ret: Box<Term> },
+    Expr { items: Box<Term> },
+    Stmt { items: Box<Term> },
+    Pipes(Vec<Term>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -43,7 +35,7 @@ pub struct UseStmt {
 pub struct NodeDecl {
     pub name: String,
     pub ty_sig: FnTySig,
-    pub initialization: Vec<MacroAssign>,
+    pub defs: Vec<NodeAssign>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -82,7 +74,7 @@ pub struct FnCall {
 #[derive(Debug, PartialEq, Clone)]
 pub struct FnCallArg {
     pub name: String,
-    pub arg: Box<AST>,
+    pub arg: Box<Term>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -104,13 +96,12 @@ pub struct FnDecl {
     pub name: String,
     pub fn_params: Vec<FnDeclArg>,
     pub return_ty: TensorTy,
-    pub func_block: Box<AST>,
+    pub func_block: Box<Term>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum MacroAssign {
-    ValueAlias { ident: String, rhs: Box<AST> },
-
+pub enum NodeAssign {
+    ValueAlias { ident: String, rhs: Term },
     TyAlias { ident: String, rhs: TensorTy },
 }
 
@@ -120,20 +111,20 @@ pub enum TensorTy {
     Generic(Vec<String>),
 }
 
-impl AST {
+impl Term {
     // pub fn is(&self, var: &Self) -> bool {
     //   ::std::mem::discriminant(self) == ::std::mem::discriminant(var)
     // }
 
     // pub fn is_UseStmt(&self) -> bool {
-    //   self.is(&AST::UseStmt {
+    //   self.is(&Term::UseStmt {
     //     mod_name: format!(""),
     //     imported_names: vec![],
     //   })
     // }
 
-    // pub fn to_list(&self) -> Option<Vec<AST>> {
-    //   if let &AST::List(ref vs) = self {
+    // pub fn to_list(&self) -> Option<Vec<Term>> {
+    //   if let &Term::List(ref vs) = self {
     //     Some(vs.to_vec())
     //   } else {
     //     None
@@ -141,7 +132,7 @@ impl AST {
     // }
 
     /// args is List(Arg)
-    pub fn extend_arg_list(func: FnCall, init: AST) -> Vec<FnCallArg> {
+    pub fn extend_arg_list(func: FnCall, init: Term) -> Vec<FnCallArg> {
         let mut new_arg_vec = vec![
             FnCallArg {
                 name: format!("x"),
@@ -153,7 +144,7 @@ impl AST {
     }
 }
 
-impl Display for AST {
+impl Display for Term {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         write!(f, "{:#}", self)
     }
