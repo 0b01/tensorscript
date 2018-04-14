@@ -14,7 +14,7 @@ pub enum TypedTerm {
     TypedList(Vec<TypedTerm>),
     TypedIdent(String),
     // TypedFieldAccess(FieldAccess),
-    // TypedFnCall(FnCall),
+    // TypedFnApp(FnApp),
     TypedBlock { stmts: Box<TypedTerm>, ret: Box<TypedTerm> },
     TypedExpr { items: Box<TypedTerm>, ty: Type },
     TypedStmt { items: Box<TypedTerm> },
@@ -68,17 +68,17 @@ pub struct TypedWeightsAssign {
     pub mod_name: String,
     pub fn_ty: Type,
     pub fn_name: String,
-    pub fn_args: Vec<TypedFnCallArg>,
+    pub fn_args: Vec<TypedFnAppArg>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedFnCall {
+pub struct TypedFnApp {
     pub name: String,
-    pub args: Vec<TypedFnCallArg>,
+    pub args: Vec<TypedFnAppArg>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedFnCallArg {
+pub struct TypedFnAppArg {
     pub name: String,
     pub ty: Type,
     pub arg: Box<TypedTerm>,

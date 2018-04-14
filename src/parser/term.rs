@@ -10,7 +10,7 @@ pub enum Term {
     List(Vec<Term>),
     Ident(String),
     FieldAccess(FieldAccess),
-    FnCall(FnCall),
+    FnApp(FnApp),
     Block { stmts: Box<Term>, ret: Box<Term> },
     Expr { items: Box<Term> },
     Stmt { items: Box<Term> },
@@ -62,17 +62,17 @@ pub struct FnDeclArg {
 pub struct FieldAccess {
     pub var_name: String,
     pub field_name: String,
-    pub func_call: Option<Vec<FnCallArg>>,
+    pub func_call: Option<Vec<FnAppArg>>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct FnCall {
+pub struct FnApp {
     pub name: String,
-    pub args: Vec<FnCallArg>,
+    pub args: Vec<FnAppArg>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct FnCallArg {
+pub struct FnAppArg {
     pub name: String,
     pub arg: Box<Term>,
 }
@@ -83,7 +83,7 @@ pub struct WeightsAssign {
     pub mod_name: String,
     pub fn_name: String,
     pub mod_sig: FnTySig,
-    pub fn_args: Vec<FnCallArg>,
+    pub fn_args: Vec<FnAppArg>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -133,9 +133,9 @@ impl Term {
     // }
 
     /// args is List(Arg)
-    pub fn extend_arg_list(func: FnCall, init: Term) -> Vec<FnCallArg> {
+    pub fn extend_arg_list(func: FnApp, init: Term) -> Vec<FnAppArg> {
         let mut new_arg_vec = vec![
-            FnCallArg {
+            FnAppArg {
                 name: format!("x"),
                 arg: Box::new(init),
             },

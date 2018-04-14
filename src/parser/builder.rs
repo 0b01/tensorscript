@@ -48,7 +48,7 @@ macro_rules! to_idents {
     };
 }
 
-use parser::term::{Decl, FieldAccess, FnCall, FnCallArg, FnDecl, FnDeclArg, FnTySig, GraphDecl,
+use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclArg, FnTySig, GraphDecl,
           NodeAssign, NodeDecl, TensorTy, UseStmt, WeightsAssign, WeightsDecl,
           Term};
 use parser::grammar::{Rule, TensorScriptParser};
@@ -148,7 +148,7 @@ fn build_block(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
     })
 }
 
-fn build_fn_app_param(pair: Pair<Rule>) -> Result<Vec<FnCallArg>, TSSParseError> {
+fn build_fn_app_param(pair: Pair<Rule>) -> Result<Vec<FnAppArg>, TSSParseError> {
     let mut tokens = pair.into_inner();
     let args = eat!(tokens, fn_app_args, "Does not have args");
     if args.is_err() {
@@ -182,7 +182,7 @@ fn build_expr(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
     assert!(tokens.next().is_none());
     let val = match p.as_rule() {
         field_access => Term::FieldAccess(build_field_access(p).unwrap()),
-        fn_app => Term::FnCall(build_fn_app(p).unwrap()),
+        fn_app => Term::FnApp(build_fn_app(p).unwrap()),
         _ => consume(p).unwrap(),
     };
     Ok(Term::Expr {
@@ -268,7 +268,7 @@ fn build_fn_decl_args(pair: Pair<Rule>) -> Result<Vec<FnDeclArg>, TSSParseError>
     Ok(vals)
 }
 
-fn build_fn_app(pair: Pair<Rule>) -> Result<FnCall, TSSParseError> {
+fn build_fn_app(pair: Pair<Rule>) -> Result<FnApp, TSSParseError> {
     let mut tokens = pair.into_inner();
     let name = eat!(tokens, ident, "Cannot parse function call identifier")?;
     let args = if let Some(args) = tokens.next() {
@@ -277,24 +277,24 @@ fn build_fn_app(pair: Pair<Rule>) -> Result<FnCall, TSSParseError> {
         vec![]
     };
 
-    Ok(FnCall {
+    Ok(FnApp {
         name: name.as_str().to_owned(),
         args: args,
     })
 }
 
-fn build_fn_app_arg(pair: Pair<Rule>) -> Result<FnCallArg, TSSParseError> {
+fn build_fn_app_arg(pair: Pair<Rule>) -> Result<FnAppArg, TSSParseError> {
     let mut tokens = pair.into_inner();
     let param = eat!(tokens, ident, "Failed to parse function call argument")?;
     let param_val = eat!(tokens, expr, "Failed to parse function call parameter")?;
 
-    Ok(FnCallArg {
+    Ok(FnAppArg {
         name: param.as_str().to_owned(),
         arg: Box::new(consume(param_val)?),
     })
 }
 
-fn build_fn_app_args(pair: Pair<Rule>) -> Result<Vec<FnCallArg>, TSSParseError> {
+fn build_fn_app_args(pair: Pair<Rule>) -> Result<Vec<FnAppArg>, TSSParseError> {
     let tokens = pair.into_inner();
     let vals = tokens.map(|p| build_fn_app_arg(p).unwrap()).collect();
     Ok(vals)
@@ -339,7 +339,7 @@ fn build_weights_assign(body: Pair<Rule>) -> Result<WeightsAssign, TSSParseError
 
 fn _process_level(curr: Pair<Rule>) -> Term {
     if curr.as_rule() == fn_app {
-        Term::FnCall(build_fn_app(curr).unwrap())
+        Term::FnApp(build_fn_app(curr).unwrap())
     } else if curr.as_rule() == field_access {
         Term::FieldAccess(build_field_access(curr).unwrap())
     } else if curr.as_rule() == ident {
@@ -383,16 +383,16 @@ fn build_pipes(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
 
     // while let Some(node) = iter.next() {
     //     init = match node {
-    //         &Term::Ident(ref name) => Term::FnCall {
+    //         &Term::Ident(ref name) => Term::FnApp {
     //             name: name.clone(),
     //             args: Box::new(Term::List(vec![
-    //                 Term::FnCallArg {
+    //                 Term::FnAppArg {
     //                     name: format!("x"),
     //                     arg: Box::new(init),
     //                 }
     //             ]))
     //         },
-    //         &Term::FnCall{ref name, ref args} => Term::FnCall {
+    //         &Term::FnApp{ref name, ref args} => Term::FnApp {
     //             name: name.clone(),
     //             args: Term::extend_arg_list(args.clone(), init),
     //         },

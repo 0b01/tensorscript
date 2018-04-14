@@ -1,5 +1,5 @@
-use parser::term::{Term, Decl, FnTySig, TensorTy, WeightsAssign, FnCallArg};
-use typed_ast::typed_term::{TypedTerm, TypedDecl, TypedNodeDecl, TypedWeightsDecl, TypedWeightsAssign, TypedFnCallArg};
+use parser::term::{Term, Decl, FnTySig, TensorTy, WeightsAssign, FnAppArg, FnDecl, FnDeclArg};
+use typed_ast::typed_term::{TypedTerm, TypedDecl, TypedNodeDecl, TypedWeightsDecl, TypedWeightsAssign, TypedFnAppArg, TypedGraphDecl, TypedFnDecl, TypedFnDeclArg};
 use typed_ast::type_env::TypeEnv;
 use typed_ast::Type;
 
@@ -47,9 +47,16 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TypedDecl {
                     .collect()
             })
         },
-        // &GraphDecl(decl) => {
+        &GraphDecl(decl) => {
+            TypedDecl::TypedGraphDecl(TypedGraphDecl {
+                name: decl.name.clone(),
+                ty_sig: annotate_fn_ty_sig(&decl.name, &decl.ty_sig, tenv),
+                fns: decl.fns.iter()
+                    .map(|f| annotate_fn_decl(&decl.name, f, tenv))
+                    .collect(),
+            })
 
-        // },
+        },
         // &UseStmt(decl) => {
 
         // },
@@ -87,13 +94,18 @@ fn annotate_weights_assign(node_name: &str, w_assign: &WeightsAssign, tenv: &mut
     }
 }
 
-fn annotate_fn_call_arg(node_name: &str, call: &FnCallArg, tenv: &mut TypeEnv) -> TypedFnCallArg {
-    TypedFnCallArg {
+fn annotate_fn_call_arg(node_name: &str, call: &FnAppArg, tenv: &mut TypeEnv) -> TypedFnAppArg {
+    TypedFnAppArg {
         name: call.name.clone(),
         ty: tenv.fresh_var(),
         arg: Box::new(annotate(*(call.arg).clone(), tenv)),
     }
 }
 
-// fn annotate_fn_call(node_name: &str, w_assign: &FnCall, tenv: &mut TypeEnv) -> TypedFnCall {
+// fn annotate_fn_call(node_name: &str, w_assign: &FnApp, tenv: &mut TypeEnv) -> TypedFnApp {
 // }
+
+
+fn annotate_fn_decl(node_name: &str, f: &FnDecl, tenv: &mut TypeEnv) -> TypedFnDecl {
+    // ...
+}
