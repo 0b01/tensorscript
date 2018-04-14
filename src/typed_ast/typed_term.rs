@@ -9,14 +9,14 @@ pub trait Typed {
 pub enum TypedTerm {
     None,
     TypedProgram(Vec<TypedDecl>),
-    TypedInteger(i64),
-    TypedFloat(f64),
+    TypedInteger(Type, i64),
+    TypedFloat(Type, f64),
     TypedList(Vec<TypedTerm>),
     TypedIdent(String),
     // TypedFieldAccess(FieldAccess),
     // TypedFnCall(FnCall),
     TypedBlock { stmts: Box<TypedTerm>, ret: Box<TypedTerm> },
-    TypedExpr { items: Box<TypedTerm> },
+    TypedExpr { items: Box<TypedTerm>, ty: Type },
     TypedStmt { items: Box<TypedTerm> },
     TypedPipes(Vec<TypedTerm>),
 }
@@ -58,15 +58,17 @@ pub struct TypedGraphDecl {
 pub struct TypedWeightsDecl {
     pub name: String,
     pub ty_sig: Type,
-    pub initialization: Vec<TypedWeightsAssign>,
+    pub inits: Vec<TypedWeightsAssign>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TypedWeightsAssign {
     pub name: String,
+    pub ty: Type,
     pub mod_name: String,
-    pub mod_sig: Type,
-    pub func: TypedFnCall,
+    pub fn_ty: Type,
+    pub fn_name: String,
+    pub fn_args: Vec<TypedFnCallArg>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -78,6 +80,7 @@ pub struct TypedFnCall {
 #[derive(Debug, PartialEq, Clone)]
 pub struct TypedFnCallArg {
     pub name: String,
+    pub ty: Type,
     pub arg: Box<TypedTerm>,
 }
 

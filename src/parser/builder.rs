@@ -177,16 +177,16 @@ fn build_field_access(pair: Pair<Rule>) -> Result<FieldAccess, TSSParseError> {
 }
 
 fn build_expr(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
-    let tokens = pair.into_inner();
-    let vals = tokens
-        .map(|p| match p.as_rule() {
-            field_access => Term::FieldAccess(build_field_access(p).unwrap()),
-            fn_app => Term::FnCall(build_fn_app(p).unwrap()),
-            _ => consume(p).unwrap(),
-        })
-        .collect();
+    let mut tokens = pair.into_inner();
+    let p = tokens.next().unwrap();
+    assert!(tokens.next().is_none());
+    let val = match p.as_rule() {
+        field_access => Term::FieldAccess(build_field_access(p).unwrap()),
+        fn_app => Term::FnCall(build_fn_app(p).unwrap()),
+        _ => consume(p).unwrap(),
+    };
     Ok(Term::Expr {
-        items: Box::new(Term::List(vals)),
+        items: Box::new(val),
     })
 }
 
@@ -316,7 +316,7 @@ fn build_weights_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     Ok(Decl::WeightsDecl(WeightsDecl {
         name: weights_name.to_owned(),
         ty_sig: build_fn_ty_sig(ty_decl)?,
-        initialization: weights_body,
+        inits: weights_body,
     }))
 }
 
@@ -327,12 +327,13 @@ fn build_weights_assign(body: Pair<Rule>) -> Result<WeightsAssign, TSSParseError
     let mod_name = eat!(tokens, cap_ident, "Failed to parse `mod_name`")?;
     let fn_sig = eat!(tokens, fn_ty_sig, "Failed to parse `fn_sig`")?;
     let func = eat!(tokens, fn_app, "Failed to parse `fn_app`")?;
-
+    let fncall = build_fn_app(func)?;
     Ok(WeightsAssign {
         name: name.as_str().to_owned(),
         mod_name: mod_name.as_str().to_owned(),
+        fn_name: fncall.name,
         mod_sig: build_fn_ty_sig(fn_sig)?,
-        func: build_fn_app(func)?,
+        fn_args: fncall.args,
     })
 }
 

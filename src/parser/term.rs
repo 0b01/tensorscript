@@ -49,7 +49,7 @@ pub struct GraphDecl {
 pub struct WeightsDecl {
     pub name: String,
     pub ty_sig: FnTySig,
-    pub initialization: Vec<WeightsAssign>,
+    pub inits: Vec<WeightsAssign>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -81,8 +81,9 @@ pub struct FnCallArg {
 pub struct WeightsAssign {
     pub name: String,
     pub mod_name: String,
+    pub fn_name: String,
     pub mod_sig: FnTySig,
-    pub func: FnCall,
+    pub fn_args: Vec<FnCallArg>,
 }
 
 #[derive(Debug, PartialEq, Clone)]

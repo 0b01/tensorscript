@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use typed_ast::Type;
+use parser::term::{TensorTy, NodeAssign, Term};
 
 pub type TypeId = usize;
 
@@ -14,9 +15,14 @@ impl TypeEnv {
         Self { counter: 0, aliases: HashMap::new() }
     }
 
-    pub fn fresh(&mut self) -> Type {
+    pub fn fresh_dim(&mut self) -> Type {
         self.counter += 1;
-        Type::TyVar(self.counter)
+        Type::Dim(self.counter)
+    }
+
+    pub fn fresh_var(&mut self) -> Type {
+        self.counter += 1;
+        Type::Var(self.counter)
     }
 
     pub fn resolve_alias(&self, node_name: &str, alias: &str) -> Option<Type> {
@@ -30,7 +36,7 @@ impl TypeEnv {
     }
 
     pub fn add_dim_alias(&mut self, node_name: &str, alias: &str) {
-        let tyvar = self.fresh();
+        let tyvar = self.fresh_dim();
         self.add_alias(node_name, alias, tyvar);
     }
 
@@ -62,5 +68,23 @@ impl TypeEnv {
     pub fn exists(&self, node_name: &str, alias: &str) -> bool {
         let hm = self.aliases.get(node_name).unwrap();
         hm.contains_key(alias)
+    }
+
+    pub fn import_node_assign(&mut self, node_name: &str, a: &NodeAssign) {
+        match a {
+            &NodeAssign::TyAlias {
+                ident: ref id,
+                rhs: TensorTy::Generic(ref tys)
+            } => {
+                self.add_tsr_alias(node_name, id, tys);
+            },
+            &NodeAssign::ValueAlias {
+                ident: ref id,
+                rhs: Term::Integer(_)
+            } => {
+                self.add_dim_alias(node_name, id);
+            },
+            _ => unimplemented!(),
+        }
     }
 }
