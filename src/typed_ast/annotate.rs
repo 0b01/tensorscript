@@ -1,5 +1,5 @@
-use parser::term::{Term, Decl, FnTySig, TensorTy, WeightsAssign, FnAppArg, FnDecl, FnDeclParam, FieldAccess, FnApp};
-use typed_ast::typed_term::{TypedTerm, TypedDecl, TypedNodeDecl, TypedWeightsDecl, TypedWeightsAssign, TypedFnAppArg, TypedGraphDecl, TypedFnDecl, TypedFnDeclParam, TypedFieldAccess, TypedFnApp, TypedPipes};
+use parser::term::{Term, Decl, FnTySig, TensorTy, WeightsAssign, FnAppArg, FnDecl, FnDeclParam, FieldAccess, FnApp, ViewFn};
+use typed_ast::typed_term::{TypedTerm, TypedDecl, TypedNodeDecl, TypedWeightsDecl, TypedWeightsAssign, TypedFnAppArg, TypedGraphDecl, TypedFnDecl, TypedFnDeclParam, TypedFieldAccess, TypedFnApp, TypedViewFn};
 use typed_ast::type_env::{ModName, TypeEnv};
 use typed_ast::Type;
 
@@ -7,7 +7,7 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TypedTerm {
     use self::Term::*;
     use self::TypedTerm::*;
     // println!("{:#?}", term);
-    let module = tenv.module();
+    let module = tenv.module().clone();
     match term {
         Ident(ref id) => TypedTerm::TypedIdent(tenv.resolve_alias(&module, id).unwrap(), id.to_owned()),
         &Program(ref decls) => TypedProgram(
@@ -23,7 +23,7 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TypedTerm {
         &Integer(i) => TypedInteger(tenv.fresh_var(), i),
         &Float(i) => TypedFloat(tenv.fresh_var(), i),
         &Block {ref stmts, ref ret } => {
-            let module = tenv.module();
+            let module = tenv.module().clone();
             tenv.push_scope(&module);
             let ret = TypedBlock {
                 stmts: Box::new(annotate(&stmts, tenv)),
@@ -40,18 +40,16 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TypedTerm {
         },
         &FieldAccess(ref f_a) => annotate_field_access(f_a, tenv),
         &None => TypedNone,
-        &Pipes(ref pipes) => TypedPipes(annotate_pipes(pipes, tenv)),
+        &Pipes(ref pipes) => annotate_pipes(pipes, tenv),
         _ => unimplemented!(),
     }
 }
 
-fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TypedPipes {
-    let mut items = vec![];
+fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TypedTerm {
     let mut it = pipes.iter();
     
     let p0 = it.next().unwrap();
     let mut term0 = annotate(p0, tenv);
-    items.push(term0.clone());
 
     while let Some(t) = it.next() {
         let prev_arg = TypedFnAppArg { name: String::from("x"), arg: Box::new(term0) };
@@ -75,15 +73,21 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TypedPipes {
                     _ => panic!("Error: for field access in a pipeline, use parenthesis: f()"),
                 }
             },
+            &Term::ViewFn(ref v_f) => TypedTerm::TypedViewFn(annotate_view_fn(&v_f, prev_arg, tenv)),
             _ => unimplemented!(),
         };
         term0 = t.clone();
-        items.push(t)
     }
 
-    TypedPipes {
-        items,
-        ret_ty: Type::Unit,
+    term0
+}
+
+fn annotate_view_fn(v_fn: &ViewFn, arg: TypedFnAppArg, tenv: &mut TypeEnv) -> TypedViewFn {
+    let module = tenv.module().clone();
+    let tsr = tenv.make_tensor(&module, &v_fn.dims);
+    TypedViewFn {
+        ty: tsr,
+        arg,
     }
 }
 
@@ -91,9 +95,9 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TypedDecl {
     use self::Decl::*;
     let ret = match decl {
         &NodeDecl(ref decl) => {
-            tenv.set_module(ModName::Named(decl.name.to_owned()));
+            let module = ModName::Named(decl.name.to_owned());
+            tenv.set_module(module.clone());
             let assigns = &decl.defs;
-            let module = tenv.module();
             assigns.into_iter()
                 .map(|a| tenv.import_node_assign(&module, a))
                 .collect::<Vec<()>>();
@@ -142,7 +146,7 @@ fn annotate_fn_ty_sig(sig: &FnTySig, tenv: &mut TypeEnv) -> Type {
 
 fn annotate_tensor_ty_sig(sig: &TensorTy, tenv: &mut TypeEnv) -> Type {
     use self::TensorTy::*;
-    let module = tenv.module();
+    let module = tenv.module().clone();
     match sig {
         &Generic(ref dims) => tenv.make_tensor(&module, dims),
         &TyAlias(ref als) => tenv.resolve_alias(&module, als).unwrap().clone()
@@ -152,7 +156,7 @@ fn annotate_tensor_ty_sig(sig: &TensorTy, tenv: &mut TypeEnv) -> Type {
 fn annotate_weights_assign(w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> TypedWeightsAssign {
     let name = w_assign.name.clone();
     let fn_ty = tenv.fresh_var();
-    let module = tenv.module();
+    let module = tenv.module().clone();
     tenv.add_alias(&module, &name, fn_ty.clone());
 
     TypedWeightsAssign {
@@ -200,7 +204,7 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TypedFnDecl {
 }
 
 fn annotate_fn_decl_param(p: &FnDeclParam, tenv: &mut TypeEnv) -> TypedFnDeclParam {
-    let module = tenv.module();
+    let module = tenv.module().clone();
     let name = p.name.clone();
     let ty = tenv.fresh_var();
     tenv.add_alias(&module, &name, ty.clone());
@@ -211,7 +215,7 @@ fn annotate_fn_decl_param(p: &FnDeclParam, tenv: &mut TypeEnv) -> TypedFnDeclPar
 }
 
 fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TypedTerm {
-    let module = tenv.module();
+    let module = tenv.module().clone();
     match module {
         ModName::Global =>
             panic!("Cannot use field access in global scope"),

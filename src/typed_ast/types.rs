@@ -20,10 +20,10 @@ impl Debug for Type {
             Fun { ref param_ty, ref return_ty } => write!(f, "{:?} -> {:?}", param_ty, return_ty),
             Tensor { ref rank, ref dims } => {
                 write!(f, "[")?;
-                for i in dims.iter() {
+                for i in dims[0..dims.len()-1].iter() {
                     write!(f, "{:?}, ", i)?;
                 }
-                write!(f, "]")
+                write!(f, "{:?}]", dims[dims.len()-1])
             },
         }
     }

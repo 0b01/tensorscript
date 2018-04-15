@@ -21,7 +21,7 @@ impl Typed for TypedTerm {
             &TypedBlock { stmts: _, ref ret } => ret.ty(),
             &TypedExpr { items: _, ref ty } => ty.clone(),
             &TypedStmt { items: _ } => Unit,
-            &TypedPipes(ref pipes) => pipes.ty(),
+            &TypedViewFn(ref view_fn) => view_fn.ty(),
         }
     }
 }
@@ -38,9 +38,9 @@ impl Typed for TypedFnApp {
     }
 }
 
-impl Typed for TypedPipes {
+impl Typed for TypedViewFn {
     fn ty(&self) -> Type {
-        self.ret_ty.clone()
+        self.ty.clone()
     }
 }
 
@@ -57,19 +57,13 @@ pub enum TypedTerm {
     TypedBlock { stmts: Box<TypedTerm>, ret: Box<TypedTerm> },
     TypedExpr { items: Box<TypedTerm>, ty: Type },
     TypedStmt { items: Box<TypedTerm> },
-    TypedPipes(TypedPipes),
+    TypedViewFn(TypedViewFn),
 }
 
 impl Display for TypedTerm {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         write!(f, "{:#?}", self)
     }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct TypedPipes {
-    pub items: Vec<TypedTerm>,
-    pub ret_ty: Type,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -141,6 +135,13 @@ pub struct TypedFnAppArg {
     pub name: String,
     pub arg: Box<TypedTerm>,
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct TypedViewFn {
+    pub ty: Type,
+    pub arg: TypedFnAppArg,
+}
+
 
 // #[derive(Debug, PartialEq, Clone)]
 // pub enum TypedNodeAssign {

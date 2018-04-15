@@ -49,7 +49,7 @@ macro_rules! to_idents {
 }
 
 use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, GraphDecl,
-          NodeAssign, NodeDecl, TensorTy, UseStmt, WeightsAssign, WeightsDecl,
+          NodeAssign, NodeDecl, TensorTy, UseStmt, WeightsAssign, WeightsDecl, ViewFn,
           Term};
 use parser::grammar::{Rule, TensorScriptParser};
 use parser::grammar::Rule::*;
@@ -65,7 +65,7 @@ pub struct TSSParseError {
 pub fn parse_str(source: &str) -> Result<Term, TSSParseError> {
     // let program = TensorScriptParser::parse(dim_assign, "dim T = 1;");
     // println!("{}", program.unwrap());
-    // unimplemented!();
+    // panic!("test...");
 
     let parser = TensorScriptParser::parse(Rule::input, source);
     if parser.is_err() {
@@ -268,6 +268,14 @@ fn build_fn_decl_params(pair: Pair<Rule>) -> Result<Vec<FnDeclParam>, TSSParseEr
     Ok(vals)
 }
 
+fn build_view_fn(pair: Pair<Rule>) -> Result<ViewFn, TSSParseError> {
+    let tokens = pair.into_inner();
+    let dims = tokens.map(|p| String::from(p.as_str())).collect();
+    Ok(ViewFn {
+        dims,
+    })
+}
+
 fn build_fn_app(pair: Pair<Rule>) -> Result<FnApp, TSSParseError> {
     let mut tokens = pair.into_inner();
     let name = eat!(tokens, ident, "Cannot parse function call identifier")?;
@@ -344,6 +352,8 @@ fn _process_level(curr: Pair<Rule>) -> Term {
         Term::FieldAccess(build_field_access(curr).unwrap())
     } else if curr.as_rule() == ident {
         Term::Ident(curr.as_str().to_owned())
+    } else if curr.as_rule() == view_fn {
+        Term::ViewFn(build_view_fn(curr).unwrap())
     } else {
         println!("{:?}", curr.as_rule());
         unimplemented!()

@@ -6,6 +6,7 @@ newline = _{ "\n" | "\r\n" }
 space   = _{ " " | "\t" }
 
 // keyword
+batch_lit = @{ "?" }
 dim_lit = _{ "dim" }
 tsr_lit = _{ "tsr" }
 node_lit = _{ "node" }
@@ -35,7 +36,7 @@ use_lit = { "use" }
 where_lit = { "where" }
 while_lit = { "while" }
 print_lit = { "print" }
-keyword = { dim_lit | tsr_lit | node_lit | weights_lit | graph_lit | view_lit | break_lit | const_lit | 
+keyword = { batch_lit | dim_lit | tsr_lit | node_lit | weights_lit | graph_lit | view_lit | break_lit | const_lit | 
              continue_lit | crate_lit | else_lit | enum_lit | true_lit | false_lit |
              fn_lit | for_lit | if_lit | let_lit | match_lit | mod_lit | move_lit | 
              return_lit | Self_lit | self_lit | ty_lit | use_lit | 
@@ -176,7 +177,7 @@ pipes = { expr_item  ~ ("|>" ~ expr)+ }
 
 field_access = { ident ~ "." ~ ident ~ fn_app_param? }
 
-view_fn = { view_lit ~ "(" ~ ("?"| expr)? ~ ("," ~ ("?"|expr))* ~ ","? ~ ")" }
+view_fn = { view_lit ~ "(" ~ ( batch_lit | cap_ident)? ~ ("," ~ ( batch_lit |cap_ident))* ~ ","? ~ ")" }
 
 expr_item = _{ view_fn | field_access | literal | bool_not | fn_app | ident | conditional }
 expr = { expr_item ~ !"|>" | pipes }

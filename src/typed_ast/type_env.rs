@@ -143,8 +143,8 @@ impl TypeEnv {
         }
     }
 
-    pub fn module(&self) -> ModName {
-        self.current_mod.clone()
+    pub fn module(&self) -> &ModName {
+        &self.current_mod
     }
 
     pub fn set_module(&mut self, scp: ModName) {

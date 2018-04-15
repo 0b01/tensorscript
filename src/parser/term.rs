@@ -12,6 +12,7 @@ pub enum Term {
     Float(f64),
     List(Vec<Term>),
     Ident(String),
+    ViewFn(ViewFn),
     FieldAccess(FieldAccess),
     FnApp(FnApp),
     Block { stmts: Statements, ret: Expression },
@@ -113,6 +114,11 @@ pub enum NodeAssign {
 pub enum TensorTy {
     TyAlias(String),
     Generic(Vec<String>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ViewFn {
+    pub dims: Vec<String>,
 }
 
 impl Term {
