@@ -141,17 +141,17 @@ impl Term {
     //   }
     // }
 
-    /// args is List(Arg)
-    pub fn extend_arg_list(func: FnApp, init: Term) -> Vec<FnAppArg> {
-        let mut new_arg_vec = vec![
-            FnAppArg {
-                name: format!("x"),
-                arg: Box::new(init),
-            },
-        ];
-        new_arg_vec.extend(func.args);
-        new_arg_vec
-    }
+    // /// args is List(Arg)
+    // pub fn extend_arg_list(func: FnApp, init: Term) -> Vec<FnAppArg> {
+    //     let mut new_arg_vec = vec![
+    //         FnAppArg {
+    //             name: format!("x"),
+    //             arg: Box::new(init),
+    //         },
+    //     ];
+    //     new_arg_vec.extend(func.args);
+    //     new_arg_vec
+    // }
 }
 
 impl Display for Term {

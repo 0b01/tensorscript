@@ -28,7 +28,6 @@ match_lit = { "match" }
 mod_lit = { "mod" }
 move_lit = { "move" }
 return_lit = { "return" }
-Self_lit = { "Self" }
 self_lit = { "self" }
 true_lit = { "true" }
 ty_lit = { "type" }
@@ -39,7 +38,7 @@ print_lit = { "print" }
 keyword = { batch_lit | dim_lit | tsr_lit | node_lit | weights_lit | graph_lit | view_lit | break_lit | const_lit | 
              continue_lit | crate_lit | else_lit | enum_lit | true_lit | false_lit |
              fn_lit | for_lit | if_lit | let_lit | match_lit | mod_lit | move_lit | 
-             return_lit | Self_lit | self_lit | ty_lit | use_lit | 
+             return_lit | self_lit | ty_lit | use_lit | 
              where_lit | while_lit | print_lit }
 
 

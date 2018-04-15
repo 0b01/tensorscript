@@ -4,8 +4,11 @@ extern crate pest_derive;
 
 mod parser;
 mod typed_ast;
+mod type_reconstruction;
+
 use typed_ast::type_env::TypeEnv;
 use typed_ast::annotate::annotate;
+use type_reconstruction::constraint::collect;
 
 const TEST_STR: &str = include_str!("../test.tss");
 
@@ -15,8 +18,10 @@ fn main() {
 
     let mut tenv = TypeEnv::new();
     let ast = annotate(&program, &mut tenv);
-    println!("{}", ast);
-    println!("{:#?}", tenv);
+    // println!("{}", ast);
+    // println!("{:#?}", tenv);
+    let constraints = collect(&ast, &tenv);
+    println!("{:#?}", constraints);
 }
 
 // 1. initialize global scope

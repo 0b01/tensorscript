@@ -1,7 +1,7 @@
 use typed_ast::type_env::TypeId;
 use std::fmt::{Debug, Formatter, Error};
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Eq, Hash)]
 pub enum Type {
     Unit,
     Var(TypeId),

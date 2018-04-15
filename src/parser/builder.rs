@@ -95,7 +95,6 @@ fn consume(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
         graph_decl_body => build_graph_decl_body(pair),
 
         fn_decls => build_fn_decls(pair),
-        fn_decl_sig => build_fn_decl_sig(pair),
         stmts => build_stmts(pair),
 
         stmt => build_stmt(pair),
@@ -231,9 +230,9 @@ fn build_fn_decl(pair: Pair<Rule>) -> Result<FnDecl, TSSParseError> {
     })
 }
 
-fn build_fn_decl_sig(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
-    unimplemented!()
-}
+// fn build_fn_decl_sig(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
+//     unimplemented!()
+// }
 
 fn build_stmts(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
     let tokens = pair.into_inner();
@@ -420,7 +419,7 @@ fn build_pipes(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
 fn build_graph_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, graph_decl_head, "Parsing `graph_head` error")?.into_inner();
-    let mod_name = eat!(head, cap_ident, "Does not have a graph name")?.as_str();
+    let node_name = eat!(head, cap_ident, "Does not have a graph name")?.as_str();
     let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`")?;
     let graph_body = eat!(tokens, graph_decl_body, "Failed to parse `graph_decl_body`")?;
     let func_decls = graph_body
@@ -432,7 +431,7 @@ fn build_graph_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
         .collect();
 
     Ok(Decl::GraphDecl(GraphDecl {
-        name: mod_name.to_owned(),
+        name: node_name.to_owned(),
         ty_sig: build_fn_ty_sig(ty_decl)?,
         fns: func_decls,
     }))
@@ -448,7 +447,7 @@ fn build_graph_decl_body(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
 fn build_node_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, node_decl_head, "Parsing `node_head` error")?.into_inner();
-    let mod_name = eat!(head, cap_ident, "Does not have a node name")?.as_str();
+    let node_name = eat!(head, cap_ident, "Does not have a node name")?.as_str();
     let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`")?;
     let node_body = eat!(tokens, node_decl_body, "Failed to parse `node_decl_body`")?;
 
@@ -460,7 +459,7 @@ fn build_node_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
         .collect();
 
     Ok(Decl::NodeDecl(NodeDecl {
-        name: mod_name.to_owned(),
+        name: node_name.to_owned(),
         ty_sig: ty_signature,
         defs: macros,
     }))
