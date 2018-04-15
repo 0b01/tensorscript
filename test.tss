@@ -1,6 +1,6 @@
-// use conv::{Conv2d, Dropout2d, maxpool2d};
-// use nonlin::relu;
-// use lin::Linear;
+use conv::{Conv2d, Dropout2d, maxpool2d};
+use nonlin::relu;
+use lin::Linear;
 
 node Mnist<IMAGE -> [?,OUT]> {
     dim FC1 = 320;
@@ -20,13 +20,13 @@ weights Mnist<IMAGE -> [?,OUT]> {
 
 graph Mnist<[?,c,h,w] -> [?,OUT]> {
 
-    fn new() {
+    def new() {
         fc1.init_normal(std=1.);
         fc2.init_normal(std=1.);
     }
 
-    fn forward(x) {
-        x
+    def forward(b) {
+        b
         |> conv1            |> maxpool2d(xkernel_size=2)
         |> conv2 |> dropout |> maxpool2d(kernel_size=2)
         |> view(?, FC1)
@@ -35,11 +35,11 @@ graph Mnist<[?,c,h,w] -> [?,OUT]> {
         |> log_softmax(dim=1)
     }
 
-    fn fc2(x: TEST) -> [?,OUT] {
+    def fc2(x: TEST) -> [?,OUT] {
         x |> fc2 |> relu
     }
 
-    fn test(x: TEST) {
+    def test(x: TEST) {
         x |> fc2 |> relu
     }
 

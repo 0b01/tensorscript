@@ -13,7 +13,7 @@ node_lit = _{ "node" }
 view_lit = _{ "view" }
 weights_lit = _{ "weights" }
 graph_lit = _{ "graph" }
-fn_lit = _{ "fn" }
+fn_lit = _{ "def" }
 break_lit = { "break" }
 const_lit = { "const" }
 continue_lit = { "continue" }
@@ -129,7 +129,7 @@ tensor_ty_sig = _{ "[" ~ ty_ident_list ~ "]" }
 tensor_ty = _{ tensor_alias_ty | tensor_ty_sig }
 tensor_alias_ty = _{ cap_ident }
 
-dim_assign = _{ dim_lit ~ upper_ident ~ op_assign ~ int_lit ~ ";" }
+dim_assign = _{ dim_lit ~ ( upper_ident | batch_lit ) ~ op_assign ~ int_lit ~ ";" }
 tsr_assign = _{ tsr_lit ~ upper_ident ~ op_assign ~ tensor_ty ~ ";" }
 node_assign = { dim_assign | tsr_assign }
 node_decl_body = { "{" ~ node_assign* ~ "}" }

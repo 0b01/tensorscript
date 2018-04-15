@@ -101,10 +101,11 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
             assigns.into_iter()
                 .map(|a| tenv.import_node_assign(&module, a))
                 .collect::<Vec<()>>();
-
+            let ty_sig = annotate_fn_ty_sig(&decl.ty_sig, tenv);
+            tenv.add_alias(&ModName::Global, &decl.name, ty_sig.clone());
             TyDecl::TyNodeDecl(TyNodeDecl {
                 name: decl.name.clone(),
-                ty_sig: annotate_fn_ty_sig(&decl.ty_sig, tenv),
+                ty_sig,
             })
         },
         &WeightsDecl(ref decl) => {
@@ -132,7 +133,7 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
             // in global scope
             // import names into scope
             for ref name in decl.imported_names.iter() {
-                let ty = tenv.fresh_var();
+                let ty = tenv.fresh_var(); // ...
                 tenv.add_alias(&ModName::Global, &name, ty);
             }
 
@@ -202,20 +203,48 @@ fn annotate_fn_app(fn_app: &FnApp, tenv: &mut TypeEnv) -> TyFnApp {
 
 fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
     let module = tenv.module().clone();
-    let ret = TyFnDecl {
+    tenv.push_scope(&module);
+    let mod_ty = tenv.resolve_alias(&ModName::Global, &module.as_str()).unwrap().clone();
+
+    let mut decl = TyFnDecl {
         name: f.name.clone(),
         fn_params: f.fn_params.iter()
             .map(|p| annotate_fn_decl_param(p, tenv))
             .collect(),
-        return_ty: tenv.resolve_tensor(&module, &f.return_ty),
-        func_block: Box::new(annotate(&f.func_block, tenv)),
+        return_ty: Type::Unit, // put a placeholder here
+        func_block: Box::new(TyTerm::TyNone), // same here
     };
-    ret
+
+    match f.name.as_str() {
+        // special function signatures
+        "new" => {
+            decl.return_ty = mod_ty;
+        },
+        "forward" => {
+            if decl.fn_params.len() == 0 { panic!("Forward must have at least 1 param"); }
+            let name0 = decl.fn_params[0].name.clone();
+
+            if let Type::Fun { ref param_ty, ref return_ty } = mod_ty {
+                let ty_sig = *param_ty.clone();
+                decl.fn_params = vec![TyFnDeclParam {name: String::from(name0), ty_sig }];
+                decl.return_ty = *return_ty.clone();
+            } else {
+                panic!("Signature of module is incorrect!");
+            };
+
+        },
+        _ => {
+            decl.return_ty = tenv.resolve_tensor(&module, &f.return_ty);
+        }
+    };
+
+    decl.func_block = Box::new(annotate(&f.func_block, tenv));
+
+    tenv.pop_scope(&module);
+    decl
 }
 
 fn annotate_fn_decl_param(p: &FnDeclParam, tenv: &mut TypeEnv) -> TyFnDeclParam {
-    let module = tenv.module().clone();
-    tenv.push_scope(&module);
     let module = tenv.module().clone();
     let name = p.name.clone();
     let ty = tenv.fresh_var();
@@ -224,7 +253,6 @@ fn annotate_fn_decl_param(p: &FnDeclParam, tenv: &mut TypeEnv) -> TyFnDeclParam 
         name: name,
         ty_sig: ty,
     };
-    tenv.push_scope(&module);
     ret
 }
 

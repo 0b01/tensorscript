@@ -10,6 +10,16 @@ pub enum ModName {
     Named(String),
 }
 
+impl ModName {
+    pub fn as_str(&self) -> &str {
+        use self::ModName::*;
+        match self {
+            &Global => "",
+            &Named(ref s) => s,
+        }
+    }
+}
+
 /// Represents a single level of scope
 #[derive(Debug)]
 pub struct Scope {
@@ -35,11 +45,7 @@ impl TypeEnv {
         Self {
             counter: 0,
             current_mod: ModName::Global,
-            modules: {
-                let mut hm = HashMap::new();
-                hm.insert(ModName::Global, VecDeque::new());
-                hm
-            }
+            modules: HashMap::new(),
         }
     }
 

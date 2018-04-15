@@ -8,7 +8,7 @@ mod type_reconstruction;
 
 use typed_ast::type_env::TypeEnv;
 use typed_ast::annotate::annotate;
-use type_reconstruction::constraint::collect;
+use type_reconstruction::constraint::Constraints;
 
 const TEST_STR: &str = include_str!("../test.tss");
 
@@ -20,8 +20,10 @@ fn main() {
     let ast = annotate(&program, &mut tenv);
     // println!("{}", ast);
     // println!("{:#?}", tenv);
-    let constraints = collect(&ast, &tenv);
-    println!("{:#?}", constraints);
+
+    let mut cs = Constraints::new();
+    cs.collect(&ast, &tenv);
+    println!("{:#?}", cs);
 }
 
 // 1. initialize global scope
