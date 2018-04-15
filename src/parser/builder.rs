@@ -212,7 +212,8 @@ fn build_fn_decl(pair: Pair<Rule>) -> Result<FnDecl, TSSParseError> {
         if temp.is_err() {
             TensorTy::Generic(vec![])
         } else {
-            TensorTy::Generic(to_idents!(temp?))
+            let temp = temp?.into_inner().next().unwrap();
+            TensorTy::Generic(to_idents!(temp))
         }
     };
 

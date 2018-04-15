@@ -120,6 +120,13 @@ impl TypeEnv {
         }
     }
 
+    pub fn resolve_tensor(&mut self, node_name: &ModName, t: &TensorTy) -> Type {
+        match t {
+            &TensorTy::Generic(ref dims) => self.make_tensor(node_name, &dims),
+            &TensorTy::TyAlias(ref alias) => self.resolve_alias(node_name, &alias).unwrap(),
+        }
+    }
+
     pub fn exists(&self, node_name: &ModName, alias: &str) -> bool {
         let aliases = self.get_scoped_aliases(node_name, alias);
         aliases.len() > 0

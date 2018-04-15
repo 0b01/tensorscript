@@ -39,4 +39,8 @@ graph Mnist<[?,c,h,w] -> [?,OUT]> {
         x |> fc2 |> relu
     }
 
+    fn test(x: TEST) {
+        x |> fc2 |> relu
+    }
+
 }

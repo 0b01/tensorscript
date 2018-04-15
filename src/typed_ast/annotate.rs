@@ -192,12 +192,13 @@ fn annotate_fn_app(fn_app: &FnApp, tenv: &mut TypeEnv) -> TyFnApp {
 
 
 fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
+    let module = tenv.module().clone();
     let ret = TyFnDecl {
         name: f.name.clone(),
         fn_params: f.fn_params.iter()
             .map(|p| annotate_fn_decl_param(p, tenv))
             .collect(),
-        return_ty: tenv.fresh_var(),
+        return_ty: tenv.resolve_tensor(&module, &f.return_ty),
         func_block: Box::new(annotate(&f.func_block, tenv)),
     };
     ret

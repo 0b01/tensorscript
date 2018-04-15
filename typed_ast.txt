@@ -1,15 +1,532 @@
+Program(
+    [
+        NodeDecl(
+            NodeDecl {
+                name: "Mnist",
+                ty_sig: FnTySig {
+                    from: TyAlias(
+                        "IMAGE"
+                    ),
+                    to: Generic(
+                        [
+                            "?",
+                            "OUT"
+                        ]
+                    )
+                },
+                defs: [
+                    ValueAlias {
+                        ident: "FC1",
+                        rhs: Integer(
+                            320
+                        )
+                    },
+                    ValueAlias {
+                        ident: "FC2",
+                        rhs: Integer(
+                            50
+                        )
+                    },
+                    ValueAlias {
+                        ident: "OUT",
+                        rhs: Integer(
+                            10
+                        )
+                    },
+                    TyAlias {
+                        ident: "IMAGE",
+                        rhs: Generic(
+                            [
+                                "?",
+                                "c",
+                                "h",
+                                "w"
+                            ]
+                        )
+                    },
+                    TyAlias {
+                        ident: "TEST",
+                        rhs: Generic(
+                            [
+                                "?",
+                                "FC2"
+                            ]
+                        )
+                    }
+                ]
+            }
+        ),
+        WeightsDecl(
+            WeightsDecl {
+                name: "Mnist",
+                ty_sig: FnTySig {
+                    from: TyAlias(
+                        "IMAGE"
+                    ),
+                    to: Generic(
+                        [
+                            "?",
+                            "OUT"
+                        ]
+                    )
+                },
+                inits: [
+                    WeightsAssign {
+                        name: "conv1",
+                        mod_name: "Conv2d",
+                        fn_name: "new",
+                        mod_sig: FnTySig {
+                            from: Generic(
+                                [
+                                    "?",
+                                    "c",
+                                    "h",
+                                    "w"
+                                ]
+                            ),
+                            to: Generic(
+                                [
+                                    "?",
+                                    "c",
+                                    "h",
+                                    "w"
+                                ]
+                            )
+                        },
+                        fn_args: [
+                            FnAppArg {
+                                name: "in_ch",
+                                arg: Expr {
+                                    items: Integer(
+                                        1
+                                    )
+                                }
+                            },
+                            FnAppArg {
+                                name: "out_ch",
+                                arg: Expr {
+                                    items: Integer(
+                                        10
+                                    )
+                                }
+                            },
+                            FnAppArg {
+                                name: "kernel_size",
+                                arg: Expr {
+                                    items: Integer(
+                                        5
+                                    )
+                                }
+                            }
+                        ]
+                    },
+                    WeightsAssign {
+                        name: "conv2",
+                        mod_name: "Conv2d",
+                        fn_name: "new",
+                        mod_sig: FnTySig {
+                            from: Generic(
+                                [
+                                    "?",
+                                    "c",
+                                    "h",
+                                    "w"
+                                ]
+                            ),
+                            to: Generic(
+                                [
+                                    "?",
+                                    "c",
+                                    "h",
+                                    "w"
+                                ]
+                            )
+                        },
+                        fn_args: [
+                            FnAppArg {
+                                name: "in_ch",
+                                arg: Expr {
+                                    items: Integer(
+                                        10
+                                    )
+                                }
+                            },
+                            FnAppArg {
+                                name: "out_ch",
+                                arg: Expr {
+                                    items: Integer(
+                                        20
+                                    )
+                                }
+                            },
+                            FnAppArg {
+                                name: "kernel_size",
+                                arg: Expr {
+                                    items: Integer(
+                                        5
+                                    )
+                                }
+                            }
+                        ]
+                    },
+                    WeightsAssign {
+                        name: "dropout",
+                        mod_name: "Dropout2d",
+                        fn_name: "new",
+                        mod_sig: FnTySig {
+                            from: Generic(
+                                [
+                                    "?",
+                                    "c",
+                                    "h",
+                                    "w"
+                                ]
+                            ),
+                            to: Generic(
+                                [
+                                    "?",
+                                    "c",
+                                    "h",
+                                    "w"
+                                ]
+                            )
+                        },
+                        fn_args: [
+                            FnAppArg {
+                                name: "p",
+                                arg: Expr {
+                                    items: Float(
+                                        0.5
+                                    )
+                                }
+                            }
+                        ]
+                    },
+                    WeightsAssign {
+                        name: "fc1",
+                        mod_name: "Linear",
+                        fn_name: "new",
+                        mod_sig: FnTySig {
+                            from: Generic(
+                                [
+                                    "?",
+                                    "FC1"
+                                ]
+                            ),
+                            to: Generic(
+                                [
+                                    "?",
+                                    "FC2"
+                                ]
+                            )
+                        },
+                        fn_args: []
+                    },
+                    WeightsAssign {
+                        name: "fc2",
+                        mod_name: "Linear",
+                        fn_name: "new",
+                        mod_sig: FnTySig {
+                            from: Generic(
+                                [
+                                    "?",
+                                    "FC2"
+                                ]
+                            ),
+                            to: Generic(
+                                [
+                                    "?",
+                                    "OUT"
+                                ]
+                            )
+                        },
+                        fn_args: []
+                    }
+                ]
+            }
+        ),
+        GraphDecl(
+            GraphDecl {
+                name: "Mnist",
+                ty_sig: FnTySig {
+                    from: Generic(
+                        [
+                            "?",
+                            "c",
+                            "h",
+                            "w"
+                        ]
+                    ),
+                    to: Generic(
+                        [
+                            "?",
+                            "OUT"
+                        ]
+                    )
+                },
+                fns: [
+                    FnDecl {
+                        name: "new",
+                        fn_params: [],
+                        return_ty: Generic(
+                            []
+                        ),
+                        func_block: Block {
+                            stmts: List(
+                                [
+                                    Stmt {
+                                        items: List(
+                                            [
+                                                Expr {
+                                                    items: FieldAccess(
+                                                        FieldAccess {
+                                                            mod_name: "fc1",
+                                                            field_name: "init_normal",
+                                                            func_call: Some(
+                                                                [
+                                                                    FnAppArg {
+                                                                        name: "std",
+                                                                        arg: Expr {
+                                                                            items: Float(
+                                                                                1.0
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            )
+                                                        }
+                                                    )
+                                                }
+                                            ]
+                                        )
+                                    },
+                                    Stmt {
+                                        items: List(
+                                            [
+                                                Expr {
+                                                    items: FieldAccess(
+                                                        FieldAccess {
+                                                            mod_name: "fc2",
+                                                            field_name: "init_normal",
+                                                            func_call: Some(
+                                                                [
+                                                                    FnAppArg {
+                                                                        name: "std",
+                                                                        arg: Expr {
+                                                                            items: Float(
+                                                                                1.0
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            )
+                                                        }
+                                                    )
+                                                }
+                                            ]
+                                        )
+                                    }
+                                ]
+                            ),
+                            ret: None
+                        }
+                    },
+                    FnDecl {
+                        name: "forward",
+                        fn_params: [
+                            FnDeclParam {
+                                name: "x",
+                                ty_sig: Generic(
+                                    []
+                                )
+                            }
+                        ],
+                        return_ty: Generic(
+                            []
+                        ),
+                        func_block: Block {
+                            stmts: List(
+                                []
+                            ),
+                            ret: Expr {
+                                items: Pipes(
+                                    [
+                                        Ident(
+                                            "x"
+                                        ),
+                                        Ident(
+                                            "conv1"
+                                        ),
+                                        FnApp(
+                                            FnApp {
+                                                name: "maxpool2d",
+                                                args: [
+                                                    FnAppArg {
+                                                        name: "xkernel_size",
+                                                        arg: Expr {
+                                                            items: Integer(
+                                                                2
+                                                            )
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ),
+                                        Ident(
+                                            "conv2"
+                                        ),
+                                        Ident(
+                                            "dropout"
+                                        ),
+                                        FnApp(
+                                            FnApp {
+                                                name: "maxpool2d",
+                                                args: [
+                                                    FnAppArg {
+                                                        name: "kernel_size",
+                                                        arg: Expr {
+                                                            items: Integer(
+                                                                2
+                                                            )
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ),
+                                        ViewFn(
+                                            ViewFn {
+                                                dims: [
+                                                    "?",
+                                                    "FC1"
+                                                ]
+                                            }
+                                        ),
+                                        Ident(
+                                            "fc1"
+                                        ),
+                                        Ident(
+                                            "relu"
+                                        ),
+                                        FieldAccess(
+                                            FieldAccess {
+                                                mod_name: "self",
+                                                field_name: "fc2",
+                                                func_call: Some(
+                                                    []
+                                                )
+                                            }
+                                        ),
+                                        FnApp(
+                                            FnApp {
+                                                name: "log_softmax",
+                                                args: [
+                                                    FnAppArg {
+                                                        name: "dim",
+                                                        arg: Expr {
+                                                            items: Integer(
+                                                                1
+                                                            )
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        )
+                                    ]
+                                )
+                            }
+                        }
+                    },
+                    FnDecl {
+                        name: "fc2",
+                        fn_params: [
+                            FnDeclParam {
+                                name: "x",
+                                ty_sig: Generic(
+                                    [
+                                        "TEST"
+                                    ]
+                                )
+                            }
+                        ],
+                        return_ty: Generic(
+                            [
+                                "?,OUT"
+                            ]
+                        ),
+                        func_block: Block {
+                            stmts: List(
+                                []
+                            ),
+                            ret: Expr {
+                                items: Pipes(
+                                    [
+                                        Ident(
+                                            "x"
+                                        ),
+                                        Ident(
+                                            "fc2"
+                                        ),
+                                        Ident(
+                                            "relu"
+                                        )
+                                    ]
+                                )
+                            }
+                        }
+                    },
+                    FnDecl {
+                        name: "test",
+                        fn_params: [
+                            FnDeclParam {
+                                name: "x",
+                                ty_sig: Generic(
+                                    [
+                                        "TEST"
+                                    ]
+                                )
+                            }
+                        ],
+                        return_ty: Generic(
+                            []
+                        ),
+                        func_block: Block {
+                            stmts: List(
+                                []
+                            ),
+                            ret: Expr {
+                                items: Pipes(
+                                    [
+                                        Ident(
+                                            "x"
+                                        ),
+                                        Ident(
+                                            "fc2"
+                                        ),
+                                        Ident(
+                                            "relu"
+                                        )
+                                    ]
+                                )
+                            }
+                        }
+                    }
+                ]
+            }
+        )
+    ]
+)
 TyProgram(
     [
         TyNodeDecl(
             TyNodeDecl {
                 name: "Mnist",
-                ty_sig: [!4, !5, !6, !7, !7] -> [!4, !3, !3]
+                ty_sig: [!4, !5, !6, !7] -> [!4, !3]
             }
         ),
         TyWeightsDecl(
             TyWeightsDecl {
                 name: "Mnist",
-                ty_sig: [!4, !5, !6, !7, !7] -> [!4, !3, !3],
+                ty_sig: [!4, !5, !6, !7] -> [!4, !3],
                 inits: [
                     TyWeightsAssign {
                         name: "conv1",
@@ -130,7 +647,7 @@ TyProgram(
         TyGraphDecl(
             TyGraphDecl {
                 name: "Mnist",
-                ty_sig: [!4, !5, !6, !7, !7] -> [!4, !3, !3],
+                ty_sig: [!4, !5, !6, !7] -> [!4, !3],
                 fns: [
                     TyFnDecl {
                         name: "new",
@@ -218,424 +735,156 @@ TyProgram(
                                 []
                             ),
                             ret: TyExpr {
-                                items: TyPipes(
-                                    TyPipes {
-                                        items: [
-                                            TyIdent(
-                                                ?41,
-                                                "x"
-                                            ),
-                                            TyFnApp(
-                                                TyFnApp {
-                                                    mod_name: None,
-                                                    name: "conv1",
-                                                    args: [
-                                                        TyFnAppArg {
-                                                            name: "x",
-                                                            arg: TyIdent(
-                                                                ?41,
-                                                                "x"
-                                                            )
-                                                        }
-                                                    ],
-                                                    ret_ty: ?43
-                                                }
-                                            ),
-                                            TyFnApp(
-                                                TyFnApp {
-                                                    mod_name: None,
-                                                    name: "maxpool2d",
-                                                    args: [
-                                                        TyFnAppArg {
-                                                            name: "x",
-                                                            arg: TyFnApp(
-                                                                TyFnApp {
-                                                                    mod_name: None,
-                                                                    name: "conv1",
-                                                                    args: [
-                                                                        TyFnAppArg {
-                                                                            name: "x",
-                                                                            arg: TyIdent(
-                                                                                ?41,
-                                                                                "x"
-                                                                            )
-                                                                        }
-                                                                    ],
-                                                                    ret_ty: ?43
-                                                                }
-                                                            )
-                                                        },
-                                                        TyFnAppArg {
-                                                            name: "xkernel_size",
-                                                            arg: TyExpr {
-                                                                items: TyInteger(
-                                                                    ?44,
-                                                                    2
-                                                                ),
-                                                                ty: ?45
-                                                            }
-                                                        }
-                                                    ],
-                                                    ret_ty: ?46
-                                                }
-                                            ),
-                                            TyFnApp(
-                                                TyFnApp {
-                                                    mod_name: None,
-                                                    name: "conv2",
-                                                    args: [
-                                                        TyFnAppArg {
-                                                            name: "x",
-                                                            arg: TyFnApp(
-                                                                TyFnApp {
-                                                                    mod_name: None,
-                                                                    name: "maxpool2d",
-                                                                    args: [
-                                                                        TyFnAppArg {
-                                                                            name: "x",
-                                                                            arg: TyFnApp(
-                                                                                TyFnApp {
-                                                                                    mod_name: None,
-                                                                                    name: "conv1",
-                                                                                    args: [
-                                                                                        TyFnAppArg {
-                                                                                            name: "x",
-                                                                                            arg: TyIdent(
-                                                                                                ?41,
-                                                                                                "x"
-                                                                                            )
-                                                                                        }
-                                                                                    ],
-                                                                                    ret_ty: ?43
-                                                                                }
-                                                                            )
-                                                                        },
-                                                                        TyFnAppArg {
-                                                                            name: "xkernel_size",
-                                                                            arg: TyExpr {
-                                                                                items: TyInteger(
-                                                                                    ?44,
-                                                                                    2
-                                                                                ),
-                                                                                ty: ?45
-                                                                            }
-                                                                        }
-                                                                    ],
-                                                                    ret_ty: ?46
-                                                                }
-                                                            )
-                                                        }
-                                                    ],
-                                                    ret_ty: ?47
-                                                }
-                                            ),
-                                            TyFnApp(
-                                                TyFnApp {
-                                                    mod_name: None,
-                                                    name: "dropout",
-                                                    args: [
-                                                        TyFnAppArg {
-                                                            name: "x",
-                                                            arg: TyFnApp(
-                                                                TyFnApp {
-                                                                    mod_name: None,
-                                                                    name: "conv2",
-                                                                    args: [
-                                                                        TyFnAppArg {
-                                                                            name: "x",
-                                                                            arg: TyFnApp(
-                                                                                TyFnApp {
-                                                                                    mod_name: None,
-                                                                                    name: "maxpool2d",
-                                                                                    args: [
-                                                                                        TyFnAppArg {
-                                                                                            name: "x",
-                                                                                            arg: TyFnApp(
-                                                                                                TyFnApp {
-                                                                                                    mod_name: None,
-                                                                                                    name: "conv1",
-                                                                                                    args: [
-                                                                                                        TyFnAppArg {
-                                                                                                            name: "x",
-                                                                                                            arg: TyIdent(
-                                                                                                                ?41,
-                                                                                                                "x"
-                                                                                                            )
-                                                                                                        }
-                                                                                                    ],
-                                                                                                    ret_ty: ?43
-                                                                                                }
-                                                                                            )
-                                                                                        },
-                                                                                        TyFnAppArg {
-                                                                                            name: "xkernel_size",
-                                                                                            arg: TyExpr {
-                                                                                                items: TyInteger(
-                                                                                                    ?44,
-                                                                                                    2
-                                                                                                ),
-                                                                                                ty: ?45
-                                                                                            }
-                                                                                        }
-                                                                                    ],
-                                                                                    ret_ty: ?46
-                                                                                }
-                                                                            )
-                                                                        }
-                                                                    ],
-                                                                    ret_ty: ?47
-                                                                }
-                                                            )
-                                                        }
-                                                    ],
-                                                    ret_ty: ?48
-                                                }
-                                            ),
-                                            TyFnApp(
-                                                TyFnApp {
-                                                    mod_name: None,
-                                                    name: "maxpool2d",
-                                                    args: [
-                                                        TyFnAppArg {
-                                                            name: "x",
-                                                            arg: TyFnApp(
-                                                                TyFnApp {
-                                                                    mod_name: None,
-                                                                    name: "dropout",
-                                                                    args: [
-                                                                        TyFnAppArg {
-                                                                            name: "x",
-                                                                            arg: TyFnApp(
-                                                                                TyFnApp {
-                                                                                    mod_name: None,
-                                                                                    name: "conv2",
-                                                                                    args: [
-                                                                                        TyFnAppArg {
-                                                                                            name: "x",
-                                                                                            arg: TyFnApp(
-                                                                                                TyFnApp {
-                                                                                                    mod_name: None,
-                                                                                                    name: "maxpool2d",
-                                                                                                    args: [
-                                                                                                        TyFnAppArg {
+                                items: TyFnApp(
+                                    TyFnApp {
+                                        mod_name: None,
+                                        name: "log_softmax",
+                                        args: [
+                                            TyFnAppArg {
+                                                name: "x",
+                                                arg: TyFnApp(
+                                                    TyFnApp {
+                                                        mod_name: Some(
+                                                            "self"
+                                                        ),
+                                                        name: "fc2",
+                                                        args: [
+                                                            TyFnAppArg {
+                                                                name: "x",
+                                                                arg: TyFnApp(
+                                                                    TyFnApp {
+                                                                        mod_name: None,
+                                                                        name: "relu",
+                                                                        args: [
+                                                                            TyFnAppArg {
+                                                                                name: "x",
+                                                                                arg: TyFnApp(
+                                                                                    TyFnApp {
+                                                                                        mod_name: None,
+                                                                                        name: "fc1",
+                                                                                        args: [
+                                                                                            TyFnAppArg {
+                                                                                                name: "x",
+                                                                                                arg: TyViewFn(
+                                                                                                    TyViewFn {
+                                                                                                        ty: [!4, !1],
+                                                                                                        arg: TyFnAppArg {
                                                                                                             name: "x",
                                                                                                             arg: TyFnApp(
                                                                                                                 TyFnApp {
                                                                                                                     mod_name: None,
-                                                                                                                    name: "conv1",
+                                                                                                                    name: "maxpool2d",
                                                                                                                     args: [
                                                                                                                         TyFnAppArg {
                                                                                                                             name: "x",
-                                                                                                                            arg: TyIdent(
-                                                                                                                                ?41,
-                                                                                                                                "x"
+                                                                                                                            arg: TyFnApp(
+                                                                                                                                TyFnApp {
+                                                                                                                                    mod_name: None,
+                                                                                                                                    name: "dropout",
+                                                                                                                                    args: [
+                                                                                                                                        TyFnAppArg {
+                                                                                                                                            name: "x",
+                                                                                                                                            arg: TyFnApp(
+                                                                                                                                                TyFnApp {
+                                                                                                                                                    mod_name: None,
+                                                                                                                                                    name: "conv2",
+                                                                                                                                                    args: [
+                                                                                                                                                        TyFnAppArg {
+                                                                                                                                                            name: "x",
+                                                                                                                                                            arg: TyFnApp(
+                                                                                                                                                                TyFnApp {
+                                                                                                                                                                    mod_name: None,
+                                                                                                                                                                    name: "maxpool2d",
+                                                                                                                                                                    args: [
+                                                                                                                                                                        TyFnAppArg {
+                                                                                                                                                                            name: "x",
+                                                                                                                                                                            arg: TyFnApp(
+                                                                                                                                                                                TyFnApp {
+                                                                                                                                                                                    mod_name: None,
+                                                                                                                                                                                    name: "conv1",
+                                                                                                                                                                                    args: [
+                                                                                                                                                                                        TyFnAppArg {
+                                                                                                                                                                                            name: "x",
+                                                                                                                                                                                            arg: TyIdent(
+                                                                                                                                                                                                ?41,
+                                                                                                                                                                                                "x"
+                                                                                                                                                                                            )
+                                                                                                                                                                                        }
+                                                                                                                                                                                    ],
+                                                                                                                                                                                    ret_ty: ?43
+                                                                                                                                                                                }
+                                                                                                                                                                            )
+                                                                                                                                                                        },
+                                                                                                                                                                        TyFnAppArg {
+                                                                                                                                                                            name: "xkernel_size",
+                                                                                                                                                                            arg: TyExpr {
+                                                                                                                                                                                items: TyInteger(
+                                                                                                                                                                                    ?44,
+                                                                                                                                                                                    2
+                                                                                                                                                                                ),
+                                                                                                                                                                                ty: ?45
+                                                                                                                                                                            }
+                                                                                                                                                                        }
+                                                                                                                                                                    ],
+                                                                                                                                                                    ret_ty: ?46
+                                                                                                                                                                }
+                                                                                                                                                            )
+                                                                                                                                                        }
+                                                                                                                                                    ],
+                                                                                                                                                    ret_ty: ?47
+                                                                                                                                                }
+                                                                                                                                            )
+                                                                                                                                        }
+                                                                                                                                    ],
+                                                                                                                                    ret_ty: ?48
+                                                                                                                                }
                                                                                                                             )
+                                                                                                                        },
+                                                                                                                        TyFnAppArg {
+                                                                                                                            name: "kernel_size",
+                                                                                                                            arg: TyExpr {
+                                                                                                                                items: TyInteger(
+                                                                                                                                    ?49,
+                                                                                                                                    2
+                                                                                                                                ),
+                                                                                                                                ty: ?50
+                                                                                                                            }
                                                                                                                         }
                                                                                                                     ],
-                                                                                                                    ret_ty: ?43
+                                                                                                                    ret_ty: ?51
                                                                                                                 }
                                                                                                             )
-                                                                                                        },
-                                                                                                        TyFnAppArg {
-                                                                                                            name: "xkernel_size",
-                                                                                                            arg: TyExpr {
-                                                                                                                items: TyInteger(
-                                                                                                                    ?44,
-                                                                                                                    2
-                                                                                                                ),
-                                                                                                                ty: ?45
-                                                                                                            }
                                                                                                         }
-                                                                                                    ],
-                                                                                                    ret_ty: ?46
-                                                                                                }
-                                                                                            )
-                                                                                        }
-                                                                                    ],
-                                                                                    ret_ty: ?47
-                                                                                }
-                                                                            )
-                                                                        }
-                                                                    ],
-                                                                    ret_ty: ?48
-                                                                }
-                                                            )
-                                                        },
-                                                        TyFnAppArg {
-                                                            name: "kernel_size",
-                                                            arg: TyExpr {
-                                                                items: TyInteger(
-                                                                    ?49,
-                                                                    2
-                                                                ),
-                                                                ty: ?50
+                                                                                                    }
+                                                                                                )
+                                                                                            }
+                                                                                        ],
+                                                                                        ret_ty: ?52
+                                                                                    }
+                                                                                )
+                                                                            }
+                                                                        ],
+                                                                        ret_ty: ?53
+                                                                    }
+                                                                )
                                                             }
-                                                        }
-                                                    ],
-                                                    ret_ty: ?51
-                                                }
-                                            ),
-                                            TyViewFn(
-                                                TyViewFn {
-                                                    ty: [!4, !1, !1]
-                                                }
-                                            ),
-                                            TyFnApp(
-                                                TyFnApp {
-                                                    mod_name: None,
-                                                    name: "fc1",
-                                                    args: [
-                                                        TyFnAppArg {
-                                                            name: "x",
-                                                            arg: TyViewFn(
-                                                                TyViewFn {
-                                                                    ty: [!4, !1, !1]
-                                                                }
-                                                            )
-                                                        }
-                                                    ],
-                                                    ret_ty: ?52
-                                                }
-                                            ),
-                                            TyFnApp(
-                                                TyFnApp {
-                                                    mod_name: None,
-                                                    name: "relu",
-                                                    args: [
-                                                        TyFnAppArg {
-                                                            name: "x",
-                                                            arg: TyFnApp(
-                                                                TyFnApp {
-                                                                    mod_name: None,
-                                                                    name: "fc1",
-                                                                    args: [
-                                                                        TyFnAppArg {
-                                                                            name: "x",
-                                                                            arg: TyViewFn(
-                                                                                TyViewFn {
-                                                                                    ty: [!4, !1, !1]
-                                                                                }
-                                                                            )
-                                                                        }
-                                                                    ],
-                                                                    ret_ty: ?52
-                                                                }
-                                                            )
-                                                        }
-                                                    ],
-                                                    ret_ty: ?53
-                                                }
-                                            ),
-                                            TyFnApp(
-                                                TyFnApp {
-                                                    mod_name: Some(
-                                                        "self"
+                                                        ],
+                                                        ret_ty: ?54
+                                                    }
+                                                )
+                                            },
+                                            TyFnAppArg {
+                                                name: "dim",
+                                                arg: TyExpr {
+                                                    items: TyInteger(
+                                                        ?55,
+                                                        1
                                                     ),
-                                                    name: "fc2",
-                                                    args: [
-                                                        TyFnAppArg {
-                                                            name: "x",
-                                                            arg: TyFnApp(
-                                                                TyFnApp {
-                                                                    mod_name: None,
-                                                                    name: "relu",
-                                                                    args: [
-                                                                        TyFnAppArg {
-                                                                            name: "x",
-                                                                            arg: TyFnApp(
-                                                                                TyFnApp {
-                                                                                    mod_name: None,
-                                                                                    name: "fc1",
-                                                                                    args: [
-                                                                                        TyFnAppArg {
-                                                                                            name: "x",
-                                                                                            arg: TyViewFn(
-                                                                                                TyViewFn {
-                                                                                                    ty: [!4, !1, !1]
-                                                                                                }
-                                                                                            )
-                                                                                        }
-                                                                                    ],
-                                                                                    ret_ty: ?52
-                                                                                }
-                                                                            )
-                                                                        }
-                                                                    ],
-                                                                    ret_ty: ?53
-                                                                }
-                                                            )
-                                                        }
-                                                    ],
-                                                    ret_ty: ?54
+                                                    ty: ?56
                                                 }
-                                            ),
-                                            TyFnApp(
-                                                TyFnApp {
-                                                    mod_name: None,
-                                                    name: "log_softmax",
-                                                    args: [
-                                                        TyFnAppArg {
-                                                            name: "x",
-                                                            arg: TyFnApp(
-                                                                TyFnApp {
-                                                                    mod_name: Some(
-                                                                        "self"
-                                                                    ),
-                                                                    name: "fc2",
-                                                                    args: [
-                                                                        TyFnAppArg {
-                                                                            name: "x",
-                                                                            arg: TyFnApp(
-                                                                                TyFnApp {
-                                                                                    mod_name: None,
-                                                                                    name: "relu",
-                                                                                    args: [
-                                                                                        TyFnAppArg {
-                                                                                            name: "x",
-                                                                                            arg: TyFnApp(
-                                                                                                TyFnApp {
-                                                                                                    mod_name: None,
-                                                                                                    name: "fc1",
-                                                                                                    args: [
-                                                                                                        TyFnAppArg {
-                                                                                                            name: "x",
-                                                                                                            arg: TyViewFn(
-                                                                                                                TyViewFn {
-                                                                                                                    ty: [!4, !1, !1]
-                                                                                                                }
-                                                                                                            )
-                                                                                                        }
-                                                                                                    ],
-                                                                                                    ret_ty: ?52
-                                                                                                }
-                                                                                            )
-                                                                                        }
-                                                                                    ],
-                                                                                    ret_ty: ?53
-                                                                                }
-                                                                            )
-                                                                        }
-                                                                    ],
-                                                                    ret_ty: ?54
-                                                                }
-                                                            )
-                                                        },
-                                                        TyFnAppArg {
-                                                            name: "dim",
-                                                            arg: TyExpr {
-                                                                items: TyInteger(
-                                                                    ?55,
-                                                                    1
-                                                                ),
-                                                                ty: ?56
-                                                            }
-                                                        }
-                                                    ],
-                                                    ret_ty: ?57
-                                                }
-                                            )
+                                            }
                                         ],
-                                        ret_ty: ()
+                                        ret_ty: ?57
                                     }
                                 ),
                                 ty: ?58
@@ -656,62 +905,81 @@ TyProgram(
                                 []
                             ),
                             ret: TyExpr {
-                                items: TyPipes(
-                                    TyPipes {
-                                        items: [
-                                            TyIdent(
-                                                ?59,
-                                                "x"
-                                            ),
-                                            TyFnApp(
-                                                TyFnApp {
-                                                    mod_name: None,
-                                                    name: "fc2",
-                                                    args: [
-                                                        TyFnAppArg {
-                                                            name: "x",
-                                                            arg: TyIdent(
-                                                                ?59,
-                                                                "x"
-                                                            )
-                                                        }
-                                                    ],
-                                                    ret_ty: ?61
-                                                }
-                                            ),
-                                            TyFnApp(
-                                                TyFnApp {
-                                                    mod_name: None,
-                                                    name: "relu",
-                                                    args: [
-                                                        TyFnAppArg {
-                                                            name: "x",
-                                                            arg: TyFnApp(
-                                                                TyFnApp {
-                                                                    mod_name: None,
-                                                                    name: "fc2",
-                                                                    args: [
-                                                                        TyFnAppArg {
-                                                                            name: "x",
-                                                                            arg: TyIdent(
-                                                                                ?59,
-                                                                                "x"
-                                                                            )
-                                                                        }
-                                                                    ],
-                                                                    ret_ty: ?61
-                                                                }
-                                                            )
-                                                        }
-                                                    ],
-                                                    ret_ty: ?62
-                                                }
-                                            )
+                                items: TyFnApp(
+                                    TyFnApp {
+                                        mod_name: None,
+                                        name: "relu",
+                                        args: [
+                                            TyFnAppArg {
+                                                name: "x",
+                                                arg: TyFnApp(
+                                                    TyFnApp {
+                                                        mod_name: None,
+                                                        name: "fc2",
+                                                        args: [
+                                                            TyFnAppArg {
+                                                                name: "x",
+                                                                arg: TyIdent(
+                                                                    ?59,
+                                                                    "x"
+                                                                )
+                                                            }
+                                                        ],
+                                                        ret_ty: ?61
+                                                    }
+                                                )
+                                            }
                                         ],
-                                        ret_ty: ()
+                                        ret_ty: ?62
                                     }
                                 ),
                                 ty: ?63
+                            }
+                        }
+                    },
+                    TyFnDecl {
+                        name: "test",
+                        fn_params: [
+                            TyFnDeclParam {
+                                name: "x",
+                                ty_sig: ?64
+                            }
+                        ],
+                        return_ty: ?65,
+                        func_block: TyBlock {
+                            stmts: TyList(
+                                []
+                            ),
+                            ret: TyExpr {
+                                items: TyFnApp(
+                                    TyFnApp {
+                                        mod_name: None,
+                                        name: "relu",
+                                        args: [
+                                            TyFnAppArg {
+                                                name: "x",
+                                                arg: TyFnApp(
+                                                    TyFnApp {
+                                                        mod_name: None,
+                                                        name: "fc2",
+                                                        args: [
+                                                            TyFnAppArg {
+                                                                name: "x",
+                                                                arg: TyIdent(
+                                                                    ?64,
+                                                                    "x"
+                                                                )
+                                                            }
+                                                        ],
+                                                        ret_ty: ?66
+                                                    }
+                                                )
+                                            }
+                                        ],
+                                        ret_ty: ?67
+                                    }
+                                ),
+                                ty: ?68
                             }
                         }
                     }
@@ -721,32 +989,32 @@ TyProgram(
     ]
 )
 TypeEnv {
-    counter: 63,
+    counter: 68,
     current_mod: Global,
     modules: {
-        Global: [],
         Named(
             "Mnist"
         ): [
             Scope {
                 aliases: {
-                    "x": ?59,
-                    "c": !5,
-                    "FC1": !1,
-                    "?": !4,
-                    "TEST": [!4, !2, !2],
-                    "w": !7,
-                    "OUT": !3,
-                    "IMAGE": [!4, !5, !6, !7, !7],
-                    "dropout": ?24,
-                    "fc2": ?30,
                     "conv1": ?8,
+                    "TEST": [!4, !2],
+                    "c": !5,
+                    "dropout": ?24,
                     "conv2": ?16,
-                    "h": !6,
+                    "w": !7,
+                    "?": !4,
+                    "OUT": !3,
                     "FC2": !2,
-                    "fc1": ?28
+                    "h": !6,
+                    "FC1": !1,
+                    "fc2": ?30,
+                    "x": ?64,
+                    "fc1": ?28,
+                    "IMAGE": [!4, !5, !6, !7]
                 }
             }
-        ]
+        ],
+        Global: []
     }
 }
