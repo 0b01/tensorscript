@@ -1,12 +1,12 @@
 use parser::term::{Term, Decl, FnTySig, TensorTy, WeightsAssign, FnAppArg, FnDecl, FnDeclParam, FieldAccess};
 use typed_ast::typed_term::{TypedTerm, TypedDecl, TypedNodeDecl, TypedWeightsDecl, TypedWeightsAssign, TypedFnAppArg, TypedGraphDecl, TypedFnDecl, TypedFnDeclParam, TypedFieldAccess};
-use typed_ast::type_env::{ScopeId, TypeEnv};
+use typed_ast::type_env::{ModName, TypeEnv};
 use typed_ast::Type;
 
 pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TypedTerm {
     use self::Term::*;
     use self::TypedTerm::*;
-    println!("{:#?}", term);
+    // println!("{:#?}", term);
     match term {
         &Program(ref decls) => TypedProgram(
             decls
@@ -30,19 +30,7 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TypedTerm {
         &Stmt{ref items} => TypedStmt {
             items: Box::new(annotate(&items, tenv))
         },
-        &FieldAccess(ref f_a) => {
-            let scp = tenv.current_scope();
-            let ret = match *(scp.borrow()) {
-                ScopeId::Global =>
-                    panic!("Cannot use field access in global scope"),
-                ScopeId::Named(ref node_name) => {
-                    let node_name = node_name.clone();
-                    TypedFieldAccess(annotate_field_access(&node_name, f_a, tenv))
-                }
-            };
-            drop(scp);
-            ret
-        },
+        &FieldAccess(ref f_a) => TypedFieldAccess(annotate_field_access(f_a, tenv)),
         &None => TypedNone,
         &Pipes(ref pipes) => TypedPipes(annotate_pipes(pipes, tenv)),
         _ => unimplemented!(),
@@ -65,34 +53,35 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TypedDecl {
     use self::Decl::*;
     let ret = match decl {
         &NodeDecl(ref decl) => {
-            tenv.set_scope(ScopeId::Named(decl.name.to_owned()));
+            tenv.set_module(ModName::Named(decl.name.to_owned()));
             let assigns = &decl.defs;
+            let module = tenv.module();
             assigns.into_iter()
-                .map(|a| tenv.import_node_assign(&decl.name, a))
+                .map(|a| tenv.import_node_assign(&module, a))
                 .collect::<Vec<()>>();
 
             TypedDecl::TypedNodeDecl(TypedNodeDecl {
                 name: decl.name.clone(),
-                ty_sig: annotate_fn_ty_sig(&decl.name, &decl.ty_sig, tenv),
+                ty_sig: annotate_fn_ty_sig(&decl.ty_sig, tenv),
             })
         },
         &WeightsDecl(ref decl) => {
-            tenv.set_scope(ScopeId::Named(decl.name.to_owned()));
+            tenv.set_module(ModName::Named(decl.name.to_owned()));
             TypedDecl::TypedWeightsDecl(TypedWeightsDecl {
                 name: decl.name.clone(),
-                ty_sig: annotate_fn_ty_sig(&decl.name, &decl.ty_sig, tenv),
+                ty_sig: annotate_fn_ty_sig(&decl.ty_sig, tenv),
                 inits: decl.inits.iter()
-                    .map(|t| annotate_weights_assign(&decl.name, t, tenv))
+                    .map(|t| annotate_weights_assign(t, tenv))
                     .collect()
             })
         },
         &GraphDecl(ref decl) => {
-            tenv.set_scope(ScopeId::Named(decl.name.to_owned()));
+            tenv.set_module(ModName::Named(decl.name.to_owned()));
             TypedDecl::TypedGraphDecl(TypedGraphDecl {
                 name: decl.name.clone(),
-                ty_sig: annotate_fn_ty_sig(&decl.name, &decl.ty_sig, tenv),
+                ty_sig: annotate_fn_ty_sig(&decl.ty_sig, tenv),
                 fns: decl.fns.iter()
-                    .map(|f| annotate_fn_decl(&decl.name, f, tenv))
+                    .map(|f| annotate_fn_decl(f, tenv))
                     .collect(),
             })
 
@@ -102,30 +91,31 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TypedDecl {
         // },
         _ => unimplemented!(),
     };
-    tenv.set_scope(ScopeId::Global);
+    tenv.set_module(ModName::Global);
     ret
 }
 
-fn annotate_fn_ty_sig(node_name: &str, sig: &FnTySig, tenv: &mut TypeEnv) -> Type {
+fn annotate_fn_ty_sig(sig: &FnTySig, tenv: &mut TypeEnv) -> Type {
     Type::Fun {
-        param_ty: Box::new(annotate_tensor_ty_sig(node_name, &sig.from, tenv)),
-        return_ty: Box::new(annotate_tensor_ty_sig(node_name, &sig.to, tenv)),
+        param_ty: Box::new(annotate_tensor_ty_sig(&sig.from, tenv)),
+        return_ty: Box::new(annotate_tensor_ty_sig(&sig.to, tenv)),
     }
 }
 
-fn annotate_tensor_ty_sig(node_name: &str, sig: &TensorTy, tenv: &mut TypeEnv) -> Type {
+fn annotate_tensor_ty_sig(sig: &TensorTy, tenv: &mut TypeEnv) -> Type {
     use self::TensorTy::*;
+    let module = tenv.module();
     match sig {
-        &Generic(ref dims) => tenv.make_tensor(node_name, dims),
-        &TyAlias(ref als) => tenv.resolve_alias(node_name, als).unwrap()
+        &Generic(ref dims) => tenv.make_tensor(&module, dims),
+        &TyAlias(ref als) => tenv.resolve_alias(&module, als).unwrap().clone()
     }
 }
 
-fn annotate_weights_assign(node_name: &str, w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> TypedWeightsAssign {
+fn annotate_weights_assign(w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> TypedWeightsAssign {
     let name = w_assign.name.clone();
     let fn_ty = tenv.fresh_var();
-
-    tenv.add_alias(node_name, &name, fn_ty.clone());
+    let module = tenv.module();
+    tenv.add_alias(&module, &name, fn_ty.clone());
 
     TypedWeightsAssign {
         name: name,
@@ -134,12 +124,12 @@ fn annotate_weights_assign(node_name: &str, w_assign: &WeightsAssign, tenv: &mut
         fn_ty: fn_ty,
         fn_name: w_assign.fn_name.clone(),
         fn_args: w_assign.fn_args.iter()
-            .map(|a| annotate_fn_call_arg(node_name, a, tenv))
+            .map(|a| annotate_fn_call_arg(a, tenv))
             .collect(),
     }
 }
 
-fn annotate_fn_call_arg(node_name: &str, call: &FnAppArg, tenv: &mut TypeEnv) -> TypedFnAppArg {
+fn annotate_fn_call_arg(call: &FnAppArg, tenv: &mut TypeEnv) -> TypedFnAppArg {
     TypedFnAppArg {
         name: call.name.clone(),
         ty: tenv.fresh_var(),
@@ -151,34 +141,45 @@ fn annotate_fn_call_arg(node_name: &str, call: &FnAppArg, tenv: &mut TypeEnv) ->
 // }
 
 
-fn annotate_fn_decl(node_name: &str, f: &FnDecl, tenv: &mut TypeEnv) -> TypedFnDecl {
-    TypedFnDecl {
+fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TypedFnDecl {
+    let module = tenv.module();;
+    tenv.push_scope(&module);
+    let ret = TypedFnDecl {
         name: f.name.clone(),
         fn_params: f.fn_params.iter()
-            .map(|p| annotate_fn_decl_param(node_name, p, tenv))
+            .map(|p| annotate_fn_decl_param(p, tenv))
             .collect(),
         return_ty: tenv.fresh_var(),
         func_block: Box::new(annotate(&f.func_block, tenv)),
-    }
+    };
+    tenv.pop_scope(&module);
+    ret
 }
 
-fn annotate_fn_decl_param(node_name: &str, p: &FnDeclParam, tenv: &mut TypeEnv) -> TypedFnDeclParam {
+fn annotate_fn_decl_param(p: &FnDeclParam, tenv: &mut TypeEnv) -> TypedFnDeclParam {
     TypedFnDeclParam {
         name: p.name.clone(),
         ty_sig: tenv.fresh_var(),
     }
 }
 
-fn annotate_field_access(node_name: &str, f_a: &FieldAccess, tenv: &mut TypeEnv) -> TypedFieldAccess {
-    TypedFieldAccess {
-        var_name: f_a.var_name.clone(),
-        field_name: f_a.field_name.clone(),
-        func_call: match f_a.func_call {
-            None => None,
-            Some(ref v) => {
-                Some(v.iter()
-                    .map(|arg| annotate_fn_call_arg(node_name, arg, tenv))
-                    .collect())
+fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TypedFieldAccess {
+    let module = tenv.module();
+    match module {
+        ModName::Global =>
+            panic!("Cannot use field access in global scope"),
+        ModName::Named(ref _node_name) => {
+            TypedFieldAccess {
+                var_name: f_a.var_name.clone(),
+                field_name: f_a.field_name.clone(),
+                func_call: match f_a.func_call {
+                    None => None,
+                    Some(ref v) => {
+                        Some(v.iter()
+                            .map(|arg| annotate_fn_call_arg(arg, tenv))
+                            .collect())
+                    }
+                }
             }
         }
     }
