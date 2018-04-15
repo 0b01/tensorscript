@@ -1,127 +1,127 @@
 use std::fmt::{Display, Formatter, Error};
 use typed_ast::Type;
 
-pub trait Typed {
+pub trait Ty {
     fn ty(&self) -> Type;
 }
 
-impl Typed for TypedTerm {
+impl Ty for TyTerm {
     fn ty(&self) -> Type {
-        use self::TypedTerm::*;
+        use self::TyTerm::*;
         use self::Type::*;
         match self {
-            &TypedNone => Unit,
-            &TypedProgram(_) => Unit,
-            &TypedInteger(ref t, _) => t.clone(),
-            &TypedFloat(ref t, _) => t.clone(),
-            &TypedList(_) => Unit,
-            &TypedIdent(_, _) => Unit,
-            &TypedFieldAccess(ref f_a) => f_a.ty(),
-            &TypedFnApp(ref f_a) => f_a.ty(),
-            &TypedBlock { stmts: _, ref ret } => ret.ty(),
-            &TypedExpr { items: _, ref ty } => ty.clone(),
-            &TypedStmt { items: _ } => Unit,
-            &TypedViewFn(ref view_fn) => view_fn.ty(),
+            &TyNone => Unit,
+            &TyProgram(_) => Unit,
+            &TyInteger(ref t, _) => t.clone(),
+            &TyFloat(ref t, _) => t.clone(),
+            &TyList(_) => Unit,
+            &TyIdent(_, _) => Unit,
+            &TyFieldAccess(ref f_a) => f_a.ty(),
+            &TyFnApp(ref f_a) => f_a.ty(),
+            &TyBlock { stmts: _, ref ret } => ret.ty(),
+            &TyExpr { items: _, ref ty } => ty.clone(),
+            &TyStmt { items: _ } => Unit,
+            &TyViewFn(ref view_fn) => view_fn.ty(),
         }
     }
 }
 
-impl Typed for TypedFieldAccess {
+impl Ty for TyFieldAccess {
     fn ty(&self) -> Type {
         self.ty.clone()
     }
 }
 
-impl Typed for TypedFnApp {
+impl Ty for TyFnApp {
     fn ty(&self) -> Type {
         self.ret_ty.clone()
     }
 }
 
-impl Typed for TypedViewFn {
+impl Ty for TyViewFn {
     fn ty(&self) -> Type {
         self.ty.clone()
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum TypedTerm {
-    TypedNone,
-    TypedProgram(Vec<TypedDecl>),
-    TypedInteger(Type, i64),
-    TypedFloat(Type, f64),
-    TypedList(Vec<TypedTerm>),
-    TypedIdent(Type, String),
-    TypedFieldAccess(TypedFieldAccess),
-    TypedFnApp(TypedFnApp),
-    TypedBlock { stmts: Box<TypedTerm>, ret: Box<TypedTerm> },
-    TypedExpr { items: Box<TypedTerm>, ty: Type },
-    TypedStmt { items: Box<TypedTerm> },
-    TypedViewFn(TypedViewFn),
+pub enum TyTerm {
+    TyNone,
+    TyProgram(Vec<TyDecl>),
+    TyInteger(Type, i64),
+    TyFloat(Type, f64),
+    TyList(Vec<TyTerm>),
+    TyIdent(Type, String),
+    TyFieldAccess(TyFieldAccess),
+    TyFnApp(TyFnApp),
+    TyBlock { stmts: Box<TyTerm>, ret: Box<TyTerm> },
+    TyExpr { items: Box<TyTerm>, ty: Type },
+    TyStmt { items: Box<TyTerm> },
+    TyViewFn(TyViewFn),
 }
 
-impl Display for TypedTerm {
+impl Display for TyTerm {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         write!(f, "{:#?}", self)
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum TypedDecl {
-    TypedNodeDecl(TypedNodeDecl),
-    TypedWeightsDecl(TypedWeightsDecl),
-    TypedGraphDecl(TypedGraphDecl),
-    TypedUseStmt(TypedUseStmt),
+pub enum TyDecl {
+    TyNodeDecl(TyNodeDecl),
+    TyWeightsDecl(TyWeightsDecl),
+    TyGraphDecl(TyGraphDecl),
+    TyUseStmt(TyUseStmt),
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedUseStmt {
+pub struct TyUseStmt {
     pub mod_name: String,
     pub imported_names: Vec<String>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedNodeDecl {
+pub struct TyNodeDecl {
     pub name: String,
     pub ty_sig: Type,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedGraphDecl {
+pub struct TyGraphDecl {
     pub name: String,
     pub ty_sig: Type,
-    pub fns: Vec<TypedFnDecl>,
+    pub fns: Vec<TyFnDecl>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedWeightsDecl {
+pub struct TyWeightsDecl {
     pub name: String,
     pub ty_sig: Type,
-    pub inits: Vec<TypedWeightsAssign>,
+    pub inits: Vec<TyWeightsAssign>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedWeightsAssign {
+pub struct TyWeightsAssign {
     pub name: String,
     pub ty: Type,
     pub mod_name: String,
     pub fn_ty: Type,
     pub fn_name: String,
-    pub fn_args: Vec<TypedFnAppArg>,
+    pub fn_args: Vec<TyFnAppArg>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedFnApp {
+pub struct TyFnApp {
     pub mod_name: Option<String>,
     pub name: String,
-    pub args: Vec<TypedFnAppArg>,
+    pub args: Vec<TyFnAppArg>,
     pub ret_ty: Type,
 }
 
-impl TypedFnApp {
-    pub fn extend_arg(mut self, arg: TypedFnAppArg) -> TypedFnApp {
+impl TyFnApp {
+    pub fn extend_arg(mut self, arg: TyFnAppArg) -> TyFnApp {
         self.args.insert(0, arg);
-        TypedFnApp {
+        TyFnApp {
             mod_name: self.mod_name,
             name: self.name,
             args: self.args,
@@ -131,40 +131,40 @@ impl TypedFnApp {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedFnAppArg {
+pub struct TyFnAppArg {
     pub name: String,
-    pub arg: Box<TypedTerm>,
+    pub arg: Box<TyTerm>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedViewFn {
+pub struct TyViewFn {
     pub ty: Type,
-    pub arg: TypedFnAppArg,
+    pub arg: TyFnAppArg,
 }
 
 
 // #[derive(Debug, PartialEq, Clone)]
-// pub enum TypedNodeAssign {
-//     ValueAlias { ident: String, rhs: Box<TypedTerm> },
+// pub enum TyNodeAssign {
+//     ValueAlias { ident: String, rhs: Box<TyTerm> },
 //     TyAlias { ident: String, rhs: Type },
 // }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedFnDecl {
+pub struct TyFnDecl {
     pub name: String,
-    pub fn_params: Vec<TypedFnDeclParam>,
+    pub fn_params: Vec<TyFnDeclParam>,
     pub return_ty: Type,
-    pub func_block: Box<TypedTerm>,
+    pub func_block: Box<TyTerm>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedFnDeclParam {
+pub struct TyFnDeclParam {
     pub name: String,
     pub ty_sig: Type,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedFieldAccess {
+pub struct TyFieldAccess {
     pub mod_name: String,
     pub field_name: String,
     pub ty: Type,

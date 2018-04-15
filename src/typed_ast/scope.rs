@@ -21,7 +21,7 @@ pub enum ScopeItem {
 pub enum ScopeType {
     /// A type, not associated with any memory
     /// Used for a struct/type declaration, not the declaration
-    /// of a variable with a type (TypedBlock should be used for that)
+    /// of a variable with a type (TyBlock should be used for that)
     Type(TypeId),
     //TODO: Generic types, etc. will all go here
 }
