@@ -80,7 +80,7 @@ impl TypeEnv {
     }
 
     pub fn add_alias(&mut self, node_name: &ModName, alias: &str, ty: Type) {
-        let mut stack = self.modules.entry(node_name.clone()).or_insert({
+        let stack = self.modules.entry(node_name.clone()).or_insert({
             let mut q = VecDeque::new(); 
             q.push_back(Scope::new());
             q

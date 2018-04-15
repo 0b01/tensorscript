@@ -170,7 +170,7 @@ fn build_field_access(pair: Pair<Rule>) -> Result<FieldAccess, TSSParseError> {
     };
 
     Ok(FieldAccess {
-        var_name: var_name.as_str().to_owned(),
+        mod_name: var_name.as_str().to_owned(),
         field_name: field_name.as_str().to_owned(),
         func_call: func_call,
     })

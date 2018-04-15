@@ -63,7 +63,7 @@ pub struct FnDeclParam {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FieldAccess {
-    pub var_name: String,
+    pub mod_name: String,
     pub field_name: String,
     pub func_call: Option<Vec<FnAppArg>>,
 }

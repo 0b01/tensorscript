@@ -1,0 +1,1063 @@
+TypedProgram(
+    [
+        TypedNodeDecl(
+            TypedNodeDecl {
+                name: "Mnist",
+                ty_sig: [!4, !5, !6, !7, ] -> [!4, !3, ]
+            }
+        ),
+        TypedWeightsDecl(
+            TypedWeightsDecl {
+                name: "Mnist",
+                ty_sig: [!4, !5, !6, !7, ] -> [!4, !3, ],
+                inits: [
+                    TypedWeightsAssign {
+                        name: "conv1",
+                        ty: ?9,
+                        mod_name: "Conv2d",
+                        fn_ty: ?8,
+                        fn_name: "new",
+                        fn_args: [
+                            TypedFnAppArg {
+                                name: "in_ch",
+                                arg: TypedExpr {
+                                    items: TypedInteger(
+                                        ?10,
+                                        1
+                                    ),
+                                    ty: ?11
+                                }
+                            },
+                            TypedFnAppArg {
+                                name: "out_ch",
+                                arg: TypedExpr {
+                                    items: TypedInteger(
+                                        ?12,
+                                        10
+                                    ),
+                                    ty: ?13
+                                }
+                            },
+                            TypedFnAppArg {
+                                name: "kernel_size",
+                                arg: TypedExpr {
+                                    items: TypedInteger(
+                                        ?14,
+                                        5
+                                    ),
+                                    ty: ?15
+                                }
+                            }
+                        ]
+                    },
+                    TypedWeightsAssign {
+                        name: "conv2",
+                        ty: ?17,
+                        mod_name: "Conv2d",
+                        fn_ty: ?16,
+                        fn_name: "new",
+                        fn_args: [
+                            TypedFnAppArg {
+                                name: "in_ch",
+                                arg: TypedExpr {
+                                    items: TypedInteger(
+                                        ?18,
+                                        10
+                                    ),
+                                    ty: ?19
+                                }
+                            },
+                            TypedFnAppArg {
+                                name: "out_ch",
+                                arg: TypedExpr {
+                                    items: TypedInteger(
+                                        ?20,
+                                        20
+                                    ),
+                                    ty: ?21
+                                }
+                            },
+                            TypedFnAppArg {
+                                name: "kernel_size",
+                                arg: TypedExpr {
+                                    items: TypedInteger(
+                                        ?22,
+                                        5
+                                    ),
+                                    ty: ?23
+                                }
+                            }
+                        ]
+                    },
+                    TypedWeightsAssign {
+                        name: "dropout",
+                        ty: ?25,
+                        mod_name: "Dropout2d",
+                        fn_ty: ?24,
+                        fn_name: "new",
+                        fn_args: [
+                            TypedFnAppArg {
+                                name: "p",
+                                arg: TypedExpr {
+                                    items: TypedFloat(
+                                        ?26,
+                                        0.5
+                                    ),
+                                    ty: ?27
+                                }
+                            }
+                        ]
+                    },
+                    TypedWeightsAssign {
+                        name: "fc1",
+                        ty: ?29,
+                        mod_name: "Linear",
+                        fn_ty: ?28,
+                        fn_name: "new",
+                        fn_args: []
+                    },
+                    TypedWeightsAssign {
+                        name: "fc2",
+                        ty: ?31,
+                        mod_name: "Linear",
+                        fn_ty: ?30,
+                        fn_name: "new",
+                        fn_args: []
+                    }
+                ]
+            }
+        ),
+        TypedGraphDecl(
+            TypedGraphDecl {
+                name: "Mnist",
+                ty_sig: [!4, !5, !6, !7, ] -> [!4, !3, ],
+                fns: [
+                    TypedFnDecl {
+                        name: "new",
+                        fn_params: [],
+                        return_ty: ?32,
+                        func_block: TypedBlock {
+                            stmts: TypedList(
+                                [
+                                    TypedStmt {
+                                        items: TypedList(
+                                            [
+                                                TypedExpr {
+                                                    items: TypedFnApp(
+                                                        TypedFnApp {
+                                                            mod_name: Some(
+                                                                "fc1"
+                                                            ),
+                                                            name: "init_normal",
+                                                            args: [
+                                                                TypedFnAppArg {
+                                                                    name: "std",
+                                                                    arg: TypedExpr {
+                                                                        items: TypedFloat(
+                                                                            ?33,
+                                                                            1.0
+                                                                        ),
+                                                                        ty: ?34
+                                                                    }
+                                                                }
+                                                            ],
+                                                            ret_ty: ?35
+                                                        }
+                                                    ),
+                                                    ty: ?36
+                                                }
+                                            ]
+                                        )
+                                    },
+                                    TypedStmt {
+                                        items: TypedList(
+                                            [
+                                                TypedExpr {
+                                                    items: TypedFnApp(
+                                                        TypedFnApp {
+                                                            mod_name: Some(
+                                                                "fc2"
+                                                            ),
+                                                            name: "init_normal",
+                                                            args: [
+                                                                TypedFnAppArg {
+                                                                    name: "std",
+                                                                    arg: TypedExpr {
+                                                                        items: TypedFloat(
+                                                                            ?37,
+                                                                            1.0
+                                                                        ),
+                                                                        ty: ?38
+                                                                    }
+                                                                }
+                                                            ],
+                                                            ret_ty: ?39
+                                                        }
+                                                    ),
+                                                    ty: ?40
+                                                }
+                                            ]
+                                        )
+                                    }
+                                ]
+                            ),
+                            ret: TypedNone
+                        }
+                    },
+                    TypedFnDecl {
+                        name: "forward",
+                        fn_params: [
+                            TypedFnDeclParam {
+                                name: "x",
+                                ty_sig: ?41
+                            }
+                        ],
+                        return_ty: ?42,
+                        func_block: TypedBlock {
+                            stmts: TypedList(
+                                []
+                            ),
+                            ret: TypedExpr {
+                                items: TypedPipes(
+                                    TypedPipes {
+                                        items: [
+                                            TypedIdent(
+                                                ?41,
+                                                "x"
+                                            ),
+                                            TypedFnApp(
+                                                TypedFnApp {
+                                                    mod_name: None,
+                                                    name: "conv1",
+                                                    args: [
+                                                        TypedFnAppArg {
+                                                            name: "x",
+                                                            arg: TypedIdent(
+                                                                ?41,
+                                                                "x"
+                                                            )
+                                                        }
+                                                    ],
+                                                    ret_ty: ?43
+                                                }
+                                            ),
+                                            TypedFnApp(
+                                                TypedFnApp {
+                                                    mod_name: None,
+                                                    name: "maxpool2d",
+                                                    args: [
+                                                        TypedFnAppArg {
+                                                            name: "x",
+                                                            arg: TypedFnApp(
+                                                                TypedFnApp {
+                                                                    mod_name: None,
+                                                                    name: "conv1",
+                                                                    args: [
+                                                                        TypedFnAppArg {
+                                                                            name: "x",
+                                                                            arg: TypedIdent(
+                                                                                ?41,
+                                                                                "x"
+                                                                            )
+                                                                        }
+                                                                    ],
+                                                                    ret_ty: ?43
+                                                                }
+                                                            )
+                                                        },
+                                                        TypedFnAppArg {
+                                                            name: "xkernel_size",
+                                                            arg: TypedExpr {
+                                                                items: TypedInteger(
+                                                                    ?44,
+                                                                    2
+                                                                ),
+                                                                ty: ?45
+                                                            }
+                                                        }
+                                                    ],
+                                                    ret_ty: ?46
+                                                }
+                                            ),
+                                            TypedFnApp(
+                                                TypedFnApp {
+                                                    mod_name: None,
+                                                    name: "conv2",
+                                                    args: [
+                                                        TypedFnAppArg {
+                                                            name: "x",
+                                                            arg: TypedFnApp(
+                                                                TypedFnApp {
+                                                                    mod_name: None,
+                                                                    name: "maxpool2d",
+                                                                    args: [
+                                                                        TypedFnAppArg {
+                                                                            name: "x",
+                                                                            arg: TypedFnApp(
+                                                                                TypedFnApp {
+                                                                                    mod_name: None,
+                                                                                    name: "conv1",
+                                                                                    args: [
+                                                                                        TypedFnAppArg {
+                                                                                            name: "x",
+                                                                                            arg: TypedIdent(
+                                                                                                ?41,
+                                                                                                "x"
+                                                                                            )
+                                                                                        }
+                                                                                    ],
+                                                                                    ret_ty: ?43
+                                                                                }
+                                                                            )
+                                                                        },
+                                                                        TypedFnAppArg {
+                                                                            name: "xkernel_size",
+                                                                            arg: TypedExpr {
+                                                                                items: TypedInteger(
+                                                                                    ?44,
+                                                                                    2
+                                                                                ),
+                                                                                ty: ?45
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    ret_ty: ?46
+                                                                }
+                                                            )
+                                                        }
+                                                    ],
+                                                    ret_ty: ?47
+                                                }
+                                            ),
+                                            TypedFnApp(
+                                                TypedFnApp {
+                                                    mod_name: None,
+                                                    name: "dropout",
+                                                    args: [
+                                                        TypedFnAppArg {
+                                                            name: "x",
+                                                            arg: TypedFnApp(
+                                                                TypedFnApp {
+                                                                    mod_name: None,
+                                                                    name: "conv2",
+                                                                    args: [
+                                                                        TypedFnAppArg {
+                                                                            name: "x",
+                                                                            arg: TypedFnApp(
+                                                                                TypedFnApp {
+                                                                                    mod_name: None,
+                                                                                    name: "maxpool2d",
+                                                                                    args: [
+                                                                                        TypedFnAppArg {
+                                                                                            name: "x",
+                                                                                            arg: TypedFnApp(
+                                                                                                TypedFnApp {
+                                                                                                    mod_name: None,
+                                                                                                    name: "conv1",
+                                                                                                    args: [
+                                                                                                        TypedFnAppArg {
+                                                                                                            name: "x",
+                                                                                                            arg: TypedIdent(
+                                                                                                                ?41,
+                                                                                                                "x"
+                                                                                                            )
+                                                                                                        }
+                                                                                                    ],
+                                                                                                    ret_ty: ?43
+                                                                                                }
+                                                                                            )
+                                                                                        },
+                                                                                        TypedFnAppArg {
+                                                                                            name: "xkernel_size",
+                                                                                            arg: TypedExpr {
+                                                                                                items: TypedInteger(
+                                                                                                    ?44,
+                                                                                                    2
+                                                                                                ),
+                                                                                                ty: ?45
+                                                                                            }
+                                                                                        }
+                                                                                    ],
+                                                                                    ret_ty: ?46
+                                                                                }
+                                                                            )
+                                                                        }
+                                                                    ],
+                                                                    ret_ty: ?47
+                                                                }
+                                                            )
+                                                        }
+                                                    ],
+                                                    ret_ty: ?48
+                                                }
+                                            ),
+                                            TypedFnApp(
+                                                TypedFnApp {
+                                                    mod_name: None,
+                                                    name: "maxpool2d",
+                                                    args: [
+                                                        TypedFnAppArg {
+                                                            name: "x",
+                                                            arg: TypedFnApp(
+                                                                TypedFnApp {
+                                                                    mod_name: None,
+                                                                    name: "dropout",
+                                                                    args: [
+                                                                        TypedFnAppArg {
+                                                                            name: "x",
+                                                                            arg: TypedFnApp(
+                                                                                TypedFnApp {
+                                                                                    mod_name: None,
+                                                                                    name: "conv2",
+                                                                                    args: [
+                                                                                        TypedFnAppArg {
+                                                                                            name: "x",
+                                                                                            arg: TypedFnApp(
+                                                                                                TypedFnApp {
+                                                                                                    mod_name: None,
+                                                                                                    name: "maxpool2d",
+                                                                                                    args: [
+                                                                                                        TypedFnAppArg {
+                                                                                                            name: "x",
+                                                                                                            arg: TypedFnApp(
+                                                                                                                TypedFnApp {
+                                                                                                                    mod_name: None,
+                                                                                                                    name: "conv1",
+                                                                                                                    args: [
+                                                                                                                        TypedFnAppArg {
+                                                                                                                            name: "x",
+                                                                                                                            arg: TypedIdent(
+                                                                                                                                ?41,
+                                                                                                                                "x"
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                    ],
+                                                                                                                    ret_ty: ?43
+                                                                                                                }
+                                                                                                            )
+                                                                                                        },
+                                                                                                        TypedFnAppArg {
+                                                                                                            name: "xkernel_size",
+                                                                                                            arg: TypedExpr {
+                                                                                                                items: TypedInteger(
+                                                                                                                    ?44,
+                                                                                                                    2
+                                                                                                                ),
+                                                                                                                ty: ?45
+                                                                                                            }
+                                                                                                        }
+                                                                                                    ],
+                                                                                                    ret_ty: ?46
+                                                                                                }
+                                                                                            )
+                                                                                        }
+                                                                                    ],
+                                                                                    ret_ty: ?47
+                                                                                }
+                                                                            )
+                                                                        }
+                                                                    ],
+                                                                    ret_ty: ?48
+                                                                }
+                                                            )
+                                                        },
+                                                        TypedFnAppArg {
+                                                            name: "kernel_size",
+                                                            arg: TypedExpr {
+                                                                items: TypedInteger(
+                                                                    ?49,
+                                                                    2
+                                                                ),
+                                                                ty: ?50
+                                                            }
+                                                        }
+                                                    ],
+                                                    ret_ty: ?51
+                                                }
+                                            ),
+                                            TypedFnApp(
+                                                TypedFnApp {
+                                                    mod_name: None,
+                                                    name: "fc1",
+                                                    args: [
+                                                        TypedFnAppArg {
+                                                            name: "x",
+                                                            arg: TypedFnApp(
+                                                                TypedFnApp {
+                                                                    mod_name: None,
+                                                                    name: "maxpool2d",
+                                                                    args: [
+                                                                        TypedFnAppArg {
+                                                                            name: "x",
+                                                                            arg: TypedFnApp(
+                                                                                TypedFnApp {
+                                                                                    mod_name: None,
+                                                                                    name: "dropout",
+                                                                                    args: [
+                                                                                        TypedFnAppArg {
+                                                                                            name: "x",
+                                                                                            arg: TypedFnApp(
+                                                                                                TypedFnApp {
+                                                                                                    mod_name: None,
+                                                                                                    name: "conv2",
+                                                                                                    args: [
+                                                                                                        TypedFnAppArg {
+                                                                                                            name: "x",
+                                                                                                            arg: TypedFnApp(
+                                                                                                                TypedFnApp {
+                                                                                                                    mod_name: None,
+                                                                                                                    name: "maxpool2d",
+                                                                                                                    args: [
+                                                                                                                        TypedFnAppArg {
+                                                                                                                            name: "x",
+                                                                                                                            arg: TypedFnApp(
+                                                                                                                                TypedFnApp {
+                                                                                                                                    mod_name: None,
+                                                                                                                                    name: "conv1",
+                                                                                                                                    args: [
+                                                                                                                                        TypedFnAppArg {
+                                                                                                                                            name: "x",
+                                                                                                                                            arg: TypedIdent(
+                                                                                                                                                ?41,
+                                                                                                                                                "x"
+                                                                                                                                            )
+                                                                                                                                        }
+                                                                                                                                    ],
+                                                                                                                                    ret_ty: ?43
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                        },
+                                                                                                                        TypedFnAppArg {
+                                                                                                                            name: "xkernel_size",
+                                                                                                                            arg: TypedExpr {
+                                                                                                                                items: TypedInteger(
+                                                                                                                                    ?44,
+                                                                                                                                    2
+                                                                                                                                ),
+                                                                                                                                ty: ?45
+                                                                                                                            }
+                                                                                                                        }
+                                                                                                                    ],
+                                                                                                                    ret_ty: ?46
+                                                                                                                }
+                                                                                                            )
+                                                                                                        }
+                                                                                                    ],
+                                                                                                    ret_ty: ?47
+                                                                                                }
+                                                                                            )
+                                                                                        }
+                                                                                    ],
+                                                                                    ret_ty: ?48
+                                                                                }
+                                                                            )
+                                                                        },
+                                                                        TypedFnAppArg {
+                                                                            name: "kernel_size",
+                                                                            arg: TypedExpr {
+                                                                                items: TypedInteger(
+                                                                                    ?49,
+                                                                                    2
+                                                                                ),
+                                                                                ty: ?50
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    ret_ty: ?51
+                                                                }
+                                                            )
+                                                        }
+                                                    ],
+                                                    ret_ty: ?52
+                                                }
+                                            ),
+                                            TypedFnApp(
+                                                TypedFnApp {
+                                                    mod_name: None,
+                                                    name: "relu",
+                                                    args: [
+                                                        TypedFnAppArg {
+                                                            name: "x",
+                                                            arg: TypedFnApp(
+                                                                TypedFnApp {
+                                                                    mod_name: None,
+                                                                    name: "fc1",
+                                                                    args: [
+                                                                        TypedFnAppArg {
+                                                                            name: "x",
+                                                                            arg: TypedFnApp(
+                                                                                TypedFnApp {
+                                                                                    mod_name: None,
+                                                                                    name: "maxpool2d",
+                                                                                    args: [
+                                                                                        TypedFnAppArg {
+                                                                                            name: "x",
+                                                                                            arg: TypedFnApp(
+                                                                                                TypedFnApp {
+                                                                                                    mod_name: None,
+                                                                                                    name: "dropout",
+                                                                                                    args: [
+                                                                                                        TypedFnAppArg {
+                                                                                                            name: "x",
+                                                                                                            arg: TypedFnApp(
+                                                                                                                TypedFnApp {
+                                                                                                                    mod_name: None,
+                                                                                                                    name: "conv2",
+                                                                                                                    args: [
+                                                                                                                        TypedFnAppArg {
+                                                                                                                            name: "x",
+                                                                                                                            arg: TypedFnApp(
+                                                                                                                                TypedFnApp {
+                                                                                                                                    mod_name: None,
+                                                                                                                                    name: "maxpool2d",
+                                                                                                                                    args: [
+                                                                                                                                        TypedFnAppArg {
+                                                                                                                                            name: "x",
+                                                                                                                                            arg: TypedFnApp(
+                                                                                                                                                TypedFnApp {
+                                                                                                                                                    mod_name: None,
+                                                                                                                                                    name: "conv1",
+                                                                                                                                                    args: [
+                                                                                                                                                        TypedFnAppArg {
+                                                                                                                                                            name: "x",
+                                                                                                                                                            arg: TypedIdent(
+                                                                                                                                                                ?41,
+                                                                                                                                                                "x"
+                                                                                                                                                            )
+                                                                                                                                                        }
+                                                                                                                                                    ],
+                                                                                                                                                    ret_ty: ?43
+                                                                                                                                                }
+                                                                                                                                            )
+                                                                                                                                        },
+                                                                                                                                        TypedFnAppArg {
+                                                                                                                                            name: "xkernel_size",
+                                                                                                                                            arg: TypedExpr {
+                                                                                                                                                items: TypedInteger(
+                                                                                                                                                    ?44,
+                                                                                                                                                    2
+                                                                                                                                                ),
+                                                                                                                                                ty: ?45
+                                                                                                                                            }
+                                                                                                                                        }
+                                                                                                                                    ],
+                                                                                                                                    ret_ty: ?46
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                    ],
+                                                                                                                    ret_ty: ?47
+                                                                                                                }
+                                                                                                            )
+                                                                                                        }
+                                                                                                    ],
+                                                                                                    ret_ty: ?48
+                                                                                                }
+                                                                                            )
+                                                                                        },
+                                                                                        TypedFnAppArg {
+                                                                                            name: "kernel_size",
+                                                                                            arg: TypedExpr {
+                                                                                                items: TypedInteger(
+                                                                                                    ?49,
+                                                                                                    2
+                                                                                                ),
+                                                                                                ty: ?50
+                                                                                            }
+                                                                                        }
+                                                                                    ],
+                                                                                    ret_ty: ?51
+                                                                                }
+                                                                            )
+                                                                        }
+                                                                    ],
+                                                                    ret_ty: ?52
+                                                                }
+                                                            )
+                                                        }
+                                                    ],
+                                                    ret_ty: ?53
+                                                }
+                                            ),
+                                            TypedFnApp(
+                                                TypedFnApp {
+                                                    mod_name: Some(
+                                                        "self"
+                                                    ),
+                                                    name: "fc2",
+                                                    args: [
+                                                        TypedFnAppArg {
+                                                            name: "x",
+                                                            arg: TypedFnApp(
+                                                                TypedFnApp {
+                                                                    mod_name: None,
+                                                                    name: "relu",
+                                                                    args: [
+                                                                        TypedFnAppArg {
+                                                                            name: "x",
+                                                                            arg: TypedFnApp(
+                                                                                TypedFnApp {
+                                                                                    mod_name: None,
+                                                                                    name: "fc1",
+                                                                                    args: [
+                                                                                        TypedFnAppArg {
+                                                                                            name: "x",
+                                                                                            arg: TypedFnApp(
+                                                                                                TypedFnApp {
+                                                                                                    mod_name: None,
+                                                                                                    name: "maxpool2d",
+                                                                                                    args: [
+                                                                                                        TypedFnAppArg {
+                                                                                                            name: "x",
+                                                                                                            arg: TypedFnApp(
+                                                                                                                TypedFnApp {
+                                                                                                                    mod_name: None,
+                                                                                                                    name: "dropout",
+                                                                                                                    args: [
+                                                                                                                        TypedFnAppArg {
+                                                                                                                            name: "x",
+                                                                                                                            arg: TypedFnApp(
+                                                                                                                                TypedFnApp {
+                                                                                                                                    mod_name: None,
+                                                                                                                                    name: "conv2",
+                                                                                                                                    args: [
+                                                                                                                                        TypedFnAppArg {
+                                                                                                                                            name: "x",
+                                                                                                                                            arg: TypedFnApp(
+                                                                                                                                                TypedFnApp {
+                                                                                                                                                    mod_name: None,
+                                                                                                                                                    name: "maxpool2d",
+                                                                                                                                                    args: [
+                                                                                                                                                        TypedFnAppArg {
+                                                                                                                                                            name: "x",
+                                                                                                                                                            arg: TypedFnApp(
+                                                                                                                                                                TypedFnApp {
+                                                                                                                                                                    mod_name: None,
+                                                                                                                                                                    name: "conv1",
+                                                                                                                                                                    args: [
+                                                                                                                                                                        TypedFnAppArg {
+                                                                                                                                                                            name: "x",
+                                                                                                                                                                            arg: TypedIdent(
+                                                                                                                                                                                ?41,
+                                                                                                                                                                                "x"
+                                                                                                                                                                            )
+                                                                                                                                                                        }
+                                                                                                                                                                    ],
+                                                                                                                                                                    ret_ty: ?43
+                                                                                                                                                                }
+                                                                                                                                                            )
+                                                                                                                                                        },
+                                                                                                                                                        TypedFnAppArg {
+                                                                                                                                                            name: "xkernel_size",
+                                                                                                                                                            arg: TypedExpr {
+                                                                                                                                                                items: TypedInteger(
+                                                                                                                                                                    ?44,
+                                                                                                                                                                    2
+                                                                                                                                                                ),
+                                                                                                                                                                ty: ?45
+                                                                                                                                                            }
+                                                                                                                                                        }
+                                                                                                                                                    ],
+                                                                                                                                                    ret_ty: ?46
+                                                                                                                                                }
+                                                                                                                                            )
+                                                                                                                                        }
+                                                                                                                                    ],
+                                                                                                                                    ret_ty: ?47
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                        }
+                                                                                                                    ],
+                                                                                                                    ret_ty: ?48
+                                                                                                                }
+                                                                                                            )
+                                                                                                        },
+                                                                                                        TypedFnAppArg {
+                                                                                                            name: "kernel_size",
+                                                                                                            arg: TypedExpr {
+                                                                                                                items: TypedInteger(
+                                                                                                                    ?49,
+                                                                                                                    2
+                                                                                                                ),
+                                                                                                                ty: ?50
+                                                                                                            }
+                                                                                                        }
+                                                                                                    ],
+                                                                                                    ret_ty: ?51
+                                                                                                }
+                                                                                            )
+                                                                                        }
+                                                                                    ],
+                                                                                    ret_ty: ?52
+                                                                                }
+                                                                            )
+                                                                        }
+                                                                    ],
+                                                                    ret_ty: ?53
+                                                                }
+                                                            )
+                                                        }
+                                                    ],
+                                                    ret_ty: ?54
+                                                }
+                                            ),
+                                            TypedFnApp(
+                                                TypedFnApp {
+                                                    mod_name: None,
+                                                    name: "log_softmax",
+                                                    args: [
+                                                        TypedFnAppArg {
+                                                            name: "x",
+                                                            arg: TypedFnApp(
+                                                                TypedFnApp {
+                                                                    mod_name: Some(
+                                                                        "self"
+                                                                    ),
+                                                                    name: "fc2",
+                                                                    args: [
+                                                                        TypedFnAppArg {
+                                                                            name: "x",
+                                                                            arg: TypedFnApp(
+                                                                                TypedFnApp {
+                                                                                    mod_name: None,
+                                                                                    name: "relu",
+                                                                                    args: [
+                                                                                        TypedFnAppArg {
+                                                                                            name: "x",
+                                                                                            arg: TypedFnApp(
+                                                                                                TypedFnApp {
+                                                                                                    mod_name: None,
+                                                                                                    name: "fc1",
+                                                                                                    args: [
+                                                                                                        TypedFnAppArg {
+                                                                                                            name: "x",
+                                                                                                            arg: TypedFnApp(
+                                                                                                                TypedFnApp {
+                                                                                                                    mod_name: None,
+                                                                                                                    name: "maxpool2d",
+                                                                                                                    args: [
+                                                                                                                        TypedFnAppArg {
+                                                                                                                            name: "x",
+                                                                                                                            arg: TypedFnApp(
+                                                                                                                                TypedFnApp {
+                                                                                                                                    mod_name: None,
+                                                                                                                                    name: "dropout",
+                                                                                                                                    args: [
+                                                                                                                                        TypedFnAppArg {
+                                                                                                                                            name: "x",
+                                                                                                                                            arg: TypedFnApp(
+                                                                                                                                                TypedFnApp {
+                                                                                                                                                    mod_name: None,
+                                                                                                                                                    name: "conv2",
+                                                                                                                                                    args: [
+                                                                                                                                                        TypedFnAppArg {
+                                                                                                                                                            name: "x",
+                                                                                                                                                            arg: TypedFnApp(
+                                                                                                                                                                TypedFnApp {
+                                                                                                                                                                    mod_name: None,
+                                                                                                                                                                    name: "maxpool2d",
+                                                                                                                                                                    args: [
+                                                                                                                                                                        TypedFnAppArg {
+                                                                                                                                                                            name: "x",
+                                                                                                                                                                            arg: TypedFnApp(
+                                                                                                                                                                                TypedFnApp {
+                                                                                                                                                                                    mod_name: None,
+                                                                                                                                                                                    name: "conv1",
+                                                                                                                                                                                    args: [
+                                                                                                                                                                                        TypedFnAppArg {
+                                                                                                                                                                                            name: "x",
+                                                                                                                                                                                            arg: TypedIdent(
+                                                                                                                                                                                                ?41,
+                                                                                                                                                                                                "x"
+                                                                                                                                                                                            )
+                                                                                                                                                                                        }
+                                                                                                                                                                                    ],
+                                                                                                                                                                                    ret_ty: ?43
+                                                                                                                                                                                }
+                                                                                                                                                                            )
+                                                                                                                                                                        },
+                                                                                                                                                                        TypedFnAppArg {
+                                                                                                                                                                            name: "xkernel_size",
+                                                                                                                                                                            arg: TypedExpr {
+                                                                                                                                                                                items: TypedInteger(
+                                                                                                                                                                                    ?44,
+                                                                                                                                                                                    2
+                                                                                                                                                                                ),
+                                                                                                                                                                                ty: ?45
+                                                                                                                                                                            }
+                                                                                                                                                                        }
+                                                                                                                                                                    ],
+                                                                                                                                                                    ret_ty: ?46
+                                                                                                                                                                }
+                                                                                                                                                            )
+                                                                                                                                                        }
+                                                                                                                                                    ],
+                                                                                                                                                    ret_ty: ?47
+                                                                                                                                                }
+                                                                                                                                            )
+                                                                                                                                        }
+                                                                                                                                    ],
+                                                                                                                                    ret_ty: ?48
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                        },
+                                                                                                                        TypedFnAppArg {
+                                                                                                                            name: "kernel_size",
+                                                                                                                            arg: TypedExpr {
+                                                                                                                                items: TypedInteger(
+                                                                                                                                    ?49,
+                                                                                                                                    2
+                                                                                                                                ),
+                                                                                                                                ty: ?50
+                                                                                                                            }
+                                                                                                                        }
+                                                                                                                    ],
+                                                                                                                    ret_ty: ?51
+                                                                                                                }
+                                                                                                            )
+                                                                                                        }
+                                                                                                    ],
+                                                                                                    ret_ty: ?52
+                                                                                                }
+                                                                                            )
+                                                                                        }
+                                                                                    ],
+                                                                                    ret_ty: ?53
+                                                                                }
+                                                                            )
+                                                                        }
+                                                                    ],
+                                                                    ret_ty: ?54
+                                                                }
+                                                            )
+                                                        },
+                                                        TypedFnAppArg {
+                                                            name: "dim",
+                                                            arg: TypedExpr {
+                                                                items: TypedInteger(
+                                                                    ?55,
+                                                                    1
+                                                                ),
+                                                                ty: ?56
+                                                            }
+                                                        }
+                                                    ],
+                                                    ret_ty: ?57
+                                                }
+                                            )
+                                        ],
+                                        ret_ty: ()
+                                    }
+                                ),
+                                ty: ?58
+                            }
+                        }
+                    },
+                    TypedFnDecl {
+                        name: "fc2",
+                        fn_params: [
+                            TypedFnDeclParam {
+                                name: "x",
+                                ty_sig: ?59
+                            }
+                        ],
+                        return_ty: ?60,
+                        func_block: TypedBlock {
+                            stmts: TypedList(
+                                []
+                            ),
+                            ret: TypedExpr {
+                                items: TypedPipes(
+                                    TypedPipes {
+                                        items: [
+                                            TypedIdent(
+                                                ?59,
+                                                "x"
+                                            ),
+                                            TypedFnApp(
+                                                TypedFnApp {
+                                                    mod_name: None,
+                                                    name: "fc2",
+                                                    args: [
+                                                        TypedFnAppArg {
+                                                            name: "x",
+                                                            arg: TypedIdent(
+                                                                ?59,
+                                                                "x"
+                                                            )
+                                                        }
+                                                    ],
+                                                    ret_ty: ?61
+                                                }
+                                            ),
+                                            TypedFnApp(
+                                                TypedFnApp {
+                                                    mod_name: None,
+                                                    name: "relu",
+                                                    args: [
+                                                        TypedFnAppArg {
+                                                            name: "x",
+                                                            arg: TypedFnApp(
+                                                                TypedFnApp {
+                                                                    mod_name: None,
+                                                                    name: "fc2",
+                                                                    args: [
+                                                                        TypedFnAppArg {
+                                                                            name: "x",
+                                                                            arg: TypedIdent(
+                                                                                ?59,
+                                                                                "x"
+                                                                            )
+                                                                        }
+                                                                    ],
+                                                                    ret_ty: ?61
+                                                                }
+                                                            )
+                                                        }
+                                                    ],
+                                                    ret_ty: ?62
+                                                }
+                                            )
+                                        ],
+                                        ret_ty: ()
+                                    }
+                                ),
+                                ty: ?63
+                            }
+                        }
+                    }
+                ]
+            }
+        )
+    ]
+)
+TypeEnv {
+    counter: 63,
+    current_mod: Global,
+    modules: {
+        Global: [],
+        Named(
+            "Mnist"
+        ): [
+            Scope {
+                aliases: {
+                    "FC1": !1,
+                    "c": !5,
+                    "fc1": ?28,
+                    "dropout": ?24,
+                    "?": !4,
+                    "h": !6,
+                    "fc2": ?30,
+                    "IMAGE": [!4, !5, !6, !7, ],
+                    "w": !7,
+                    "OUT": !3,
+                    "x": ?59,
+                    "conv2": ?16,
+                    "FC2": !2,
+                    "TEST": [!4, !2, ],
+                    "conv1": ?8
+                }
+            }
+        ]
+    }
+}

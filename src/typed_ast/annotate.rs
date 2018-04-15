@@ -38,7 +38,7 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TypedTerm {
         &Stmt{ref items} => TypedStmt {
             items: Box::new(annotate(&items, tenv))
         },
-        &FieldAccess(ref f_a) => TypedFieldAccess(annotate_field_access(f_a, tenv)),
+        &FieldAccess(ref f_a) => annotate_field_access(f_a, tenv),
         &None => TypedNone,
         &Pipes(ref pipes) => TypedPipes(annotate_pipes(pipes, tenv)),
         _ => unimplemented!(),
@@ -54,32 +54,26 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TypedPipes {
     items.push(term0.clone());
 
     while let Some(t) = it.next() {
-        println!("{:#?}", t);
+        let prev_arg = TypedFnAppArg { name: String::from("x"), arg: Box::new(term0) };
         let t = match t {
             &Term::Ident(ref id) => {
                 TypedTerm::TypedFnApp(TypedFnApp {
+                    mod_name: None,
                     name: id.to_owned(),
-                    args: vec![TypedFnAppArg { name: String::from("x"), arg: Box::new(term0) }],
+                    args: vec![prev_arg],
                     ret_ty: tenv.fresh_var(),
                 })
             },
-            &Term::FnApp(FnApp{ref name, ref args}) => {
-                TypedTerm::TypedFnApp(TypedFnApp {
-                    name: name.to_owned(),
-                    args: {
-                        let mut args: Vec<TypedFnAppArg> = args.iter().cloned()
-                            .map(|a| annotate_fn_call_arg(&a, tenv))
-                            .collect();
-                        args.insert(0, TypedFnAppArg { name: String::from("x"), arg: Box::new(term0) });
-                        args
-                    },
-                    ret_ty: tenv.fresh_var(),
-                })
+            &Term::FnApp(ref fn_app) => {
+                let mut typed_fn_app = annotate_fn_call(&fn_app, tenv);
+                TypedTerm::TypedFnApp(typed_fn_app.extend_arg(prev_arg))
             },
             &Term::FieldAccess(ref f_a) => {
-                let mut typed_f_a = annotate_field_access(&f_a, tenv);
-                unimplemented!();
-                TypedTerm::TypedFieldAccess(typed_f_a)
+                let typed_f_a = annotate_field_access(&f_a, tenv);
+                match typed_f_a {
+                    TypedTerm::TypedFnApp(ref fn_app) => TypedTerm::TypedFnApp(fn_app.clone().extend_arg(prev_arg)),
+                    _ => panic!("Error: for field access in a pipeline, use parenthesis: f()"),
+                }
             },
             _ => unimplemented!(),
         };
@@ -180,8 +174,17 @@ fn annotate_fn_call_arg(call: &FnAppArg, tenv: &mut TypeEnv) -> TypedFnAppArg {
     }
 }
 
-// fn annotate_fn_call(node_name: &str, w_assign: &FnApp, tenv: &mut TypeEnv) -> TypedFnApp {
-// }
+fn annotate_fn_call(fn_app: &FnApp, tenv: &mut TypeEnv) -> TypedFnApp {
+    let FnApp {ref name, ref args } = fn_app;
+    TypedFnApp {
+        mod_name: None,
+        name: name.to_owned(),
+        args: args.iter()
+            .map(|a| annotate_fn_call_arg(&a, tenv))
+            .collect(),
+        ret_ty: tenv.fresh_var(),
+    }
+}
 
 
 fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TypedFnDecl {
@@ -207,25 +210,31 @@ fn annotate_fn_decl_param(p: &FnDeclParam, tenv: &mut TypeEnv) -> TypedFnDeclPar
     }
 }
 
-fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TypedFieldAccess {
+fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TypedTerm {
     let module = tenv.module();
     match module {
         ModName::Global =>
             panic!("Cannot use field access in global scope"),
         ModName::Named(ref _node_name) => {
-            let f = match f_a.func_call {
-                None => None,
+            match f_a.func_call {
+                None => {
+                    TypedTerm::TypedFieldAccess(TypedFieldAccess {
+                        mod_name: f_a.mod_name.clone(),
+                        field_name: f_a.field_name.clone(),
+                        ty: tenv.fresh_var(),
+                    })
+                },
                 Some(ref v) => {
-                    Some((tenv.fresh_var(),
-                        v.iter()
+                    let args = v.iter()
                             .map(|arg| annotate_fn_call_arg(arg, tenv))
-                            .collect()))
+                            .collect();
+                    TypedTerm::TypedFnApp(TypedFnApp {
+                        mod_name: Some(f_a.mod_name.clone()),
+                        name: f_a.field_name.clone(),
+                        args,
+                        ret_ty: tenv.fresh_var(),
+                    })
                 }
-            };
-            TypedFieldAccess {
-                var_name: f_a.var_name.clone(),
-                field_name: f_a.field_name.clone(),
-                func_call: f,
             }
         }
     }

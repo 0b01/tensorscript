@@ -28,8 +28,7 @@ impl Typed for TypedTerm {
 
 impl Typed for TypedFieldAccess {
     fn ty(&self) -> Type {
-        if self.func_call.is_none() { Type::Unit }
-        else { self.func_call.clone().unwrap().0.clone() }
+        self.ty.clone()
     }
 }
 
@@ -119,9 +118,22 @@ pub struct TypedWeightsAssign {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TypedFnApp {
+    pub mod_name: Option<String>,
     pub name: String,
     pub args: Vec<TypedFnAppArg>,
     pub ret_ty: Type,
+}
+
+impl TypedFnApp {
+    pub fn extend_arg(mut self, arg: TypedFnAppArg) -> TypedFnApp {
+        self.args.insert(0, arg);
+        TypedFnApp {
+            mod_name: self.mod_name,
+            name: self.name,
+            args: self.args,
+            ret_ty: self.ret_ty,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -152,7 +164,7 @@ pub struct TypedFnDeclParam {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TypedFieldAccess {
-    pub var_name: String,
+    pub mod_name: String,
     pub field_name: String,
-    pub func_call: Option<(Type, Vec<TypedFnAppArg>)>,
+    pub ty: Type,
 }
