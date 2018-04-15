@@ -15,9 +15,16 @@ pub enum Term {
     ViewFn(ViewFn),
     FieldAccess(FieldAccess),
     FnApp(FnApp),
-    Block { stmts: Statements, ret: Expression },
-    Expr { items: Box<Term> },
-    Stmt { items: Box<Term> },
+    Block {
+        stmts: Statements,
+        ret: Expression,
+    },
+    Expr {
+        items: Box<Term>,
+    },
+    Stmt {
+        items: Box<Term>,
+    },
     Pipes(Vec<Term>),
 }
 

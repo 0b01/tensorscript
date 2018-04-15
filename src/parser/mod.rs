@@ -1,5 +1,5 @@
 mod builder;
-pub mod term;
 mod grammar;
+pub mod term;
 
 pub use self::builder::parse_str;

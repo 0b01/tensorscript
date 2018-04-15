@@ -40,27 +40,27 @@ macro_rules! eat {
 }
 
 macro_rules! to_idents {
-    ($ident_list: expr) => {
-        $ident_list.into_inner()
+    ($ident_list:expr) => {
+        $ident_list
+            .into_inner()
             .map(|id| id.as_str())
             .map(String::from)
             .collect()
     };
 }
 
-use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, GraphDecl,
-          NodeAssign, NodeDecl, TensorTy, UseStmt, WeightsAssign, WeightsDecl, ViewFn,
-          Term};
-use parser::grammar::{Rule, TensorScriptParser};
 use parser::grammar::Rule::*;
-use pest::iterators::{Pair};
+use parser::grammar::{Rule, TensorScriptParser};
+use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, GraphDecl,
+                   NodeAssign, NodeDecl, TensorTy, Term, UseStmt, ViewFn, WeightsAssign,
+                   WeightsDecl};
 use pest::Parser;
+use pest::iterators::Pair;
 
 #[derive(Debug)]
 pub struct TSSParseError {
     msg: String,
 }
-
 
 pub fn parse_str(source: &str) -> Result<Term, TSSParseError> {
     // let program = TensorScriptParser::parse(dim_assign, "dim T = 1;");
@@ -271,9 +271,7 @@ fn build_fn_decl_params(pair: Pair<Rule>) -> Result<Vec<FnDeclParam>, TSSParseEr
 fn build_view_fn(pair: Pair<Rule>) -> Result<ViewFn, TSSParseError> {
     let tokens = pair.into_inner();
     let dims = tokens.map(|p| String::from(p.as_str())).collect();
-    Ok(ViewFn {
-        dims,
-    })
+    Ok(ViewFn { dims })
 }
 
 fn build_fn_app(pair: Pair<Rule>) -> Result<FnApp, TSSParseError> {
@@ -454,9 +452,7 @@ fn build_node_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let ty_signature = build_fn_ty_sig(ty_decl)?;
 
     let macros = node_body.into_inner();
-    let macros = macros
-        .map(|p| build_node_assign(p).unwrap())
-        .collect();
+    let macros = macros.map(|p| build_node_assign(p).unwrap()).collect();
 
     Ok(Decl::NodeDecl(NodeDecl {
         name: node_name.to_owned(),

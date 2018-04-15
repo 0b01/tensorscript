@@ -3,12 +3,12 @@ extern crate pest;
 extern crate pest_derive;
 
 mod parser;
-mod typed_ast;
 mod type_reconstruction;
+mod typed_ast;
 
-use typed_ast::type_env::TypeEnv;
-use typed_ast::annotate::annotate;
 use type_reconstruction::constraint::Constraints;
+use typed_ast::annotate::annotate;
+use typed_ast::type_env::TypeEnv;
 
 const TEST_STR: &str = include_str!("../test.tss");
 

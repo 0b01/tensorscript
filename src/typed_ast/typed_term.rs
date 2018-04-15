@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter, Error};
+use std::fmt::{Display, Error, Formatter};
 use typed_ast::Type;
 
 pub trait Ty {
@@ -54,9 +54,17 @@ pub enum TyTerm {
     TyIdent(Type, String),
     TyFieldAccess(TyFieldAccess),
     TyFnApp(TyFnApp),
-    TyBlock { stmts: Box<TyTerm>, ret: Box<TyTerm> },
-    TyExpr { items: Box<TyTerm>, ty: Type },
-    TyStmt { items: Box<TyTerm> },
+    TyBlock {
+        stmts: Box<TyTerm>,
+        ret: Box<TyTerm>,
+    },
+    TyExpr {
+        items: Box<TyTerm>,
+        ty: Type,
+    },
+    TyStmt {
+        items: Box<TyTerm>,
+    },
     TyViewFn(TyViewFn),
 }
 
@@ -141,7 +149,6 @@ pub struct TyViewFn {
     pub ty: Type,
     pub arg: TyFnAppArg,
 }
-
 
 // #[derive(Debug, PartialEq, Clone)]
 // pub enum TyNodeAssign {

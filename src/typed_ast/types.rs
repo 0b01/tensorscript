@@ -1,13 +1,19 @@
+use std::fmt::{Debug, Error, Formatter};
 use typed_ast::type_env::TypeId;
-use std::fmt::{Debug, Formatter, Error};
 
 #[derive(PartialEq, Clone, Eq, Hash)]
 pub enum Type {
     Unit,
     Var(TypeId),
     Dim(TypeId),
-    Fun { param_ty: Box<Type>, return_ty: Box<Type> },
-    Tensor { rank: usize, dims: Vec<Type> },
+    Fun {
+        param_ty: Box<Type>,
+        return_ty: Box<Type>,
+    },
+    Tensor {
+        rank: usize,
+        dims: Vec<Type>,
+    },
 }
 
 impl Debug for Type {
@@ -17,18 +23,21 @@ impl Debug for Type {
             Unit => write!(f, "()"),
             Var(ref t_id) => write!(f, "?{:?}", t_id),
             Dim(ref t_id) => write!(f, "!{:?}", t_id),
-            Fun { ref param_ty, ref return_ty } => write!(f, "{:?} -> {:?}", param_ty, return_ty),
+            Fun {
+                ref param_ty,
+                ref return_ty,
+            } => write!(f, "{:?} -> {:?}", param_ty, return_ty),
             Tensor { ref rank, ref dims } => {
                 if rank > &0 {
                     write!(f, "[")?;
-                    for i in dims[0..dims.len()-1].iter() {
+                    for i in dims[0..dims.len() - 1].iter() {
                         write!(f, "{:?}, ", i)?;
                     }
-                    write!(f, "{:?}]", dims[dims.len()-1])
+                    write!(f, "{:?}]", dims[dims.len() - 1])
                 } else {
                     write!(f, "[]")
                 }
-            },
+            }
         }
     }
 }

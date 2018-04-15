@@ -1,6 +1,6 @@
+use parser::term::{NodeAssign, TensorTy, Term};
 use std::collections::{HashMap, VecDeque};
 use typed_ast::Type;
-use parser::term::{TensorTy, NodeAssign, Term};
 
 pub type TypeId = usize;
 
@@ -28,7 +28,9 @@ pub struct Scope {
 
 impl Scope {
     pub fn new() -> Scope {
-        Scope { aliases: HashMap::new() }
+        Scope {
+            aliases: HashMap::new(),
+        }
     }
 }
 
@@ -38,7 +40,6 @@ pub struct TypeEnv {
     current_mod: ModName,
     modules: HashMap<ModName, VecDeque<Scope>>,
 }
-
 
 impl TypeEnv {
     pub fn new() -> Self {
@@ -76,7 +77,8 @@ impl TypeEnv {
 
     fn get_scoped_aliases(&self, mod_name: &ModName, alias: &str) -> Vec<Type> {
         let stack = self.modules.get(mod_name).unwrap();
-        stack.into_iter()
+        stack
+            .into_iter()
             .rev()
             .map(|sc| sc.aliases.get(alias))
             .filter(|i| i.is_some())
@@ -87,13 +89,15 @@ impl TypeEnv {
 
     pub fn add_alias(&mut self, mod_name: &ModName, alias: &str, ty: Type) {
         let stack = self.modules.entry(mod_name.clone()).or_insert({
-            let mut q = VecDeque::new(); 
+            let mut q = VecDeque::new();
             q.push_back(Scope::new());
             q
         });
         let top = stack.len() - 1;
         let scope = stack.get_mut(top).unwrap();
-        if scope.aliases.contains_key(alias) { panic!("duplicate item"); }
+        if scope.aliases.contains_key(alias) {
+            panic!("duplicate item");
+        }
         let _ = scope.aliases.insert(alias.to_owned(), ty);
     }
 
@@ -111,7 +115,7 @@ impl TypeEnv {
                 }
             })
             .collect::<Vec<()>>();
-        
+
         // then insert the tensor itself
         let tsr = self.create_tensor(mod_name, tsr);
         self.add_alias(mod_name, alias, tsr)
@@ -143,16 +147,16 @@ impl TypeEnv {
         match a {
             &NodeAssign::TyAlias {
                 ident: ref id,
-                rhs: TensorTy::Generic(ref tys)
+                rhs: TensorTy::Generic(ref tys),
             } => {
                 self.add_tsr_alias(mod_name, id, tys);
-            },
+            }
             &NodeAssign::ValueAlias {
                 ident: ref id,
-                rhs: Term::Integer(_)
+                rhs: Term::Integer(_),
             } => {
                 self.add_dim_alias(mod_name, id);
-            },
+            }
             _ => unimplemented!(),
         }
     }
@@ -164,5 +168,4 @@ impl TypeEnv {
     pub fn set_module(&mut self, scp: ModName) {
         self.current_mod = scp;
     }
-
 }
