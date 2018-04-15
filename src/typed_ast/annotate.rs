@@ -84,7 +84,7 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TyTerm {
 
 fn annotate_view_fn(v_fn: &ViewFn, arg: TyFnAppArg, tenv: &mut TypeEnv) -> TyViewFn {
     let module = tenv.module().clone();
-    let tsr = tenv.make_tensor(&module, &v_fn.dims);
+    let tsr = tenv.create_tensor(&module, &v_fn.dims);
     TyViewFn {
         ty: tsr,
         arg,
@@ -148,7 +148,7 @@ fn annotate_tensor_ty_sig(sig: &TensorTy, tenv: &mut TypeEnv) -> Type {
     use self::TensorTy::*;
     let module = tenv.module().clone();
     match sig {
-        &Generic(ref dims) => tenv.make_tensor(&module, dims),
+        &Generic(ref dims) => tenv.create_tensor(&module, dims),
         &TyAlias(ref als) => tenv.resolve_alias(&module, als).unwrap().clone()
     }
 }
@@ -220,7 +220,7 @@ fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TyTerm {
     match module {
         ModName::Global =>
             panic!("Cannot use field access in global scope"),
-        ModName::Named(ref _node_name) => {
+        ModName::Named(ref _mod_name) => {
             match f_a.func_call {
                 None => {
                     TyTerm::TyFieldAccess(TyFieldAccess {

@@ -53,23 +53,23 @@ impl TypeEnv {
         Type::Var(self.counter)
     }
 
-    pub fn push_scope(&mut self, node_name: &ModName) {
-        let stack = self.modules.get_mut(node_name).unwrap();
+    pub fn push_scope(&mut self, mod_name: &ModName) {
+        let stack = self.modules.get_mut(mod_name).unwrap();
         stack.push_back(Scope::new());
     }
 
-    pub fn pop_scope(&mut self, node_name: &ModName) {
-        let stack = self.modules.get_mut(node_name).unwrap();
+    pub fn pop_scope(&mut self, mod_name: &ModName) {
+        let stack = self.modules.get_mut(mod_name).unwrap();
         stack.pop_back().unwrap();
     }
 
-    pub fn resolve_alias(&self, node_name: &ModName, alias: &str) -> Option<Type> {
-        let aliases = self.get_scoped_aliases(node_name, alias);
+    pub fn resolve_alias(&self, mod_name: &ModName, alias: &str) -> Option<Type> {
+        let aliases = self.get_scoped_aliases(mod_name, alias);
         aliases.iter().last().cloned()
     }
 
-    fn get_scoped_aliases(&self, node_name: &ModName, alias: &str) -> Vec<Type> {
-        let stack = self.modules.get(node_name).unwrap();
+    fn get_scoped_aliases(&self, mod_name: &ModName, alias: &str) -> Vec<Type> {
+        let stack = self.modules.get(mod_name).unwrap();
         stack.into_iter()
             .rev()
             .map(|sc| sc.aliases.get(alias))
@@ -79,8 +79,8 @@ impl TypeEnv {
             .collect::<Vec<Type>>()
     }
 
-    pub fn add_alias(&mut self, node_name: &ModName, alias: &str, ty: Type) {
-        let stack = self.modules.entry(node_name.clone()).or_insert({
+    pub fn add_alias(&mut self, mod_name: &ModName, alias: &str, ty: Type) {
+        let stack = self.modules.entry(mod_name.clone()).or_insert({
             let mut q = VecDeque::new(); 
             q.push_back(Scope::new());
             q
@@ -90,29 +90,29 @@ impl TypeEnv {
         let _ = scope.aliases.insert(alias.to_owned(), ty);
     }
 
-    pub fn add_dim_alias(&mut self, node_name: &ModName, alias: &str) {
+    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &str) {
         let tyvar = self.fresh_dim();
-        self.add_alias(node_name, alias, tyvar);
+        self.add_alias(mod_name, alias, tyvar);
     }
 
-    pub fn add_tsr_alias(&mut self, node_name: &ModName, alias: &str, tsr: &[String]) {
+    pub fn add_tsr_alias(&mut self, mod_name: &ModName, alias: &str, tsr: &[String]) {
         // first insert all the dims
         tsr.iter()
             .map(|t| {
-                if !self.exists(node_name, t) {
-                    self.add_dim_alias(node_name, t);
+                if !self.exists(mod_name, t) {
+                    self.add_dim_alias(mod_name, t);
                 }
             })
             .collect::<Vec<()>>();
         
         // then insert the tensor itself
-        let tsr = self.make_tensor(node_name, tsr);
-        self.add_alias(node_name, alias, tsr)
+        let tsr = self.create_tensor(mod_name, tsr);
+        self.add_alias(mod_name, alias, tsr)
     }
 
-    pub fn make_tensor(&mut self, node_name: &ModName, dims: &[String]) -> Type {
+    pub fn create_tensor(&mut self, mod_name: &ModName, dims: &[String]) -> Type {
         let dims_ty = dims.iter()
-            .map(|t| self.resolve_alias(node_name, t).unwrap().clone())
+            .map(|t| self.resolve_alias(mod_name, t).unwrap().clone())
             .collect();
         Type::Tensor {
             rank: dims.len(),
@@ -120,31 +120,31 @@ impl TypeEnv {
         }
     }
 
-    pub fn resolve_tensor(&mut self, node_name: &ModName, t: &TensorTy) -> Type {
+    pub fn resolve_tensor(&mut self, mod_name: &ModName, t: &TensorTy) -> Type {
         match t {
-            &TensorTy::Generic(ref dims) => self.make_tensor(node_name, &dims),
-            &TensorTy::TyAlias(ref alias) => self.resolve_alias(node_name, &alias).unwrap(),
+            &TensorTy::Generic(ref dims) => self.create_tensor(mod_name, &dims),
+            &TensorTy::TyAlias(ref alias) => self.resolve_alias(mod_name, &alias).unwrap(),
         }
     }
 
-    pub fn exists(&self, node_name: &ModName, alias: &str) -> bool {
-        let aliases = self.get_scoped_aliases(node_name, alias);
+    pub fn exists(&self, mod_name: &ModName, alias: &str) -> bool {
+        let aliases = self.get_scoped_aliases(mod_name, alias);
         aliases.len() > 0
     }
 
-    pub fn import_node_assign(&mut self, node_name: &ModName, a: &NodeAssign) {
+    pub fn import_node_assign(&mut self, mod_name: &ModName, a: &NodeAssign) {
         match a {
             &NodeAssign::TyAlias {
                 ident: ref id,
                 rhs: TensorTy::Generic(ref tys)
             } => {
-                self.add_tsr_alias(node_name, id, tys);
+                self.add_tsr_alias(mod_name, id, tys);
             },
             &NodeAssign::ValueAlias {
                 ident: ref id,
                 rhs: Term::Integer(_)
             } => {
-                self.add_dim_alias(node_name, id);
+                self.add_dim_alias(mod_name, id);
             },
             _ => unimplemented!(),
         }
