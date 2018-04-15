@@ -63,7 +63,7 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TypedTerm {
                 })
             },
             &Term::FnApp(ref fn_app) => {
-                let mut typed_fn_app = annotate_fn_call(&fn_app, tenv);
+                let mut typed_fn_app = annotate_fn_app(&fn_app, tenv);
                 TypedTerm::TypedFnApp(typed_fn_app.extend_arg(prev_arg))
             },
             &Term::FieldAccess(ref f_a) => {
@@ -166,25 +166,25 @@ fn annotate_weights_assign(w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> Type
         fn_ty: fn_ty,
         fn_name: w_assign.fn_name.clone(),
         fn_args: w_assign.fn_args.iter()
-            .map(|a| annotate_fn_call_arg(a, tenv))
+            .map(|a| annotate_fn_app_arg(a, tenv))
             .collect(),
     }
 }
 
-fn annotate_fn_call_arg(call: &FnAppArg, tenv: &mut TypeEnv) -> TypedFnAppArg {
+fn annotate_fn_app_arg(call: &FnAppArg, tenv: &mut TypeEnv) -> TypedFnAppArg {
     TypedFnAppArg {
         name: call.name.clone(),
         arg: Box::new(annotate(&call.arg, tenv)),
     }
 }
 
-fn annotate_fn_call(fn_app: &FnApp, tenv: &mut TypeEnv) -> TypedFnApp {
+fn annotate_fn_app(fn_app: &FnApp, tenv: &mut TypeEnv) -> TypedFnApp {
     let FnApp {ref name, ref args } = fn_app;
     TypedFnApp {
         mod_name: None,
         name: name.to_owned(),
         args: args.iter()
-            .map(|a| annotate_fn_call_arg(&a, tenv))
+            .map(|a| annotate_fn_app_arg(&a, tenv))
             .collect(),
         ret_ty: tenv.fresh_var(),
     }
@@ -230,7 +230,7 @@ fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TypedTerm {
                 },
                 Some(ref v) => {
                     let args = v.iter()
-                            .map(|arg| annotate_fn_call_arg(arg, tenv))
+                            .map(|arg| annotate_fn_app_arg(arg, tenv))
                             .collect();
                     TypedTerm::TypedFnApp(TypedFnApp {
                         mod_name: Some(f_a.mod_name.clone()),
