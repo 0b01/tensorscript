@@ -532,7 +532,7 @@ fn build_fn_ty_sig(pair: Pair<Rule>) -> Result<FnTySig, TSSParseError> {
 
 fn build_use_stmt(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     let mut tokens = pair.into_inner();
-    let value = eat!(tokens, use_lit, "Parsing `use` error")?;
+    let _use_lit = eat!(tokens, use_lit, "Parsing `use` error")?;
     let module_name = eat!(tokens, ident, "module name not defined")?.as_str();
     let imported = eat!(tokens, "no imported modules")?;
 

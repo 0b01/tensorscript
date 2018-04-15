@@ -25,18 +25,18 @@ graph Mnist<[?,c,h,w] -> [?,OUT]> {
         fc2.init_normal(std=1.);
     }
 
-//     fn forward(x) {
-//         x
-//         |> conv1            |> maxpool2d(xkernel_size=2)
-//         |> conv2 |> dropout |> maxpool2d(kernel_size=2)
-//         // |> view(?, FC1)
-//         |> fc1 |> relu
-//         |> self.fc2()
-//         |> log_softmax(dim=1)
-//     }
-// 
-//     fn fc2(x: TEST) -> [?,OUT] {
-//         x |> fc2 |> relu
-//     }
+    fn forward(x) {
+        x
+        |> conv1            |> maxpool2d(xkernel_size=2)
+        |> conv2 |> dropout |> maxpool2d(kernel_size=2)
+        // |> view(?, FC1)
+        |> fc1 |> relu
+        |> self.fc2()
+        |> log_softmax(dim=1)
+    }
+
+    fn fc2(x: TEST) -> [?,OUT] {
+        x |> fc2 |> relu
+    }
 
 }

@@ -54,12 +54,12 @@ impl TypeEnv {
     }
 
     pub fn push_scope(&mut self, node_name: &ModName) {
-        let mut stack = self.modules.get_mut(node_name).unwrap();
+        let stack = self.modules.get_mut(node_name).unwrap();
         stack.push_back(Scope::new());
     }
 
     pub fn pop_scope(&mut self, node_name: &ModName) {
-        let mut stack = self.modules.get_mut(node_name).unwrap();
+        let stack = self.modules.get_mut(node_name).unwrap();
         stack.pop_back().unwrap();
     }
 
@@ -86,7 +86,7 @@ impl TypeEnv {
             q
         });
         let top = stack.len() - 1;
-        let mut scope = stack.get_mut(top).unwrap();
+        let scope = stack.get_mut(top).unwrap();
         let _ = scope.aliases.insert(alias.to_owned(), ty);
     }
 
