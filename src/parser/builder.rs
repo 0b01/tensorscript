@@ -48,7 +48,7 @@ macro_rules! to_idents {
     };
 }
 
-use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclArg, FnTySig, GraphDecl,
+use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, GraphDecl,
           NodeAssign, NodeDecl, TensorTy, UseStmt, WeightsAssign, WeightsDecl,
           Term};
 use parser::grammar::{Rule, TensorScriptParser};
@@ -217,7 +217,7 @@ fn build_fn_decl(pair: Pair<Rule>) -> Result<FnDecl, TSSParseError> {
     };
 
     let params = if let Some(args) = param.into_inner().next() {
-        build_fn_decl_args(args)?
+        build_fn_decl_params(args)?
     } else {
         vec![]
     };
@@ -246,7 +246,7 @@ fn build_fn_decls(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
     Ok(Term::List(vals))
 }
 
-fn build_fn_decl_arg(pair: Pair<Rule>) -> Result<FnDeclArg, TSSParseError> {
+fn build_fn_decl_param(pair: Pair<Rule>) -> Result<FnDeclParam, TSSParseError> {
     let mut tokens = pair.into_inner();
     let param = eat!(tokens, ident, "Failed to parse function parameter")?;
     let typ = eat!(tokens, ty_sig, "Failed to parse type signature");
@@ -256,15 +256,15 @@ fn build_fn_decl_arg(pair: Pair<Rule>) -> Result<FnDeclArg, TSSParseError> {
         TensorTy::Generic(to_idents!(typ?))
     };
 
-    Ok(FnDeclArg {
+    Ok(FnDeclParam {
         name: param.as_str().to_owned(),
         ty_sig: typ,
     })
 }
 
-fn build_fn_decl_args(pair: Pair<Rule>) -> Result<Vec<FnDeclArg>, TSSParseError> {
+fn build_fn_decl_params(pair: Pair<Rule>) -> Result<Vec<FnDeclParam>, TSSParseError> {
     let tokens = pair.into_inner();
-    let vals = tokens.map(|p| build_fn_decl_arg(p).unwrap()).collect();
+    let vals = tokens.map(|p| build_fn_decl_param(p).unwrap()).collect();
     Ok(vals)
 }
 

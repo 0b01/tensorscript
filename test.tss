@@ -1,7 +1,7 @@
 // use conv::{Conv2d, Dropout2d, maxpool2d};
 // use nonlin::relu;
 // use lin::Linear;
-// 
+
 node Mnist<IMAGE -> [?,OUT]> {
     dim FC1 = 320;
     dim FC2 = 50;
@@ -35,8 +35,8 @@ graph Mnist<[?,c,h,w] -> [?,OUT]> {
         |> log_softmax(dim=1)
     }
 
-    fn fc2(x: TEST) -> [?,OUT] {
-        x |> fc2 |> relu
-    }
+//     fn fc2(x: TEST) -> [?,OUT] {
+//         x |> fc2 |> relu
+//     }
 
 }

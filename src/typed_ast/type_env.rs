@@ -1,3 +1,6 @@
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use std::collections::HashMap;
 use typed_ast::Type;
 use parser::term::{TensorTy, NodeAssign, Term};
@@ -5,14 +8,25 @@ use parser::term::{TensorTy, NodeAssign, Term};
 pub type TypeId = usize;
 
 #[derive(Debug)]
+pub enum ScopeId {
+    Global,
+    Named(String),
+}
+
+#[derive(Debug)]
 pub struct TypeEnv {
     counter: TypeId,
+    current_scope: Rc<RefCell<ScopeId>>,
     aliases: HashMap<String, HashMap<String, Type>>,
 }
 
 impl TypeEnv {
     pub fn new() -> Self {
-        Self { counter: 0, aliases: HashMap::new() }
+        Self {
+            counter: 0,
+            current_scope: Rc::new(RefCell::new(ScopeId::Global)),
+            aliases: HashMap::new()
+        }
     }
 
     pub fn fresh_dim(&mut self) -> Type {
@@ -30,7 +44,7 @@ impl TypeEnv {
         hm.get(alias).cloned()
     }
 
-    fn add_alias(&mut self, node_name: &str, alias: &str, ty: Type) {
+    pub fn add_alias(&mut self, node_name: &str, alias: &str, ty: Type) {
         let hm = self.aliases.entry(node_name.to_string()).or_insert(HashMap::new());
         let _ = hm.insert(alias.to_owned(), ty);
     }
@@ -87,4 +101,13 @@ impl TypeEnv {
             _ => unimplemented!(),
         }
     }
+
+    pub fn current_scope(&self) -> Rc<RefCell<ScopeId>> {
+        self.current_scope.clone()
+    }
+
+    pub fn set_scope(&mut self, scp: ScopeId) {
+        self.current_scope = Rc::new(RefCell::new(scp));
+    }
+
 }

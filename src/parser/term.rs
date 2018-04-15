@@ -1,5 +1,8 @@
 use std::fmt::{Display, Error, Formatter};
 
+type Expression = Box<Term>;
+type Statements = Box<Term>;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Term {
     None,
@@ -11,7 +14,7 @@ pub enum Term {
     Ident(String),
     FieldAccess(FieldAccess),
     FnApp(FnApp),
-    Block { stmts: Box<Term>, ret: Box<Term> },
+    Block { stmts: Statements, ret: Expression },
     Expr { items: Box<Term> },
     Stmt { items: Box<Term> },
     Pipes(Vec<Term>),
@@ -53,7 +56,7 @@ pub struct WeightsDecl {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct FnDeclArg {
+pub struct FnDeclParam {
     pub name: String,
     pub ty_sig: TensorTy,
 }
@@ -95,7 +98,7 @@ pub struct FnTySig {
 #[derive(Debug, PartialEq, Clone)]
 pub struct FnDecl {
     pub name: String,
-    pub fn_params: Vec<FnDeclArg>,
+    pub fn_params: Vec<FnDeclParam>,
     pub return_ty: TensorTy,
     pub func_block: Box<Term>,
 }

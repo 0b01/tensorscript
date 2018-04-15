@@ -7,13 +7,13 @@ pub trait Typed {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TypedTerm {
-    None,
+    TypedNone,
     TypedProgram(Vec<TypedDecl>),
     TypedInteger(Type, i64),
     TypedFloat(Type, f64),
     TypedList(Vec<TypedTerm>),
     TypedIdent(String),
-    // TypedFieldAccess(FieldAccess),
+    TypedFieldAccess(TypedFieldAccess),
     // TypedFnApp(FnApp),
     TypedBlock { stmts: Box<TypedTerm>, ret: Box<TypedTerm> },
     TypedExpr { items: Box<TypedTerm>, ty: Type },
@@ -93,13 +93,20 @@ pub enum TypedNodeAssign {
 #[derive(Debug, PartialEq, Clone)]
 pub struct TypedFnDecl {
     pub name: String,
-    pub fn_params: Vec<TypedFnDeclArg>,
+    pub fn_params: Vec<TypedFnDeclParam>,
     pub return_ty: Type,
     pub func_block: Box<TypedTerm>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TypedFnDeclArg {
+pub struct TypedFnDeclParam {
     pub name: String,
     pub ty_sig: Type,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct TypedFieldAccess {
+    pub var_name: String,
+    pub field_name: String,
+    pub func_call: Option<Vec<TypedFnAppArg>>,
 }

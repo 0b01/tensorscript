@@ -15,7 +15,7 @@ fn main() {
     // println!("{:#?}", program);
 
     let mut tenv = TypeEnv::new();
-    let ast = annotate(program, &mut tenv);
+    let ast = annotate(&program, &mut tenv);
     println!("{}", ast);
     // println!("{:#?}", tenv);
 }

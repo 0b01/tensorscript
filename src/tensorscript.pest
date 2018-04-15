@@ -158,9 +158,9 @@ op_else = { "else" }
 
 
 fn_decls = { fn_decl* }
-fn_decl_param = { ("(" ~ ")") | ("(" ~ fn_decl_args ~ ")") }
+fn_decl_param = { ("(" ~ ")") | ("(" ~ fn_decl_params ~ ")") }
 fn_decl_sig = { fn_decl_param ~ ("->" ~ ty_sig)? }
-fn_decl_args = { fn_decl_arg ~ ("," ~ fn_decl_arg)* }
+fn_decl_params = { fn_decl_arg ~ ("," ~ fn_decl_arg)* }
 fn_decl_arg = { ident ~ (":" ~ ty_sig)? }
 fn_decl_head = { fn_lit ~ ident ~ fn_decl_sig }
 fn_decl = { fn_decl_head ~ block }
