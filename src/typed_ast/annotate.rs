@@ -1,5 +1,5 @@
 use parser::term::{Term, Decl, FnTySig, TensorTy, WeightsAssign, FnAppArg, FnDecl, FnDeclParam, FieldAccess, FnApp, ViewFn};
-use typed_ast::typed_term::{TyTerm, TyDecl, TyNodeDecl, TyWeightsDecl, TyWeightsAssign, TyFnAppArg, TyGraphDecl, TyFnDecl, TyFnDeclParam, TyFieldAccess, TyFnApp, TyViewFn};
+use typed_ast::typed_term::{TyTerm, TyDecl, TyNodeDecl, TyWeightsDecl, TyWeightsAssign, TyFnAppArg, TyGraphDecl, TyFnDecl, TyFnDeclParam, TyFieldAccess, TyFnApp, TyViewFn, TyUseStmt};
 use typed_ast::type_env::{ModName, TypeEnv};
 use typed_ast::Type;
 
@@ -128,10 +128,19 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
             })
 
         },
-        // &UseStmt(decl) => {
+        &UseStmt(ref decl) => {
+            // in global scope
+            // import names into scope
+            for ref name in decl.imported_names.iter() {
+                let ty = tenv.fresh_var();
+                tenv.add_alias(&ModName::Global, &name, ty);
+            }
 
-        // },
-        _ => unimplemented!(),
+            TyDecl::TyUseStmt(TyUseStmt {
+                mod_name: decl.mod_name.clone(),
+                imported_names: decl.imported_names.clone(), // ...
+            })
+        },
     };
     tenv.set_module(ModName::Global);
     ret

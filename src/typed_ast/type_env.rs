@@ -87,6 +87,7 @@ impl TypeEnv {
         });
         let top = stack.len() - 1;
         let scope = stack.get_mut(top).unwrap();
+        if scope.aliases.contains_key(alias) { panic!("duplicate item"); }
         let _ = scope.aliases.insert(alias.to_owned(), ty);
     }
 
