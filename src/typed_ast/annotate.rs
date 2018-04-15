@@ -215,13 +215,17 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
 
 fn annotate_fn_decl_param(p: &FnDeclParam, tenv: &mut TypeEnv) -> TyFnDeclParam {
     let module = tenv.module().clone();
+    tenv.push_scope(&module);
+    let module = tenv.module().clone();
     let name = p.name.clone();
     let ty = tenv.fresh_var();
     tenv.add_alias(&module, &name, ty.clone());
-    TyFnDeclParam {
+    let ret = TyFnDeclParam {
         name: name,
         ty_sig: ty,
-    }
+    };
+    tenv.push_scope(&module);
+    ret
 }
 
 fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TyTerm {
