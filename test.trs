@@ -2,13 +2,14 @@ use conv::{Conv2d, Dropout2d, maxpool2d};
 use nonlin::relu;
 use lin::Linear;
 
-node Mnist<IMAGE -> [?,OUT]> {
+node Mnist<IMAGE -> LABELS> {
     // declare type level constants
     dim FC1 = 320;
     dim FC2 = 50;
     dim OUT = 10;
     tsr IMAGE = [?,c,h,w];
     tsr TEST = [?,FC2];
+    tsr LABELS = [?,OUT];
 }
 
 weights Mnist<IMAGE -> [?,OUT]> {
@@ -21,12 +22,13 @@ weights Mnist<IMAGE -> [?,OUT]> {
 
 graph Mnist<[?,c,h,w] -> [?,OUT]> {
 
-    def new() {
+    def new() -> Self {
         fc1.init_normal(std=1.);
         fc2.init_normal(std=1.);
+        self
     }
 
-    def forward(b) {
+    def forward(b) -> LABELS {
         b
         |> conv1            |> maxpool2d(xkernel_size=2)
         |> conv2 |> dropout |> maxpool2d(kernel_size=2)

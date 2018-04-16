@@ -160,6 +160,8 @@ pub struct TyViewFn {
 pub struct TyFnDecl {
     pub name: String,
     pub fn_params: Vec<TyFnDeclParam>,
+    pub fn_ty: Type,
+    pub param_ty: Type,
     pub return_ty: Type,
     pub func_block: Box<TyTerm>,
 }

@@ -26,7 +26,7 @@ impl Debug for Type {
             Fun {
                 ref param_ty,
                 ref return_ty,
-            } => write!(f, "{:?} -> {:?}", param_ty, return_ty),
+            } => write!(f, "({:?} -> {:?})", param_ty, return_ty),
             Tensor { ref rank, ref dims } => {
                 if rank > &0 {
                     write!(f, "[")?;

@@ -22,7 +22,7 @@ fn main() {
     // println!("{:#?}", tenv);
 
     let mut cs = Constraints::new();
-    cs.collect(&ast, &tenv);
+    cs.collect(&ast, &mut tenv);
     println!("{:#?}", cs);
 }
 

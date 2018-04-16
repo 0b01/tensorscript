@@ -99,7 +99,12 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
                 .map(|a| tenv.import_node_assign(&module, a))
                 .collect::<Vec<()>>();
             let ty_sig = annotate_fn_ty_sig(&decl.ty_sig, tenv);
+
+            // add current name into global scope
             tenv.add_alias(&ModName::Global, &decl.name, ty_sig.clone());
+            // add "self" into module scope
+            tenv.add_alias(&module, "self", ty_sig.clone());
+
             TyDecl::TyNodeDecl(TyNodeDecl {
                 name: decl.name.clone(),
                 ty_sig,
@@ -107,6 +112,7 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
         }
         &WeightsDecl(ref decl) => {
             tenv.set_module(ModName::Named(decl.name.to_owned()));
+            // TODO? also import global symbols into scope...
             TyDecl::TyWeightsDecl(TyWeightsDecl {
                 name: decl.name.clone(),
                 ty_sig: annotate_fn_ty_sig(&decl.ty_sig, tenv),
@@ -208,6 +214,8 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
             .iter()
             .map(|p| annotate_fn_decl_param(p, tenv))
             .collect(),
+        fn_ty: tenv.fresh_var(),
+        param_ty: tenv.fresh_var(),
         return_ty: Type::Unit,                // put a placeholder here
         func_block: Box::new(TyTerm::TyNone), // same here
     };

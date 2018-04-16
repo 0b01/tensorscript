@@ -182,6 +182,7 @@ fn build_expr(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
     let val = match p.as_rule() {
         field_access => Term::FieldAccess(build_field_access(p).unwrap()),
         fn_app => Term::FnApp(build_fn_app(p).unwrap()),
+        ident => Term::Ident(p.as_str().to_owned()),
         _ => consume(p).unwrap(),
     };
     Ok(Term::Expr {
