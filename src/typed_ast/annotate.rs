@@ -149,7 +149,7 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
 }
 
 fn annotate_fn_ty_sig(sig: &FnTySig, tenv: &mut TypeEnv) -> Type {
-    Type::FUN (
+    Type::FUN(
         Box::new(annotate_tensor_ty_sig(&sig.from, tenv)),
         Box::new(annotate_tensor_ty_sig(&sig.to, tenv)),
     )
@@ -231,7 +231,7 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
             }
             let name0 = decl.fn_params[0].name.clone();
 
-            if let Type::FUN(ref p, ref r)= mod_ty {
+            if let Type::FUN(ref p, ref r) = mod_ty {
                 let ty_sig = *p.clone();
                 decl.fn_params = vec![
                     TyFnDeclParam {

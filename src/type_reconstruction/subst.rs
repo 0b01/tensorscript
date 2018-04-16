@@ -45,9 +45,9 @@ impl Substitution {
 fn occurs(tvar: TypeId, ty: &Type) -> bool {
     use self::Type::*;
     match ty {
-        &FUN(ref p,ref r) => occurs(tvar, &p) | occurs(tvar, &r),
+        &FUN(ref p, ref r) => occurs(tvar, &p) | occurs(tvar, &r),
         &VAR(ref tvar2) => tvar == *tvar2,
-        _ => false
+        _ => false,
     }
 }
 
@@ -94,7 +94,11 @@ fn unify_one(cs: Equals) -> Substitution {
         Equals(INT, INT) => Substitution::empty(),
         Equals(BOOL, BOOL) => Substitution::empty(),
 
-        Equals(ResolvedDim(i), ResolvedDim(j)) => if i == j { Substitution::empty() } else { panic!("dimension mismatch") }
+        Equals(ResolvedDim(i), ResolvedDim(j)) => if i == j {
+            Substitution::empty()
+        } else {
+            panic!("dimension mismatch")
+        },
 
         Equals(VAR(tvar), ty) => unify_var(tvar, ty),
         Equals(ty, VAR(tvar)) => unify_var(tvar, ty),
@@ -102,20 +106,17 @@ fn unify_one(cs: Equals) -> Substitution {
         Equals(DIM(tvar), ty) => unify_var(tvar, ty),
         Equals(ty, DIM(tvar)) => unify_var(tvar, ty),
 
-        Equals(FUN(p1,r1), FUN(p2,r2)) => {
-            unify(Constraints(hashset!{ 
-                Equals(*p1, *p2),
-                Equals(*r1, *r2),
-            }))
-        },
-        Equals(TSR(dims1), TSR(dims2)) => {
-            unify(Constraints({
-                dims1.into_iter()
-                    .zip(dims2)
-                    .map(|(i,j)| Equals(i,j))
-                    .collect()
-            }))
-        },
+        Equals(FUN(p1, r1), FUN(p2, r2)) => unify(Constraints(hashset!{
+            Equals(*p1, *p2),
+            Equals(*r1, *r2),
+        })),
+        Equals(TSR(dims1), TSR(dims2)) => unify(Constraints({
+            dims1
+                .into_iter()
+                .zip(dims2)
+                .map(|(i, j)| Equals(i, j))
+                .collect()
+        })),
         _ => {
             println!("{:#?}", cs);
             unimplemented!();
@@ -126,8 +127,20 @@ fn unify_one(cs: Equals) -> Substitution {
 fn unify_var(tvar: TypeId, ty: Type) -> Substitution {
     use self::Type::*;
     match ty.clone() {
-        VAR(tvar2) => if tvar == tvar2 { Substitution::empty() } else { Substitution(hashmap!{ tvar => ty }) },
-        DIM(tvar2) => if tvar == tvar2 { Substitution::empty() } else { Substitution(hashmap!{ tvar => ty }) },
-        _ => if occurs(tvar, &ty) { panic!("circular type") } else { Substitution(hashmap!{ tvar => ty }) }
+        VAR(tvar2) => if tvar == tvar2 {
+            Substitution::empty()
+        } else {
+            Substitution(hashmap!{ tvar => ty })
+        },
+        DIM(tvar2) => if tvar == tvar2 {
+            Substitution::empty()
+        } else {
+            Substitution(hashmap!{ tvar => ty })
+        },
+        _ => if occurs(tvar, &ty) {
+            panic!("circular type")
+        } else {
+            Substitution(hashmap!{ tvar => ty })
+        },
     }
 }
