@@ -107,6 +107,11 @@ impl TypeEnv {
         self.add_alias(mod_name, alias, tyvar);
     }
 
+    pub fn add_resolved_dim_alias(&mut self, mod_name: &ModName, alias: &str, num: i64) {
+        let tyvar = Type::ResolvedDim(num);
+        self.add_alias(mod_name, alias, tyvar);
+    }
+
     pub fn add_tsr_alias(&mut self, mod_name: &ModName, alias: &str, tsr: &[String]) {
         // first insert all the dims
         tsr.iter()
@@ -151,9 +156,9 @@ impl TypeEnv {
             }
             &NodeAssign::ValueAlias {
                 ident: ref id,
-                rhs: Term::Integer(_),
+                rhs: Term::Integer(num), // ...
             } => {
-                self.add_dim_alias(mod_name, id);
+                self.add_resolved_dim_alias(mod_name, id, num);
             }
             _ => unimplemented!(),
         }
