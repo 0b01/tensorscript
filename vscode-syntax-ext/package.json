@@ -1,0 +1,26 @@
+{
+    "name": "tensorscript",
+    "displayName": "TensorScript",
+    "description": "Syntax Highlighting for TensorScript",
+    "version": "0.0.1",
+    "publisher": "rickyhan",
+    "engines": {
+        "vscode": "^1.22.0"
+    },
+    "categories": [
+        "Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "tensorscript",
+            "aliases": ["TensorScript", "tensorscript"],
+            "extensions": [".trs"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "tensorscript",
+            "scopeName": "source.trs",
+            "path": "./syntaxes/tensorscript.tmLanguage.json"
+        }]
+    }
+}

@@ -1,0 +1,76 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "TensorScript",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#tensor_type"
+		},
+		{
+			"include": "#type_sig"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#pipes"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.tensorscript",
+				"match": "\\b(if|while|for|return|use|node|weights|graph|def)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.tensorscript",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.tensorscript",
+					"match": "\\\\."
+				}
+			]
+		},
+		"comments": {
+            "patterns": [
+                {
+                    "name": "comment.line.tensorscript",
+                    "match": "\/\/.*"
+                }
+            ]
+        },
+		"type_sig": {
+            "patterns": [
+                {
+                    "name": "constant.language.tensorscript",
+                    "match": "<.*>"
+                }
+            ]
+		},
+		"tensor_type": {
+            "patterns": [
+                {
+                    "name": "markup.list.tensorscript",
+                    "match": "[.*]"
+                }
+            ]
+		},
+		"pipes": {
+            "patterns": [
+                {
+                    "name": "keyword.control.tensorscript",
+                    "match": "\b|>\b"
+                }
+            ]
+        }
+	},
+	"scopeName": "source.trs"
+}

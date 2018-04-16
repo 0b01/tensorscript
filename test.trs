@@ -3,6 +3,7 @@ use nonlin::relu;
 use lin::Linear;
 
 node Mnist<IMAGE -> [?,OUT]> {
+    // declare type level constants
     dim FC1 = 320;
     dim FC2 = 50;
     dim OUT = 10;

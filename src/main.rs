@@ -10,7 +10,7 @@ use type_reconstruction::constraint::Constraints;
 use typed_ast::annotate::annotate;
 use typed_ast::type_env::TypeEnv;
 
-const TEST_STR: &str = include_str!("../test.tss");
+const TEST_STR: &str = include_str!("../test.trs");
 
 fn main() {
     let program = parser::parse_str(TEST_STR).unwrap();

@@ -74,6 +74,6 @@ fn collect_use_stmt(_cs: &mut Constraints, _decl: &TyUseStmt, _tenv: &TypeEnv) {
 
 fn collect_weights_assign(cs: &mut Constraints, w_a: &TyWeightsAssign, tenv: &TypeEnv) {
     // w_a.fn_ty
-
+    
     // ...
 }
