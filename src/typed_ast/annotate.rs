@@ -149,10 +149,10 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
 }
 
 fn annotate_fn_ty_sig(sig: &FnTySig, tenv: &mut TypeEnv) -> Type {
-    Type::Fun {
-        param_ty: Box::new(annotate_tensor_ty_sig(&sig.from, tenv)),
-        return_ty: Box::new(annotate_tensor_ty_sig(&sig.to, tenv)),
-    }
+    Type::FUN (
+        Box::new(annotate_tensor_ty_sig(&sig.from, tenv)),
+        Box::new(annotate_tensor_ty_sig(&sig.to, tenv)),
+    )
 }
 
 fn annotate_tensor_ty_sig(sig: &TensorTy, tenv: &mut TypeEnv) -> Type {
@@ -231,19 +231,15 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
             }
             let name0 = decl.fn_params[0].name.clone();
 
-            if let Type::Fun {
-                ref param_ty,
-                ref return_ty,
-            } = mod_ty
-            {
-                let ty_sig = *param_ty.clone();
+            if let Type::FUN(ref p, ref r)= mod_ty {
+                let ty_sig = *p.clone();
                 decl.fn_params = vec![
                     TyFnDeclParam {
                         name: String::from(name0),
                         ty_sig,
                     },
                 ];
-                decl.return_ty = *return_ty.clone();
+                decl.return_ty = *r.clone();
             } else {
                 panic!("Signature of module is incorrect!");
             };

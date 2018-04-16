@@ -52,12 +52,13 @@ impl TypeEnv {
 
     pub fn fresh_dim(&mut self) -> Type {
         self.counter += 1;
-        Type::Dim(self.counter)
+        Type::DIM(self.counter)
     }
 
     pub fn fresh_var(&mut self) -> Type {
         self.counter += 1;
-        Type::Var(self.counter)
+        // println!("new_var: {}", self.counter);
+        Type::VAR(self.counter)
     }
 
     pub fn push_scope(&mut self, mod_name: &ModName) {
@@ -125,10 +126,7 @@ impl TypeEnv {
         let dims_ty = dims.iter()
             .map(|t| self.resolve_alias(mod_name, t).unwrap().clone())
             .collect();
-        Type::Tensor {
-            rank: dims.len(),
-            dims: dims_ty,
-        }
+        Type::TSR(dims_ty)
     }
 
     pub fn resolve_tensor(&mut self, mod_name: &ModName, t: &TensorTy) -> Type {

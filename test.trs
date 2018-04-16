@@ -8,7 +8,6 @@ node Mnist<IMAGE -> LABELS> {
     dim FC2 = 50;
     dim OUT = 10;
     tsr IMAGE = [?,c,h,w];
-    tsr TEST = [?,FC2];
     tsr LABELS = [?,OUT];
 }
 
@@ -38,11 +37,11 @@ graph Mnist<[?,c,h,w] -> [?,OUT]> {
         |> log_softmax(dim=1)
     }
 
-    def fc2(x: TEST) -> [?,OUT] {
+    def fc2(x: [?,FC2]) -> [?,OUT] {
         x |> fc2 |> relu
     }
 
-    def test(x: TEST) {
+    def test(x: [?,FC2]) {
         x |> fc2 |> relu
     }
 

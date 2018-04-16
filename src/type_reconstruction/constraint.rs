@@ -79,10 +79,10 @@ fn collect_fn_decl(cs: &mut Constraints, decl: &TyFnDecl, tenv: &mut TypeEnv) {
     cs.add(decl.return_ty.clone(), decl.func_block.ty());
     cs.add(
         decl.fn_ty.clone(),
-        Type::Fun {
-            param_ty: Box::new(decl.param_ty.clone()),
-            return_ty: Box::new(decl.return_ty.clone()),
-        },
+        Type::FUN(
+            Box::new(decl.param_ty.clone()),
+            Box::new(decl.return_ty.clone()),
+        ),
     )
     // ...
 }

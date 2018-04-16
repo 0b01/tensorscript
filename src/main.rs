@@ -7,7 +7,7 @@ mod type_reconstruction;
 mod typed_ast;
 
 use type_reconstruction::constraint::Constraints;
-use type_reconstruction::subst::Substitution;
+use type_reconstruction::subst::unify;
 use typed_ast::annotate::annotate;
 use typed_ast::type_env::TypeEnv;
 
@@ -26,7 +26,7 @@ fn main() {
     cs.collect(&ast, &mut tenv);
     // println!("{:#?}", cs);
 
-    let subs = Substitution::unify(cs.clone());
+    let subs = unify(cs.clone());
     println!("{:#?}", subs);
 }
 
