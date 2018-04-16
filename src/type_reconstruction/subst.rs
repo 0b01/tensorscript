@@ -1,13 +1,12 @@
 use std::collections::HashMap;
-use typed_ast::type_env::TypeId;
-use typed_ast::Type;
 use type_reconstruction::constraint::{Constraints, Equals};
+use typed_ast::Type;
+use typed_ast::type_env::TypeId;
 
 #[derive(Debug)]
 pub struct Substitution(pub HashMap<TypeId, Type>);
 
 impl Substitution {
-
     pub fn new() -> Substitution {
         Substitution(HashMap::new())
     }
@@ -18,7 +17,7 @@ impl Substitution {
 
     pub fn apply_equals(&mut self, eq: &Equals) -> Equals {
         let Equals(a, b) = eq;
-        Equals(self.apply_ty(a), self.apply_ty(b),)
+        Equals(self.apply_ty(a), self.apply_ty(b))
     }
 
     pub fn apply_ty(&mut self, ty: &Type) -> Type {
@@ -29,7 +28,11 @@ impl Substitution {
     }
 
     pub fn compose(&mut self, mut other: Substitution) -> Substitution {
-        let mut self_substituded: HashMap<TypeId, Type> = self.0.clone().into_iter().map(|(k,s)| (k, other.apply_ty(&s))).collect();
+        let mut self_substituded: HashMap<TypeId, Type> = self.0
+            .clone()
+            .into_iter()
+            .map(|(k, s)| (k, other.apply_ty(&s)))
+            .collect();
         self_substituded.extend(other.0);
         Substitution(self_substituded)
     }
@@ -45,47 +48,47 @@ impl Substitution {
             subst.compose(subst_tail)
         }
     }
-    
+
     fn unify_one(cs: Equals) -> Substitution {
         let Equals(a, b) = cs;
-        match (a, b)  {
-            _ => unimplemented!()
+        match (a, b) {
+            _ => unimplemented!(),
         }
     }
 
-//   def unifyOne(constraint: Constraint): Substitution = {
-//     (constraint.a, constraint.b) match {
-//       case (Type.INT, Type.INT) => Substitution.empty
-//       case (Type.BOOL, Type.BOOL) => Substitution.empty
-//       case (Type.FUN(param1, return1), Type.FUN(param2, return2)) =>
-//         unify(Set(
-//           Constraint(param1, param2),
-//           Constraint(return1, return2)
-//         ))
-//       case (Type.VAR(tvar), ty) => unifyVar(tvar, ty)
-//       case (ty, Type.VAR(tvar)) => unifyVar(tvar, ty)
-//       case (a, b) => throw new RuntimeException(s"cannot unify $a with $b")
-//     }
-//   }
+    //   def unifyOne(constraint: Constraint): Substitution = {
+    //     (constraint.a, constraint.b) match {
+    //       case (Type.INT, Type.INT) => Substitution.empty
+    //       case (Type.BOOL, Type.BOOL) => Substitution.empty
+    //       case (Type.FUN(param1, return1), Type.FUN(param2, return2)) =>
+    //         unify(Set(
+    //           Constraint(param1, param2),
+    //           Constraint(return1, return2)
+    //         ))
+    //       case (Type.VAR(tvar), ty) => unifyVar(tvar, ty)
+    //       case (ty, Type.VAR(tvar)) => unifyVar(tvar, ty)
+    //       case (a, b) => throw new RuntimeException(s"cannot unify $a with $b")
+    //     }
+    //   }
 
-//   def unifyVar(tvar: Type.Var, ty: Type): Substitution = {
-//     ty match {
-//       case Type.VAR(tvar2) if tvar == tvar2 => Substitution.empty
-//       case Type.VAR(_) => Substitution.fromPair(tvar, ty)
-//       case ty if occurs(tvar, ty) =>
-//         throw new RuntimeException(s"circular use: $tvar occurs in $ty")
-//       case ty => Substitution.fromPair(tvar, ty)
-//     }
-//   }
+    //   def unifyVar(tvar: Type.Var, ty: Type): Substitution = {
+    //     ty match {
+    //       case Type.VAR(tvar2) if tvar == tvar2 => Substitution.empty
+    //       case Type.VAR(_) => Substitution.fromPair(tvar, ty)
+    //       case ty if occurs(tvar, ty) =>
+    //         throw new RuntimeException(s"circular use: $tvar occurs in $ty")
+    //       case ty => Substitution.fromPair(tvar, ty)
+    //     }
+    //   }
 
-//   def occurs(tvar: Type.Var, ty: Type): Boolean = {
-//     ty match {
-//       case Type.FUN(p, r) => occurs(tvar, p) || occurs(tvar, r)
-//       case Type.VAR(tvar2) => tvar == tvar2
-//       case _ => false
-//     }
-//   }
-// }
+    //   def occurs(tvar: Type.Var, ty: Type): Boolean = {
+    //     ty match {
+    //       case Type.FUN(p, r) => occurs(tvar, p) || occurs(tvar, r)
+    //       case Type.VAR(tvar2) => tvar == tvar2
+    //       case _ => false
+    //     }
+    //   }
+    // }
 }
 
 fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
@@ -93,9 +96,20 @@ fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
     println!("{:?}", ty);
     match ty {
         Unit => ty,
-        Var(tvar2) => if tvar.clone() == tvar2 { replacement.clone() } else { ty },
-        Dim(tvar2) => if tvar.clone() == tvar2 { replacement.clone() } else { ty },
-        Fun { param_ty, return_ty } => Type::Fun {
+        Var(tvar2) => if tvar.clone() == tvar2 {
+            replacement.clone()
+        } else {
+            ty
+        },
+        Dim(tvar2) => if tvar.clone() == tvar2 {
+            replacement.clone()
+        } else {
+            ty
+        },
+        Fun {
+            param_ty,
+            return_ty,
+        } => Type::Fun {
             param_ty: Box::new(substitute(*param_ty, tvar, &replacement)),
             return_ty: Box::new(substitute(*return_ty, tvar, &replacement)),
         },
@@ -104,7 +118,10 @@ fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
         //     dims: Vec<Type>,
         // },
         _ => {
-            println!("ty: {:?}, tvar: {}, replacement: {:?}", ty, tvar, replacement);
+            println!(
+                "ty: {:?}, tvar: {}, replacement: {:?}",
+                ty, tvar, replacement
+            );
             unimplemented!();
         }
     }
