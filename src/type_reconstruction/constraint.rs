@@ -4,29 +4,25 @@ use typed_ast::Type;
 use typed_ast::type_env::{ModName, TypeEnv};
 use typed_ast::typed_term::*;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
-pub struct Equals(Type, Type);
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct Equals(pub Type, pub Type);
 
-#[derive(Debug)]
-pub struct Constraints {
-    constraints: HashSet<Equals>,
-}
+#[derive(Debug, Clone)]
+pub struct Constraints(pub HashSet<Equals>);
 
 impl Constraints {
     pub fn new() -> Self {
-        Constraints {
-            constraints: HashSet::new(),
-        }
+        Constraints(HashSet::new())
     }
 
     fn add(&mut self, a: Type, b: Type) {
-        self.constraints.insert(Equals(a, b));
+        self.0.insert(Equals(a, b));
     }
 
     pub fn collect(&mut self, typed_term: &TyTerm, tenv: &mut TypeEnv) {
         use self::TyTerm::*;
         let module = tenv.module().clone();
-        println!("{}", typed_term);
+        // println!("{}", typed_term);
         match typed_term {
             &TyProgram(ref decls) => decls
                 .iter()
@@ -105,12 +101,12 @@ fn collect_use_stmt(_cs: &mut Constraints, _decl: &TyUseStmt, _tenv: &TypeEnv) {
     ()
 }
 
-fn collect_weights_assign(cs: &mut Constraints, w_a: &TyWeightsAssign, tenv: &TypeEnv) {
+fn collect_weights_assign(_cs: &mut Constraints, _w_a: &TyWeightsAssign, _tenv: &TypeEnv) {
     // w_a.fn_ty
     // ... need to somehow collect_fn_app
     ()
 }
 
-fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &TypeEnv) {
-
+fn collect_fn_app(_cs: &mut Constraints, _fn_app: &TyFnApp, _tenv: &TypeEnv) {
+    // ...
 }

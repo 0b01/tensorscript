@@ -7,6 +7,7 @@ mod type_reconstruction;
 mod typed_ast;
 
 use type_reconstruction::constraint::Constraints;
+use type_reconstruction::subst::Substitution;
 use typed_ast::annotate::annotate;
 use typed_ast::type_env::TypeEnv;
 
@@ -23,7 +24,10 @@ fn main() {
 
     let mut cs = Constraints::new();
     cs.collect(&ast, &mut tenv);
-    println!("{:#?}", cs);
+    // println!("{:#?}", cs);
+
+    let subs = Substitution::unify(cs.clone());
+    println!("{:#?}", subs);
 }
 
 // 1. initialize global scope
