@@ -5,10 +5,13 @@ use typed_ast::type_env::TypeId;
 pub enum Type {
     Unit,
     INT,
+    FLOAT,
     BOOL,
     VAR(TypeId),
     DIM(TypeId),
-    FN_ARG(Vec<(Option<String>, Type)>),
+    Module(String, Option<Box<Type>>),
+    FN_ARGS(Vec<Type>),
+    FN_ARG(Option<String>, Box<Type>),
     ResolvedDim(i64),
     FUN(Box<Type>, Box<Type>),
     TSR(Vec<Type>),
@@ -20,11 +23,14 @@ impl Debug for Type {
         match self {
             Unit => write!(f, "()"),
             INT => write!(f, "int"),
+            FLOAT => write!(f, "float"),
             BOOL => write!(f, "bool"),
             VAR(ref t_id) => write!(f, "'{:?}", t_id),
             DIM(ref t_id) => write!(f, "!{:?}", t_id),
-            FN_ARG(ref args) => write!(f, "FN_ARG({:?})", args),
+            FN_ARGS(ref args) => write!(f, "FN_ARGS({:?})", args),
+            FN_ARG(ref name, ref ty) => write!(f, "{:?}={:?}", name, ty),
             ResolvedDim(ref d) => write!(f, "<{}>", d),
+            Module(ref s, _) => write!(f, "MODULE({})", s),
             FUN(ref p, ref r) => write!(f, "({:?} -> {:?})", p, r),
             TSR(ref dims) => {
                 if dims.len() > 0 {

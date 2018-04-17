@@ -57,28 +57,40 @@ fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
         Unit => ty,
         INT => ty,
         BOOL => ty,
+        FLOAT => ty,
         ResolvedDim(_) => ty,
-        VAR(tvar2) => if tvar.clone() == tvar2 {
-            replacement.clone()
-        } else {
-            ty
-        },
-        DIM(tvar2) => if tvar.clone() == tvar2 {
-            replacement.clone()
-        } else {
-            ty
-        },
-        FN_ARG(args) => FN_ARG(
+        VAR(tvar2) => {
+            if tvar.clone() == tvar2 {
+                replacement.clone()
+            } else {
+                ty
+            }
+        }
+        DIM(tvar2) => {
+            if tvar.clone() == tvar2 {
+                replacement.clone()
+            } else {
+                ty
+            }
+        }
+        FN_ARGS(args) => FN_ARGS(
             args
                 .into_iter()
-                .map(|(name, a)| (name, substitute(a, tvar, replacement)))
+                .map(|ty| match ty {
+                    FN_ARG(name, a) => FN_ARG(name, box substitute(*a, tvar, replacement)),
+                    _ => unimplemented!(),
+                })
                 .collect()
         ),
         FUN(p, r) => FUN(
             Box::new(substitute(*p, tvar, &replacement)),
             Box::new(substitute(*r, tvar, &replacement)),
         ),
-        TSR(dims) => TSR(dims),
+        TSR(_) => ty,
+        _ => {
+            panic!("{:?}", ty);
+            unimplemented!();
+        }
     }
 }
 
@@ -98,6 +110,7 @@ fn unify_one(cs: Equals) -> Substitution {
     use self::Type::*;
     match cs {
         Equals(INT, INT) => Substitution::empty(),
+        Equals(FLOAT, FLOAT) => Substitution::empty(),
         Equals(BOOL, BOOL) => Substitution::empty(),
 
         Equals(ResolvedDim(i), ResolvedDim(j)) => if i == j {
@@ -112,7 +125,28 @@ fn unify_one(cs: Equals) -> Substitution {
         Equals(DIM(tvar), ty) => unify_var(tvar, ty),
         Equals(ty, DIM(tvar)) => unify_var(tvar, ty),
 
-        // ... FN_ARG(args)
+        Equals(FN_ARGS(v1), FN_ARGS(v2)) => unify(Constraints(
+            v1.into_iter().zip(v2).map(|(i,j)|Equals(i,j)).collect()
+        )),
+
+        Equals(FN_ARG(Some(a), ty1), FN_ARG(Some(b), ty2))  => {
+            if a == b {
+                unify(Constraints(hashset!{
+                    Equals(*ty1, *ty2),
+                }))
+            } else {
+                panic!("supplied parameter is incorrect!");
+            }
+        }
+        Equals(FN_ARG(None, ty1), FN_ARG(Some(_), ty2))  => unify(Constraints(hashset!{
+            Equals(*ty1, *ty2),
+        })),
+        Equals(FN_ARG(Some(_), ty1), FN_ARG(None, ty2))  => unify(Constraints(hashset!{
+            Equals(*ty1, *ty2),
+        })),
+        Equals(FN_ARG(None, ty1), FN_ARG(None, ty2)) => unify(Constraints(hashset!{
+            Equals(*ty1, *ty2),
+        })),
 
         Equals(FUN(p1, r1), FUN(p2, r2)) => unify(Constraints(hashset!{
             Equals(*p1, *p2),
@@ -126,7 +160,7 @@ fn unify_one(cs: Equals) -> Substitution {
                 .collect()
         })),
         _ => {
-            println!("{:#?}", cs);
+            panic!("{:#?}", cs);
             unimplemented!();
         }
     }
@@ -135,15 +169,19 @@ fn unify_one(cs: Equals) -> Substitution {
 fn unify_var(tvar: TypeId, ty: Type) -> Substitution {
     use self::Type::*;
     match ty.clone() {
-        VAR(tvar2) => if tvar == tvar2 {
-            Substitution::empty()
-        } else {
-            Substitution(hashmap!{ tvar => ty })
+        VAR(tvar2) => {
+            if tvar == tvar2 {
+                Substitution::empty()
+            } else {
+                Substitution(hashmap!{ tvar => ty })
+            }
         },
-        DIM(tvar2) => if tvar == tvar2 {
-            Substitution::empty()
-        } else {
-            Substitution(hashmap!{ tvar => ty })
+        DIM(tvar2) => {
+            if tvar == tvar2 {
+                Substitution::empty()
+            } else {
+                Substitution(hashmap!{ tvar => ty })
+            }
         },
         _ => if occurs(tvar, &ty) {
             panic!("circular type")

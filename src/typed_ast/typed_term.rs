@@ -15,7 +15,7 @@ impl Ty for TyTerm {
             &TyInteger(ref t, _) => t.clone(),
             &TyFloat(ref t, _) => t.clone(),
             &TyList(_) => Unit,
-            &TyIdent(_, _) => Unit,
+            &TyIdent(ref t, _) => t.clone(),
             &TyFieldAccess(ref f_a) => f_a.ty(),
             &TyFnApp(ref f_a) => f_a.ty(),
             &TyBlock { stmts: _, ref ret } => ret.ty(),
@@ -113,7 +113,6 @@ pub struct TyWeightsAssign {
     pub name: String,
     pub ty: Type,
     pub mod_name: String,
-    pub fn_ty: Type,
     pub fn_name: String,
     pub fn_args: Vec<TyFnAppArg>,
 }
@@ -123,15 +122,15 @@ pub struct TyFnApp {
     pub mod_name: Option<String>,
     pub name: String,
     pub arg_ty: Type,
-    pub args: Vec<TyFnAppArg>,
     pub ret_ty: Type,
+    pub args: Vec<TyFnAppArg>,
 }
 
 impl TyFnApp {
     pub fn extend_arg(&mut self, arg: TyFnAppArg) {
         self.args.insert(0, arg.clone());
         match &mut self.arg_ty {
-            &mut Type::FN_ARG(ref mut args) => args.insert(0, (arg.name.clone(), arg.ty)),
+            &mut Type::FN_ARGS(ref mut args) => args.insert(0, Type::FN_ARG(arg.name.clone(), box arg.ty)),
             &mut Type::VAR(_) => (),
             _ => unimplemented!(),
         };

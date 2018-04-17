@@ -1,3 +1,5 @@
+#![feature(box_syntax)]
+
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
@@ -5,6 +7,7 @@ extern crate pest_derive;
 extern crate maplit;
 
 mod parser;
+mod core;
 mod type_reconstruction;
 mod typed_ast;
 
@@ -23,14 +26,14 @@ fn main() {
     let mut tenv = TypeEnv::new();
     let ast = annotate(&program, &mut tenv);
     // println!("{}", ast);
-    println!("{:#?}", tenv);
+    // println!("initial tenv: {:#?}", tenv);
 
     let mut cs = Constraints::new();
     cs.collect(&ast, &mut tenv);
     // println!("{:#?}", cs);
 
     let mut subs = unify(cs.clone());
-    println!("{:#?}", subs);
+    // println!("{:#?}", subs);
     let test = subs.apply_ty(&ast.ty());
     // println!("{:?}", test);
 }

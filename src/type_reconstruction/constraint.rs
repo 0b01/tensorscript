@@ -26,30 +26,37 @@ impl Constraints {
         match typed_term {
             &TyProgram(ref decls) => decls
                 .iter()
-                .map(|decl| collect_ty_decl(self, &decl, tenv))
+                .map(|decl| collect_decl(self, &decl, tenv))
                 .collect(),
-            // &TyInteger(Type, i64),
-            // &TyFloat(Type, f64),
+            &TyInteger(_,_) => (),
+            &TyFloat(_,_) => (),
             &TyList(ref terms) => terms.iter().map(|t| self.collect(&t, tenv)).collect(),
             &TyIdent(ref t, ref name) => self.add(
                 t.clone(),
-                tenv.resolve_alias(&module, name.as_str()).unwrap().clone(),
+                tenv.resolve_type(&module, name.as_str()).expect(&format!("{:#?}",tenv)).clone(),
             ),
             // &TyFieldAccess(TyFieldAccess),
             &TyFnApp(ref fn_app) => collect_fn_app(self, &fn_app, tenv),
             &TyBlock { ref stmts, ref ret } => {
+                tenv.push_scope_collection(&module);
                 self.collect(&stmts, tenv);
                 self.collect(&ret, tenv);
+                tenv.pop_scope(&module);
             }
             &TyExpr { ref items, ty: _ } => self.collect(&items, tenv), // ... need to use ty?
             &TyStmt { ref items } => self.collect(&items, tenv),
-            // &TyViewFn(TyViewFn),
-            _ => unimplemented!(),
+            &TyViewFn(ref view_fn) => {
+                self.collect(&view_fn.arg.arg, tenv);
+            },
+            _ => {
+                panic!("{:#?}", typed_term);
+                unimplemented!();
+            }
         }
     }
 }
 
-fn collect_ty_decl(cs: &mut Constraints, decl: &TyDecl, tenv: &mut TypeEnv) {
+fn collect_decl(cs: &mut Constraints, decl: &TyDecl, tenv: &mut TypeEnv) {
     use self::TyDecl::*;
     match decl {
         TyGraphDecl(d) => collect_graph_decl(cs, d, tenv),
@@ -57,12 +64,13 @@ fn collect_ty_decl(cs: &mut Constraints, decl: &TyDecl, tenv: &mut TypeEnv) {
         TyUseStmt(d) => collect_use_stmt(cs, d, tenv),
         TyWeightsDecl(d) => collect_weights_decl(cs, d, tenv),
     }
+    tenv.set_module(ModName::Global);
 }
 
 fn collect_graph_decl(cs: &mut Constraints, decl: &TyGraphDecl, tenv: &mut TypeEnv) {
-    tenv.set_module(ModName::Named(decl.name.clone()));
     // type decl should be the same
-    let graph_ty_sig = tenv.resolve_alias(&ModName::Global, decl.name.as_str())
+    tenv.set_module(ModName::Named(decl.name.clone()));
+    let graph_ty_sig = tenv.resolve_type(&ModName::Global, decl.name.as_str())
         .unwrap()
         .clone();
     cs.add(decl.ty_sig.clone(), graph_ty_sig);
@@ -71,10 +79,12 @@ fn collect_graph_decl(cs: &mut Constraints, decl: &TyGraphDecl, tenv: &mut TypeE
         .iter()
         .map(|f| collect_fn_decl(cs, &f, tenv))
         .collect::<Vec<_>>();
-    tenv.set_module(ModName::Global);
 }
 
 fn collect_fn_decl(cs: &mut Constraints, decl: &TyFnDecl, tenv: &mut TypeEnv) {
+    let module = tenv.module().clone();
+    tenv.push_scope_collection(&module);
+
     cs.collect(&decl.func_block, tenv);
     cs.add(decl.return_ty.clone(), decl.func_block.ty());
     cs.add(
@@ -83,21 +93,24 @@ fn collect_fn_decl(cs: &mut Constraints, decl: &TyFnDecl, tenv: &mut TypeEnv) {
             Box::new(decl.param_ty.clone()),
             Box::new(decl.return_ty.clone()),
         ),
-    )
+    );
+    tenv.pop_scope(&module);
     // ...
 }
 
-fn collect_node_decl(cs: &mut Constraints, decl: &TyNodeDecl, tenv: &TypeEnv) {
+fn collect_node_decl(cs: &mut Constraints, decl: &TyNodeDecl, tenv: &mut TypeEnv) {
+    tenv.set_module(ModName::Named(decl.name.clone()));
     // type decl should be the same
-    let graph_ty_sig = tenv.resolve_alias(&ModName::Global, decl.name.as_str())
+    let graph_ty_sig = tenv.resolve_type(&ModName::Global, decl.name.as_str())
         .unwrap()
         .clone();
     cs.add(decl.ty_sig.clone(), graph_ty_sig);
 }
 
-fn collect_weights_decl(cs: &mut Constraints, decl: &TyWeightsDecl, tenv: &TypeEnv) {
+fn collect_weights_decl(cs: &mut Constraints, decl: &TyWeightsDecl, tenv: &mut TypeEnv) {
+    tenv.set_module(ModName::Named(decl.name.clone()));
     // type decl should be the same
-    let graph_ty_sig = tenv.resolve_alias(&ModName::Global, decl.name.as_str())
+    let graph_ty_sig = tenv.resolve_type(&ModName::Global, decl.name.as_str())
         .unwrap()
         .clone();
     cs.add(decl.ty_sig.clone(), graph_ty_sig);
@@ -119,28 +132,29 @@ fn collect_weights_assign(_cs: &mut Constraints, w_a: &TyWeightsAssign, _tenv: &
     ()
 }
 
-fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &TypeEnv) {
+fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
     let module = tenv.module().clone();
     // println!("{:#?}", fn_app);
     let looked_up_fn_ty = match fn_app.mod_name {
 
+        // is of the form `fc1.init_normal()`
         Some(ref mod_name) => {
-            if fn_app.name.as_str() == "new" {
-                // then the type must be the same as
-                tenv.resolve_alias(&module, &mod_name).unwrap().clone()
-            } else {
-                let defined_module = tenv.resolve_name(&module, &mod_name).unwrap().clone();
-                tenv.resolve_alias(&defined_module, &fn_app.name).unwrap().clone()
-            }
+            let defined_module = tenv.resolve_type(&module, &mod_name).unwrap().clone();
+            let mod_name = match defined_module {
+                Type::Module(s, _) => s, // ...
+                _ => panic!("must be of type: Module but is {:?}", defined_module),
+            };
+            tenv.resolve_type(&ModName::Named(mod_name), &fn_app.name).unwrap().clone()
         },
 
         // must be defined in current scope or global scope
         None => {
-            tenv.resolve_alias(&module, &fn_app.name).unwrap().clone()
+            tenv.resolve_type(&module, &fn_app.name).unwrap().clone()
         }
     };
     
-    println!("{:#?}", Equals(looked_up_fn_ty.clone(), Type::FUN(Box::new(fn_app.arg_ty.clone()), Box::new(fn_app.ret_ty.clone()))));
-    cs.add(looked_up_fn_ty, Type::FUN(Box::new(fn_app.arg_ty.clone()), Box::new(fn_app.ret_ty.clone())))
+    // println!("{:#?}", Equals(looked_up_fn_ty.clone(), Type::FUN(Box::new(fn_app.arg_ty.clone()), Box::new(fn_app.ret_ty.clone()))));
+    cs.add(looked_up_fn_ty, Type::FUN(Box::new(fn_app.arg_ty.clone()), Box::new(fn_app.ret_ty.clone())));
+    fn_app.args.iter().map(|a| cs.collect(&a.arg, tenv)).collect::<Vec<_>>();
 
 }

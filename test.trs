@@ -44,8 +44,4 @@ graph Mnist<[?,C,H,W] -> [?,OUT]> {
         x |> fc2 |> relu
     }
 
-    def test(x: [?,FC2]) {
-        x |> fc2 |> relu
-    }
-
 }

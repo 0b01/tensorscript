@@ -365,8 +365,7 @@ fn _process_level(curr: Pair<Rule>) -> Term {
     } else if curr.as_rule() == view_fn {
         Term::ViewFn(build_view_fn(curr).unwrap())
     } else {
-        println!("{:?}", curr.as_rule());
-        unimplemented!()
+        panic!("{:?}", curr.as_rule());
     }
 }
 
