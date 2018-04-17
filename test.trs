@@ -6,20 +6,23 @@ node Mnist<IMAGE -> LABELS> {
     // declare type level constants
     dim FC1 = 320;
     dim FC2 = 50;
-    dim OUT = 10;
-    tsr IMAGE = [?,c,h,w];
+    dim OUT = 10;               // Prediction
+    dim C = 3;                  // Channel
+    dim W = 28;                 // Image Width
+    dim H = 28;                 // Image Height
+    tsr IMAGE = [?,C,H,W];      // Tensor alias
     tsr LABELS = [?,OUT];
 }
 
 weights Mnist<IMAGE -> [?,OUT]> {
-    conv1 = Conv2d::<[?,c,h,w] -> [?,c,h,w]>::new(in_ch=1, out_ch=10, kernel_size=5);
-    conv2 = Conv2d::<[?,c,h,w] -> [?,c,h,w]>::new(in_ch=10, out_ch=20, kernel_size=5);
-    dropout = Dropout2d::<[?,c,h,w] -> [?,c,h,w]>::new(p=0.5);
+    conv1 = Conv2d::new(in_ch=1, out_ch=10, kernel_size=5);
+    conv2 = Conv2d::<[?,C,H,W] -> [?,C,H,W]>::new(in_ch=10, out_ch=20, kernel_size=5);
+    dropout = Dropout2d::<[?,C,H,W] -> [?,C,H,W]>::new(p=0.5);
     fc1 = Linear::<[?,FC1] -> [?,FC2]>::new();
     fc2 = Linear::<[?,FC2] -> [?,OUT]>::new();
 }
 
-graph Mnist<[?,c,h,w] -> [?,OUT]> {
+graph Mnist<[?,C,H,W] -> [?,OUT]> {
 
     def new() -> Self {
         fc1.init_normal(std=1.);

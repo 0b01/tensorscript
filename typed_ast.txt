@@ -1,643 +1,152 @@
-Program(
-    [
-        NodeDecl(
-            NodeDecl {
-                name: "Mnist",
-                ty_sig: FnTySig {
-                    from: TyAlias(
-                        "IMAGE"
-                    ),
-                    to: Generic(
-                        [
-                            "?",
-                            "OUT"
-                        ]
-                    )
-                },
-                defs: [
-                    ValueAlias {
-                        ident: "FC1",
-                        rhs: Integer(
-                            320
-                        )
-                    },
-                    ValueAlias {
-                        ident: "FC2",
-                        rhs: Integer(
-                            50
-                        )
-                    },
-                    ValueAlias {
-                        ident: "OUT",
-                        rhs: Integer(
-                            10
-                        )
-                    },
-                    TyAlias {
-                        ident: "IMAGE",
-                        rhs: Generic(
-                            [
-                                "?",
-                                "c",
-                                "h",
-                                "w"
-                            ]
-                        )
-                    },
-                    TyAlias {
-                        ident: "TEST",
-                        rhs: Generic(
-                            [
-                                "?",
-                                "FC2"
-                            ]
-                        )
-                    }
-                ]
-            }
-        ),
-        WeightsDecl(
-            WeightsDecl {
-                name: "Mnist",
-                ty_sig: FnTySig {
-                    from: TyAlias(
-                        "IMAGE"
-                    ),
-                    to: Generic(
-                        [
-                            "?",
-                            "OUT"
-                        ]
-                    )
-                },
-                inits: [
-                    WeightsAssign {
-                        name: "conv1",
-                        mod_name: "Conv2d",
-                        fn_name: "new",
-                        mod_sig: FnTySig {
-                            from: Generic(
-                                [
-                                    "?",
-                                    "c",
-                                    "h",
-                                    "w"
-                                ]
-                            ),
-                            to: Generic(
-                                [
-                                    "?",
-                                    "c",
-                                    "h",
-                                    "w"
-                                ]
-                            )
-                        },
-                        fn_args: [
-                            FnAppArg {
-                                name: "in_ch",
-                                arg: Expr {
-                                    items: Integer(
-                                        1
-                                    )
-                                }
-                            },
-                            FnAppArg {
-                                name: "out_ch",
-                                arg: Expr {
-                                    items: Integer(
-                                        10
-                                    )
-                                }
-                            },
-                            FnAppArg {
-                                name: "kernel_size",
-                                arg: Expr {
-                                    items: Integer(
-                                        5
-                                    )
-                                }
-                            }
-                        ]
-                    },
-                    WeightsAssign {
-                        name: "conv2",
-                        mod_name: "Conv2d",
-                        fn_name: "new",
-                        mod_sig: FnTySig {
-                            from: Generic(
-                                [
-                                    "?",
-                                    "c",
-                                    "h",
-                                    "w"
-                                ]
-                            ),
-                            to: Generic(
-                                [
-                                    "?",
-                                    "c",
-                                    "h",
-                                    "w"
-                                ]
-                            )
-                        },
-                        fn_args: [
-                            FnAppArg {
-                                name: "in_ch",
-                                arg: Expr {
-                                    items: Integer(
-                                        10
-                                    )
-                                }
-                            },
-                            FnAppArg {
-                                name: "out_ch",
-                                arg: Expr {
-                                    items: Integer(
-                                        20
-                                    )
-                                }
-                            },
-                            FnAppArg {
-                                name: "kernel_size",
-                                arg: Expr {
-                                    items: Integer(
-                                        5
-                                    )
-                                }
-                            }
-                        ]
-                    },
-                    WeightsAssign {
-                        name: "dropout",
-                        mod_name: "Dropout2d",
-                        fn_name: "new",
-                        mod_sig: FnTySig {
-                            from: Generic(
-                                [
-                                    "?",
-                                    "c",
-                                    "h",
-                                    "w"
-                                ]
-                            ),
-                            to: Generic(
-                                [
-                                    "?",
-                                    "c",
-                                    "h",
-                                    "w"
-                                ]
-                            )
-                        },
-                        fn_args: [
-                            FnAppArg {
-                                name: "p",
-                                arg: Expr {
-                                    items: Float(
-                                        0.5
-                                    )
-                                }
-                            }
-                        ]
-                    },
-                    WeightsAssign {
-                        name: "fc1",
-                        mod_name: "Linear",
-                        fn_name: "new",
-                        mod_sig: FnTySig {
-                            from: Generic(
-                                [
-                                    "?",
-                                    "FC1"
-                                ]
-                            ),
-                            to: Generic(
-                                [
-                                    "?",
-                                    "FC2"
-                                ]
-                            )
-                        },
-                        fn_args: []
-                    },
-                    WeightsAssign {
-                        name: "fc2",
-                        mod_name: "Linear",
-                        fn_name: "new",
-                        mod_sig: FnTySig {
-                            from: Generic(
-                                [
-                                    "?",
-                                    "FC2"
-                                ]
-                            ),
-                            to: Generic(
-                                [
-                                    "?",
-                                    "OUT"
-                                ]
-                            )
-                        },
-                        fn_args: []
-                    }
-                ]
-            }
-        ),
-        GraphDecl(
-            GraphDecl {
-                name: "Mnist",
-                ty_sig: FnTySig {
-                    from: Generic(
-                        [
-                            "?",
-                            "c",
-                            "h",
-                            "w"
-                        ]
-                    ),
-                    to: Generic(
-                        [
-                            "?",
-                            "OUT"
-                        ]
-                    )
-                },
-                fns: [
-                    FnDecl {
-                        name: "new",
-                        fn_params: [],
-                        return_ty: Generic(
-                            []
-                        ),
-                        func_block: Block {
-                            stmts: List(
-                                [
-                                    Stmt {
-                                        items: List(
-                                            [
-                                                Expr {
-                                                    items: FieldAccess(
-                                                        FieldAccess {
-                                                            mod_name: "fc1",
-                                                            field_name: "init_normal",
-                                                            func_call: Some(
-                                                                [
-                                                                    FnAppArg {
-                                                                        name: "std",
-                                                                        arg: Expr {
-                                                                            items: Float(
-                                                                                1.0
-                                                                            )
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            )
-                                                        }
-                                                    )
-                                                }
-                                            ]
-                                        )
-                                    },
-                                    Stmt {
-                                        items: List(
-                                            [
-                                                Expr {
-                                                    items: FieldAccess(
-                                                        FieldAccess {
-                                                            mod_name: "fc2",
-                                                            field_name: "init_normal",
-                                                            func_call: Some(
-                                                                [
-                                                                    FnAppArg {
-                                                                        name: "std",
-                                                                        arg: Expr {
-                                                                            items: Float(
-                                                                                1.0
-                                                                            )
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            )
-                                                        }
-                                                    )
-                                                }
-                                            ]
-                                        )
-                                    }
-                                ]
-                            ),
-                            ret: None
-                        }
-                    },
-                    FnDecl {
-                        name: "forward",
-                        fn_params: [
-                            FnDeclParam {
-                                name: "x",
-                                ty_sig: Generic(
-                                    []
-                                )
-                            }
-                        ],
-                        return_ty: Generic(
-                            []
-                        ),
-                        func_block: Block {
-                            stmts: List(
-                                []
-                            ),
-                            ret: Expr {
-                                items: Pipes(
-                                    [
-                                        Ident(
-                                            "x"
-                                        ),
-                                        Ident(
-                                            "conv1"
-                                        ),
-                                        FnApp(
-                                            FnApp {
-                                                name: "maxpool2d",
-                                                args: [
-                                                    FnAppArg {
-                                                        name: "xkernel_size",
-                                                        arg: Expr {
-                                                            items: Integer(
-                                                                2
-                                                            )
-                                                        }
-                                                    }
-                                                ]
-                                            }
-                                        ),
-                                        Ident(
-                                            "conv2"
-                                        ),
-                                        Ident(
-                                            "dropout"
-                                        ),
-                                        FnApp(
-                                            FnApp {
-                                                name: "maxpool2d",
-                                                args: [
-                                                    FnAppArg {
-                                                        name: "kernel_size",
-                                                        arg: Expr {
-                                                            items: Integer(
-                                                                2
-                                                            )
-                                                        }
-                                                    }
-                                                ]
-                                            }
-                                        ),
-                                        ViewFn(
-                                            ViewFn {
-                                                dims: [
-                                                    "?",
-                                                    "FC1"
-                                                ]
-                                            }
-                                        ),
-                                        Ident(
-                                            "fc1"
-                                        ),
-                                        Ident(
-                                            "relu"
-                                        ),
-                                        FieldAccess(
-                                            FieldAccess {
-                                                mod_name: "self",
-                                                field_name: "fc2",
-                                                func_call: Some(
-                                                    []
-                                                )
-                                            }
-                                        ),
-                                        FnApp(
-                                            FnApp {
-                                                name: "log_softmax",
-                                                args: [
-                                                    FnAppArg {
-                                                        name: "dim",
-                                                        arg: Expr {
-                                                            items: Integer(
-                                                                1
-                                                            )
-                                                        }
-                                                    }
-                                                ]
-                                            }
-                                        )
-                                    ]
-                                )
-                            }
-                        }
-                    },
-                    FnDecl {
-                        name: "fc2",
-                        fn_params: [
-                            FnDeclParam {
-                                name: "x",
-                                ty_sig: Generic(
-                                    [
-                                        "TEST"
-                                    ]
-                                )
-                            }
-                        ],
-                        return_ty: Generic(
-                            [
-                                "?,OUT"
-                            ]
-                        ),
-                        func_block: Block {
-                            stmts: List(
-                                []
-                            ),
-                            ret: Expr {
-                                items: Pipes(
-                                    [
-                                        Ident(
-                                            "x"
-                                        ),
-                                        Ident(
-                                            "fc2"
-                                        ),
-                                        Ident(
-                                            "relu"
-                                        )
-                                    ]
-                                )
-                            }
-                        }
-                    },
-                    FnDecl {
-                        name: "test",
-                        fn_params: [
-                            FnDeclParam {
-                                name: "x",
-                                ty_sig: Generic(
-                                    [
-                                        "TEST"
-                                    ]
-                                )
-                            }
-                        ],
-                        return_ty: Generic(
-                            []
-                        ),
-                        func_block: Block {
-                            stmts: List(
-                                []
-                            ),
-                            ret: Expr {
-                                items: Pipes(
-                                    [
-                                        Ident(
-                                            "x"
-                                        ),
-                                        Ident(
-                                            "fc2"
-                                        ),
-                                        Ident(
-                                            "relu"
-                                        )
-                                    ]
-                                )
-                            }
-                        }
-                    }
-                ]
-            }
-        )
-    ]
-)
 TyProgram(
     [
+        TyUseStmt(
+            TyUseStmt {
+                mod_name: "conv",
+                imported_names: [
+                    "Conv2d",
+                    "Dropout2d",
+                    "maxpool2d"
+                ]
+            }
+        ),
+        TyUseStmt(
+            TyUseStmt {
+                mod_name: "nonlin",
+                imported_names: [
+                    "relu"
+                ]
+            }
+        ),
+        TyUseStmt(
+            TyUseStmt {
+                mod_name: "lin",
+                imported_names: [
+                    "Linear"
+                ]
+            }
+        ),
         TyNodeDecl(
             TyNodeDecl {
                 name: "Mnist",
-                ty_sig: [!4, !5, !6, !7] -> [!4, !3]
+                ty_sig: ([!6, !7, !8, !9] -> [!6, <10>])
             }
         ),
         TyWeightsDecl(
             TyWeightsDecl {
                 name: "Mnist",
-                ty_sig: [!4, !5, !6, !7] -> [!4, !3],
+                ty_sig: ([!6, !7, !8, !9] -> [!6, <10>]),
                 inits: [
                     TyWeightsAssign {
                         name: "conv1",
-                        ty: ?9,
+                        ty: '11,
                         mod_name: "Conv2d",
-                        fn_ty: ?8,
+                        fn_ty: '10,
                         fn_name: "new",
                         fn_args: [
                             TyFnAppArg {
                                 name: "in_ch",
                                 arg: TyExpr {
                                     items: TyInteger(
-                                        ?10,
+                                        '12,
                                         1
                                     ),
-                                    ty: ?11
+                                    ty: '13
                                 }
                             },
                             TyFnAppArg {
                                 name: "out_ch",
                                 arg: TyExpr {
                                     items: TyInteger(
-                                        ?12,
+                                        '14,
                                         10
                                     ),
-                                    ty: ?13
+                                    ty: '15
                                 }
                             },
                             TyFnAppArg {
                                 name: "kernel_size",
                                 arg: TyExpr {
                                     items: TyInteger(
-                                        ?14,
+                                        '16,
                                         5
                                     ),
-                                    ty: ?15
+                                    ty: '17
                                 }
                             }
                         ]
                     },
                     TyWeightsAssign {
                         name: "conv2",
-                        ty: ?17,
+                        ty: '19,
                         mod_name: "Conv2d",
-                        fn_ty: ?16,
+                        fn_ty: '18,
                         fn_name: "new",
                         fn_args: [
                             TyFnAppArg {
                                 name: "in_ch",
                                 arg: TyExpr {
                                     items: TyInteger(
-                                        ?18,
+                                        '20,
                                         10
                                     ),
-                                    ty: ?19
+                                    ty: '21
                                 }
                             },
                             TyFnAppArg {
                                 name: "out_ch",
                                 arg: TyExpr {
                                     items: TyInteger(
-                                        ?20,
+                                        '22,
                                         20
                                     ),
-                                    ty: ?21
+                                    ty: '23
                                 }
                             },
                             TyFnAppArg {
                                 name: "kernel_size",
                                 arg: TyExpr {
                                     items: TyInteger(
-                                        ?22,
+                                        '24,
                                         5
                                     ),
-                                    ty: ?23
+                                    ty: '25
                                 }
                             }
                         ]
                     },
                     TyWeightsAssign {
                         name: "dropout",
-                        ty: ?25,
+                        ty: '27,
                         mod_name: "Dropout2d",
-                        fn_ty: ?24,
+                        fn_ty: '26,
                         fn_name: "new",
                         fn_args: [
                             TyFnAppArg {
                                 name: "p",
                                 arg: TyExpr {
                                     items: TyFloat(
-                                        ?26,
+                                        '28,
                                         0.5
                                     ),
-                                    ty: ?27
+                                    ty: '29
                                 }
                             }
                         ]
                     },
                     TyWeightsAssign {
                         name: "fc1",
-                        ty: ?29,
+                        ty: '31,
                         mod_name: "Linear",
-                        fn_ty: ?28,
+                        fn_ty: '30,
                         fn_name: "new",
                         fn_args: []
                     },
                     TyWeightsAssign {
                         name: "fc2",
-                        ty: ?31,
+                        ty: '33,
                         mod_name: "Linear",
-                        fn_ty: ?30,
+                        fn_ty: '32,
                         fn_name: "new",
                         fn_args: []
                     }
@@ -647,12 +156,14 @@ TyProgram(
         TyGraphDecl(
             TyGraphDecl {
                 name: "Mnist",
-                ty_sig: [!4, !5, !6, !7] -> [!4, !3],
+                ty_sig: ([!6, !7, !8, !9] -> [!6, <10>]),
                 fns: [
                     TyFnDecl {
                         name: "new",
                         fn_params: [],
-                        return_ty: ?32,
+                        fn_ty: '34,
+                        param_ty: '35,
+                        return_ty: ([!6, !7, !8, !9] -> [!6, <10>]),
                         func_block: TyBlock {
                             stmts: TyList(
                                 [
@@ -671,17 +182,17 @@ TyProgram(
                                                                     name: "std",
                                                                     arg: TyExpr {
                                                                         items: TyFloat(
-                                                                            ?33,
+                                                                            '36,
                                                                             1.0
                                                                         ),
-                                                                        ty: ?34
+                                                                        ty: '37
                                                                     }
                                                                 }
                                                             ],
-                                                            ret_ty: ?35
+                                                            ret_ty: '38
                                                         }
                                                     ),
-                                                    ty: ?36
+                                                    ty: '39
                                                 }
                                             ]
                                         )
@@ -701,35 +212,43 @@ TyProgram(
                                                                     name: "std",
                                                                     arg: TyExpr {
                                                                         items: TyFloat(
-                                                                            ?37,
+                                                                            '40,
                                                                             1.0
                                                                         ),
-                                                                        ty: ?38
+                                                                        ty: '41
                                                                     }
                                                                 }
                                                             ],
-                                                            ret_ty: ?39
+                                                            ret_ty: '42
                                                         }
                                                     ),
-                                                    ty: ?40
+                                                    ty: '43
                                                 }
                                             ]
                                         )
                                     }
                                 ]
                             ),
-                            ret: TyNone
+                            ret: TyExpr {
+                                items: TyIdent(
+                                    ([!6, !7, !8, !9] -> [!6, <10>]),
+                                    "self"
+                                ),
+                                ty: '44
+                            }
                         }
                     },
                     TyFnDecl {
                         name: "forward",
                         fn_params: [
                             TyFnDeclParam {
-                                name: "x",
-                                ty_sig: ?41
+                                name: "b",
+                                ty_sig: [!6, !7, !8, !9]
                             }
                         ],
-                        return_ty: ?42,
+                        fn_ty: '46,
+                        param_ty: '47,
+                        return_ty: [!6, <10>],
                         func_block: TyBlock {
                             stmts: TyList(
                                 []
@@ -767,7 +286,7 @@ TyProgram(
                                                                                                 name: "x",
                                                                                                 arg: TyViewFn(
                                                                                                     TyViewFn {
-                                                                                                        ty: [!4, !1],
+                                                                                                        ty: [!6, <320>],
                                                                                                         arg: TyFnAppArg {
                                                                                                             name: "x",
                                                                                                             arg: TyFnApp(
@@ -806,37 +325,37 @@ TyProgram(
                                                                                                                                                                                         TyFnAppArg {
                                                                                                                                                                                             name: "x",
                                                                                                                                                                                             arg: TyIdent(
-                                                                                                                                                                                                ?41,
-                                                                                                                                                                                                "x"
+                                                                                                                                                                                                '45,
+                                                                                                                                                                                                "b"
                                                                                                                                                                                             )
                                                                                                                                                                                         }
                                                                                                                                                                                     ],
-                                                                                                                                                                                    ret_ty: ?43
+                                                                                                                                                                                    ret_ty: '48
                                                                                                                                                                                 }
                                                                                                                                                                             )
                                                                                                                                                                         },
                                                                                                                                                                         TyFnAppArg {
-                                                                                                                                                                            name: "xkernel_size",
+                                                                                                                                                                            name: "kernel_size",
                                                                                                                                                                             arg: TyExpr {
                                                                                                                                                                                 items: TyInteger(
-                                                                                                                                                                                    ?44,
+                                                                                                                                                                                    '49,
                                                                                                                                                                                     2
                                                                                                                                                                                 ),
-                                                                                                                                                                                ty: ?45
+                                                                                                                                                                                ty: '50
                                                                                                                                                                             }
                                                                                                                                                                         }
                                                                                                                                                                     ],
-                                                                                                                                                                    ret_ty: ?46
+                                                                                                                                                                    ret_ty: '51
                                                                                                                                                                 }
                                                                                                                                                             )
                                                                                                                                                         }
                                                                                                                                                     ],
-                                                                                                                                                    ret_ty: ?47
+                                                                                                                                                    ret_ty: '52
                                                                                                                                                 }
                                                                                                                                             )
                                                                                                                                         }
                                                                                                                                     ],
-                                                                                                                                    ret_ty: ?48
+                                                                                                                                    ret_ty: '53
                                                                                                                                 }
                                                                                                                             )
                                                                                                                         },
@@ -844,14 +363,14 @@ TyProgram(
                                                                                                                             name: "kernel_size",
                                                                                                                             arg: TyExpr {
                                                                                                                                 items: TyInteger(
-                                                                                                                                    ?49,
+                                                                                                                                    '54,
                                                                                                                                     2
                                                                                                                                 ),
-                                                                                                                                ty: ?50
+                                                                                                                                ty: '55
                                                                                                                             }
                                                                                                                         }
                                                                                                                     ],
-                                                                                                                    ret_ty: ?51
+                                                                                                                    ret_ty: '56
                                                                                                                 }
                                                                                                             )
                                                                                                         }
@@ -859,17 +378,17 @@ TyProgram(
                                                                                                 )
                                                                                             }
                                                                                         ],
-                                                                                        ret_ty: ?52
+                                                                                        ret_ty: '57
                                                                                     }
                                                                                 )
                                                                             }
                                                                         ],
-                                                                        ret_ty: ?53
+                                                                        ret_ty: '58
                                                                     }
                                                                 )
                                                             }
                                                         ],
-                                                        ret_ty: ?54
+                                                        ret_ty: '59
                                                     }
                                                 )
                                             },
@@ -877,17 +396,17 @@ TyProgram(
                                                 name: "dim",
                                                 arg: TyExpr {
                                                     items: TyInteger(
-                                                        ?55,
+                                                        '60,
                                                         1
                                                     ),
-                                                    ty: ?56
+                                                    ty: '61
                                                 }
                                             }
                                         ],
-                                        ret_ty: ?57
+                                        ret_ty: '62
                                     }
                                 ),
-                                ty: ?58
+                                ty: '63
                             }
                         }
                     },
@@ -896,10 +415,12 @@ TyProgram(
                         fn_params: [
                             TyFnDeclParam {
                                 name: "x",
-                                ty_sig: ?59
+                                ty_sig: '64
                             }
                         ],
-                        return_ty: ?60,
+                        fn_ty: '65,
+                        param_ty: '66,
+                        return_ty: [!6, <10>],
                         func_block: TyBlock {
                             stmts: TyList(
                                 []
@@ -920,20 +441,20 @@ TyProgram(
                                                             TyFnAppArg {
                                                                 name: "x",
                                                                 arg: TyIdent(
-                                                                    ?59,
+                                                                    '64,
                                                                     "x"
                                                                 )
                                                             }
                                                         ],
-                                                        ret_ty: ?61
+                                                        ret_ty: '67
                                                     }
                                                 )
                                             }
                                         ],
-                                        ret_ty: ?62
+                                        ret_ty: '68
                                     }
                                 ),
-                                ty: ?63
+                                ty: '69
                             }
                         }
                     },
@@ -942,10 +463,12 @@ TyProgram(
                         fn_params: [
                             TyFnDeclParam {
                                 name: "x",
-                                ty_sig: ?64
+                                ty_sig: '70
                             }
                         ],
-                        return_ty: ?65,
+                        fn_ty: '71,
+                        param_ty: '72,
+                        return_ty: [],
                         func_block: TyBlock {
                             stmts: TyList(
                                 []
@@ -966,20 +489,20 @@ TyProgram(
                                                             TyFnAppArg {
                                                                 name: "x",
                                                                 arg: TyIdent(
-                                                                    ?64,
+                                                                    '70,
                                                                     "x"
                                                                 )
                                                             }
                                                         ],
-                                                        ret_ty: ?66
+                                                        ret_ty: '73
                                                     }
                                                 )
                                             }
                                         ],
-                                        ret_ty: ?67
+                                        ret_ty: '74
                                     }
                                 ),
-                                ty: ?68
+                                ty: '75
                             }
                         }
                     }
@@ -988,33 +511,3 @@ TyProgram(
         )
     ]
 )
-TypeEnv {
-    counter: 68,
-    current_mod: Global,
-    modules: {
-        Named(
-            "Mnist"
-        ): [
-            Scope {
-                aliases: {
-                    "conv1": ?8,
-                    "TEST": [!4, !2],
-                    "c": !5,
-                    "dropout": ?24,
-                    "conv2": ?16,
-                    "w": !7,
-                    "?": !4,
-                    "OUT": !3,
-                    "FC2": !2,
-                    "h": !6,
-                    "FC1": !1,
-                    "fc2": ?30,
-                    "x": ?64,
-                    "fc1": ?28,
-                    "IMAGE": [!4, !5, !6, !7]
-                }
-            }
-        ],
-        Global: []
-    }
-}

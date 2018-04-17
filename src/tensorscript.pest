@@ -121,7 +121,7 @@ use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident ) ~ ";"}
 // type signature
 
 // type identifier cannot be just an integer
-ty_ident = @{ !int_lit ~  (alpha | digit | "?" | "_")+ }
+ty_ident = @{ !int_lit ~  (upper | digit | "?" | "_")+ }
 ty_ident_list = { ty_ident ~ ("," ~ ty_ident)* }
 fn_ty_sig = { "<" ~ tensor_ty ~ "->" ~ tensor_ty ~ ">" }
 ty_sig = { "<"? ~ tensor_ty ~ ">"? }
@@ -138,7 +138,7 @@ node_decl = { node_decl_head ~ node_decl_body }
 
 
 weights_assign = { ident ~ op_assign ~
-                   cap_ident ~ "::" ~ fn_ty_sig ~ "::" ~ fn_app ~ ";"
+                   cap_ident ~ ("::" ~ fn_ty_sig)? ~ "::" ~ fn_app ~ ";"
                  }
 weights_decl_body = { "{" ~ weights_assign* ~ "}" }
 weights_decl_head = { weights_lit ~ cap_ident ~ fn_ty_sig }

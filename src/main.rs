@@ -23,16 +23,16 @@ fn main() {
     let mut tenv = TypeEnv::new();
     let ast = annotate(&program, &mut tenv);
     // println!("{}", ast);
-    // println!("{:#?}", tenv);
+    println!("{:#?}", tenv);
 
     let mut cs = Constraints::new();
     cs.collect(&ast, &mut tenv);
     // println!("{:#?}", cs);
 
     let mut subs = unify(cs.clone());
-    // println!("{:#?}", subs);
+    println!("{:#?}", subs);
     let test = subs.apply_ty(&ast.ty());
-    println!("{:?}", test);
+    // println!("{:?}", test);
 }
 
 // 1. initialize global scope

@@ -93,7 +93,7 @@ pub struct WeightsAssign {
     pub name: String,
     pub mod_name: String,
     pub fn_name: String,
-    pub mod_sig: FnTySig,
+    pub mod_sig: Option<FnTySig>,
     pub fn_args: Vec<FnAppArg>,
 }
 

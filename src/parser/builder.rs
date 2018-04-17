@@ -332,16 +332,27 @@ fn build_weights_assign(body: Pair<Rule>) -> Result<WeightsAssign, TSSParseError
     let name = eat!(tokens, ident, "Failed to parse ident")?;
     let _assign = eat!(tokens, op_assign, "Failed to parse `=`")?;
     let mod_name = eat!(tokens, cap_ident, "Failed to parse `mod_name`")?;
-    let fn_sig = eat!(tokens, fn_ty_sig, "Failed to parse `fn_sig`")?;
-    let func = eat!(tokens, fn_app, "Failed to parse `fn_app`")?;
-    let fncall = build_fn_app(func)?;
-    Ok(WeightsAssign {
-        name: name.as_str().to_owned(),
-        mod_name: mod_name.as_str().to_owned(),
-        fn_name: fncall.name,
-        mod_sig: build_fn_ty_sig(fn_sig)?,
-        fn_args: fncall.args,
-    })
+    let nxt = tokens.next().unwrap();
+    if nxt.as_rule() == fn_ty_sig {
+        let func = eat!(tokens, fn_app, "Failed to parse `fn_app`")?;
+        let fncall = build_fn_app(func)?;
+        Ok(WeightsAssign {
+            name: name.as_str().to_owned(),
+            mod_name: mod_name.as_str().to_owned(),
+            fn_name: fncall.name,
+            mod_sig: Some(build_fn_ty_sig(nxt).expect("Cannot parse function type signature!")),
+            fn_args: fncall.args,
+        })
+    } else {
+        let fncall = build_fn_app(nxt)?;
+        Ok(WeightsAssign {
+            name: name.as_str().to_owned(),
+            mod_name: mod_name.as_str().to_owned(),
+            fn_name: fncall.name,
+            mod_sig: None,
+            fn_args: fncall.args,
+        })
+    }
 }
 
 fn _process_level(curr: Pair<Rule>) -> Term {

@@ -166,7 +166,10 @@ fn annotate_tensor_ty_sig(sig: &TensorTy, tenv: &mut TypeEnv) -> Type {
 
 fn annotate_weights_assign(w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> TyWeightsAssign {
     let name = w_assign.name.clone();
-    let fn_ty = tenv.fresh_var();
+    let fn_ty = match w_assign.mod_sig {
+        Some(ref sig) => annotate_fn_ty_sig(&sig, tenv),
+        None => tenv.fresh_var(),
+    };
     let module = tenv.module().clone();
     tenv.add_alias(&module, &name, fn_ty.clone());
 
