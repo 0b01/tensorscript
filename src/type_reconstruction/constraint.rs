@@ -50,7 +50,6 @@ impl Constraints {
             },
             _ => {
                 panic!("{:#?}", typed_term);
-                unimplemented!();
             }
         }
     }
@@ -126,9 +125,10 @@ fn collect_use_stmt(_cs: &mut Constraints, _decl: &TyUseStmt, _tenv: &TypeEnv) {
     ()
 }
 
-fn collect_weights_assign(_cs: &mut Constraints, w_a: &TyWeightsAssign, _tenv: &TypeEnv) {
+fn collect_weights_assign(_cs: &mut Constraints, _w_a: &TyWeightsAssign, _tenv: &TypeEnv) {
     // w_a.fn_ty
-    // ... need to somehow collect_fn_app
+    // TODO:
+    // ...
     ()
 }
 

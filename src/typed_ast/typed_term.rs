@@ -1,3 +1,6 @@
+/// Data structures for Typed AST
+/// 
+/// 
 use std::fmt::{Display, Error, Formatter};
 use typed_ast::Type;
 
@@ -130,7 +133,7 @@ impl TyFnApp {
     pub fn extend_arg(&mut self, arg: TyFnAppArg) {
         self.args.insert(0, arg.clone());
         match &mut self.arg_ty {
-            &mut Type::FN_ARGS(ref mut args) => args.insert(0, Type::FN_ARG(arg.name.clone(), box arg.ty)),
+            &mut Type::FnArgs(ref mut args) => args.insert(0, Type::FnArg(arg.name.clone(), box arg.ty)),
             &mut Type::VAR(_) => (),
             _ => unimplemented!(),
         };
@@ -149,12 +152,6 @@ pub struct TyViewFn {
     pub ty: Type,
     pub arg: TyFnAppArg,
 }
-
-// #[derive(Debug, PartialEq, Clone)]
-// pub enum TyNodeAssign {
-//     ValueAlias { ident: String, rhs: Box<TyTerm> },
-//     TyAlias { ident: String, rhs: Type },
-// }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TyFnDecl {

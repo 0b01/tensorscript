@@ -1,3 +1,25 @@
+/// Hindley-Milner type inference for type reconstruction
+/// 
+/// This consists of three substeps:
+/// 
+/// 1. Collect constraints. (handled in constraint.rs)
+///     In this step, traverse typed ast and collect types of adjacent nodes that should
+///     be equivalent. This generates a Constraint struct which is just a thin wrapper
+///     around a hashset of (Type, Type) tuple.
+/// 
+/// 2. Unify constraints by generating substitutions.
+///     This is a variant to Algorithm W in H-M type inference. Bascially, unify_one
+///     function tries to replace 1 type var with a concrete type. The parent function, unify,
+///     then uses that substitution on the rest of the constraints, thus eliminating the type
+///     variable from the constraint set. The process is iterated until one of these conditions are met:
+///     a) all type variable are exhausted. b) equivalence that can never happen. c) circular
+///     type dependence (handled by occurs check).
+/// 
+/// 3. Generate Substitutions
+///     Now after the unification is complete, the function returns a list of substitutions that
+///     should remove all type variables from the typed AST.
+/// 
+
 use std::collections::HashMap;
 use type_reconstruction::constraint::{Constraints, Equals};
 use typed_ast::Type;
@@ -7,17 +29,19 @@ use typed_ast::type_env::TypeId;
 pub struct Substitution(pub HashMap<TypeId, Type>);
 
 impl Substitution {
+    /// returns an empty substitution
     pub fn new() -> Substitution {
-        Substitution(HashMap::new())
+        Substitution::empty()
     }
 
+    /// apply substitution to a set of constraints
     pub fn apply(&mut self, cs: &Constraints) -> Constraints {
-        Constraints(cs.0.iter().map(|eq| self.apply_equals(eq)).collect())
-    }
-
-    pub fn apply_equals(&mut self, eq: &Equals) -> Equals {
-        let Equals(a, b) = eq;
-        Equals(self.apply_ty(a), self.apply_ty(b))
+        Constraints(cs.0
+            .iter()
+            .map(|Equals(a,b)|
+                Equals(self.apply_ty(a), self.apply_ty(b))
+            )
+            .collect())
     }
 
     pub fn apply_ty(&mut self, ty: &Type) -> Type {
@@ -73,12 +97,12 @@ fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
                 ty
             }
         }
-        FN_ARGS(args) => FN_ARGS(
+        FnArgs(args) => FnArgs(
             args
                 .into_iter()
                 .map(|ty| match ty {
-                    FN_ARG(name, a) => FN_ARG(name, box substitute(*a, tvar, replacement)),
-                    _ => unimplemented!(),
+                    FnArg(name, a) => FnArg(name, box substitute(*a, tvar, replacement)),
+                    _ => panic!(ty),
                 })
                 .collect()
         ),
@@ -89,7 +113,6 @@ fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
         TSR(_) => ty,
         _ => {
             panic!("{:?}", ty);
-            unimplemented!();
         }
     }
 }
@@ -125,11 +148,11 @@ fn unify_one(cs: Equals) -> Substitution {
         Equals(DIM(tvar), ty) => unify_var(tvar, ty),
         Equals(ty, DIM(tvar)) => unify_var(tvar, ty),
 
-        Equals(FN_ARGS(v1), FN_ARGS(v2)) => unify(Constraints(
+        Equals(FnArgs(v1), FnArgs(v2)) => unify(Constraints(
             v1.into_iter().zip(v2).map(|(i,j)|Equals(i,j)).collect()
         )),
 
-        Equals(FN_ARG(Some(a), ty1), FN_ARG(Some(b), ty2))  => {
+        Equals(FnArg(Some(a), ty1), FnArg(Some(b), ty2))  => {
             if a == b {
                 unify(Constraints(hashset!{
                     Equals(*ty1, *ty2),
@@ -138,13 +161,13 @@ fn unify_one(cs: Equals) -> Substitution {
                 panic!("supplied parameter is incorrect!");
             }
         }
-        Equals(FN_ARG(None, ty1), FN_ARG(Some(_), ty2))  => unify(Constraints(hashset!{
+        Equals(FnArg(None, ty1), FnArg(Some(_), ty2))  => unify(Constraints(hashset!{
             Equals(*ty1, *ty2),
         })),
-        Equals(FN_ARG(Some(_), ty1), FN_ARG(None, ty2))  => unify(Constraints(hashset!{
+        Equals(FnArg(Some(_), ty1), FnArg(None, ty2))  => unify(Constraints(hashset!{
             Equals(*ty1, *ty2),
         })),
-        Equals(FN_ARG(None, ty1), FN_ARG(None, ty2)) => unify(Constraints(hashset!{
+        Equals(FnArg(None, ty1), FnArg(None, ty2)) => unify(Constraints(hashset!{
             Equals(*ty1, *ty2),
         })),
 
@@ -161,7 +184,6 @@ fn unify_one(cs: Equals) -> Substitution {
         })),
         _ => {
             panic!("{:#?}", cs);
-            unimplemented!();
         }
     }
 }

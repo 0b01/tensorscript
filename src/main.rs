@@ -1,5 +1,27 @@
 #![feature(box_syntax)]
 
+/// How it works:
+/// 1. PEG parser parses into token tree. The downside of PEG parser is that
+/// it is mostly magic, which means either it works or not, very difficult 
+/// to debug or rigorously test other than trial and error. The Pest crate handles 
+/// lexing and parsing in this compiler.
+/// 
+/// 2. Parses token tree into untyped AST. This constructs a simple traversable tree
+/// structure for quality of life. The typing step might as well be merged to this part.
+/// 
+/// 3. Annotate untyped AST into typed AST for type inference and reconstruction. The
+/// idea is to annotate each tree node with a dummy type variable.
+/// 
+/// 4. Hindley-Milner type inference. This is consisted of a few substeps. See module
+/// documentation for more details.
+/// 
+/// 5. ...
+/// 
+/// TODO: 
+/// 1. implement module pattern matching
+/// 2. type level computation (resolved tensor dimension)
+///
+
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
@@ -61,3 +83,4 @@ fn main() {
 // 2. for each arg, check rank against corresponding param rank
 // 3. for each dimension, deref generic types, check referential equality
 // 4. x::<1,1> + y::<1,1> is <1,1>
+

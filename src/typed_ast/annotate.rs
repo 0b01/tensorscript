@@ -213,12 +213,12 @@ fn annotate_fn_app(fn_app: &FnApp, tenv: &mut TypeEnv) -> TyFnApp {
         .collect();
     let arg_ty = t_args
         .iter()
-        .map(|t_arg| Type::FN_ARG(t_arg.name.clone(), box t_arg.ty.clone()))
+        .map(|t_arg| Type::FnArg(t_arg.name.clone(), box t_arg.ty.clone()))
         .collect();
     TyFnApp {
         mod_name: None,
         name: name.to_owned(),
-        arg_ty: Type::FN_ARGS(arg_ty),
+        arg_ty: Type::FnArgs(arg_ty),
         args: t_args,
         ret_ty: tenv.fresh_var(),
     }
@@ -304,12 +304,12 @@ fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TyTerm {
                 let args: Vec<TyFnAppArg> = v.iter().map(|arg| annotate_fn_app_arg(arg, tenv)).collect();
                 let arg_ty = args
                     .iter()
-                    .map(|t_arg| Type::FN_ARG(t_arg.name.clone(), box t_arg.ty.clone()))
+                    .map(|t_arg| Type::FnArg(t_arg.name.clone(), box t_arg.ty.clone()))
                     .collect();
                 TyTerm::TyFnApp(TyFnApp {
                     mod_name: Some(f_a.mod_name.clone()),
                     name: f_a.field_name.clone(),
-                    arg_ty: Type::FN_ARGS(arg_ty),
+                    arg_ty: Type::FnArgs(arg_ty),
                     args,
                     ret_ty: tenv.fresh_var(),
                 })

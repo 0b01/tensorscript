@@ -12,8 +12,8 @@ impl Op for Linear {
     fn get_module_sig() -> Vec<(MethodName, Type)> {
         use self::Type::*;
         vec![
-            ("init_normal", FUN(box FN_ARGS(vec![
-                FN_ARG(Some("std".to_owned()), box FLOAT)
+            ("init_normal", FUN(box FnArgs(vec![
+                FnArg(Some("std".to_owned()), box FLOAT)
             ]), box Unit)),
         ]
     }
