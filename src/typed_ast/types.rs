@@ -8,6 +8,7 @@ pub enum Type {
     BOOL,
     VAR(TypeId),
     DIM(TypeId),
+    FN_ARG(Vec<(Option<String>, Type)>),
     ResolvedDim(i64),
     FUN(Box<Type>, Box<Type>),
     TSR(Vec<Type>),
@@ -22,6 +23,7 @@ impl Debug for Type {
             BOOL => write!(f, "bool"),
             VAR(ref t_id) => write!(f, "'{:?}", t_id),
             DIM(ref t_id) => write!(f, "!{:?}", t_id),
+            FN_ARG(ref args) => write!(f, "FN_ARG({:?})", args),
             ResolvedDim(ref d) => write!(f, "<{}>", d),
             FUN(ref p, ref r) => write!(f, "({:?} -> {:?})", p, r),
             TSR(ref dims) => {

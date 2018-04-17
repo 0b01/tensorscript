@@ -114,12 +114,33 @@ fn collect_use_stmt(_cs: &mut Constraints, _decl: &TyUseStmt, _tenv: &TypeEnv) {
 }
 
 fn collect_weights_assign(_cs: &mut Constraints, w_a: &TyWeightsAssign, _tenv: &TypeEnv) {
-    println!("{:#?}", w_a);
     // w_a.fn_ty
     // ... need to somehow collect_fn_app
     ()
 }
 
-fn collect_fn_app(_cs: &mut Constraints, _fn_app: &TyFnApp, _tenv: &TypeEnv) {
-    // ...
+fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &TypeEnv) {
+    let module = tenv.module().clone();
+    // println!("{:#?}", fn_app);
+    let looked_up_fn_ty = match fn_app.mod_name {
+
+        Some(ref mod_name) => {
+            if fn_app.name.as_str() == "new" {
+                // then the type must be the same as
+                tenv.resolve_alias(&module, &mod_name).unwrap().clone()
+            } else {
+                let defined_module = tenv.resolve_name(&module, &mod_name).unwrap().clone();
+                tenv.resolve_alias(&defined_module, &fn_app.name).unwrap().clone()
+            }
+        },
+
+        // must be defined in current scope or global scope
+        None => {
+            tenv.resolve_alias(&module, &fn_app.name).unwrap().clone()
+        }
+    };
+    
+    println!("{:#?}", Equals(looked_up_fn_ty.clone(), Type::FUN(Box::new(fn_app.arg_ty.clone()), Box::new(fn_app.ret_ty.clone()))));
+    cs.add(looked_up_fn_ty, Type::FUN(Box::new(fn_app.arg_ty.clone()), Box::new(fn_app.ret_ty.clone())))
+
 }

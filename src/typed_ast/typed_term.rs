@@ -122,25 +122,26 @@ pub struct TyWeightsAssign {
 pub struct TyFnApp {
     pub mod_name: Option<String>,
     pub name: String,
+    pub arg_ty: Type,
     pub args: Vec<TyFnAppArg>,
     pub ret_ty: Type,
 }
 
 impl TyFnApp {
-    pub fn extend_arg(mut self, arg: TyFnAppArg) -> TyFnApp {
-        self.args.insert(0, arg);
-        TyFnApp {
-            mod_name: self.mod_name,
-            name: self.name,
-            args: self.args,
-            ret_ty: self.ret_ty,
-        }
+    pub fn extend_arg(&mut self, arg: TyFnAppArg) {
+        self.args.insert(0, arg.clone());
+        match &mut self.arg_ty {
+            &mut Type::FN_ARG(ref mut args) => args.insert(0, (arg.name.clone(), arg.ty)),
+            &mut Type::VAR(_) => (),
+            _ => unimplemented!(),
+        };
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TyFnAppArg {
-    pub name: String,
+    pub name: Option<String>,
+    pub ty: Type,
     pub arg: Box<TyTerm>,
 }
 

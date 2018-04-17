@@ -24,12 +24,14 @@ impl ModName {
 #[derive(Debug)]
 pub struct Scope {
     aliases: HashMap<String, Type>,
+    names: HashMap<String, ModName>,
 }
 
 impl Scope {
     pub fn new() -> Scope {
         Scope {
             aliases: HashMap::new(),
+            names: HashMap::new(),
         }
     }
 }
@@ -72,8 +74,38 @@ impl TypeEnv {
     }
 
     pub fn resolve_alias(&self, mod_name: &ModName, alias: &str) -> Option<Type> {
+        self.resolve_alias_inner(mod_name, alias).or(
+            self.resolve_alias_inner(&ModName::Global, alias)
+        )
+    }
+
+    /// fc1.init_normal(stddev=0.1)
+    pub fn resolve_name(&self, mod_name: &ModName, alias: &str) -> Option<ModName> {
+        self.resolve_name_inner(mod_name, alias).or(
+            self.resolve_name_inner(&ModName::Global, alias)
+        )
+    }
+
+    fn resolve_name_inner(&self, mod_name: &ModName, alias: &str) -> Option<ModName> {
+        let names = self.get_scoped_names(mod_name, alias);
+        names.iter().last().cloned()
+    }
+
+    fn resolve_alias_inner(&self, mod_name: &ModName, alias: &str) -> Option<Type> {
         let aliases = self.get_scoped_aliases(mod_name, alias);
         aliases.iter().last().cloned()
+    }
+
+    fn get_scoped_names(&self, mod_name: &ModName, alias: &str) -> Vec<ModName> {
+        let stack = self.modules.get(mod_name).unwrap();
+        stack
+            .into_iter()
+            .rev()
+            .map(|sc| sc.names.get(alias))
+            .filter(|i| i.is_some())
+            .map(|i| i.unwrap())
+            .cloned()
+            .collect::<Vec<ModName>>()
     }
 
     fn get_scoped_aliases(&self, mod_name: &ModName, alias: &str) -> Vec<Type> {
@@ -86,6 +118,20 @@ impl TypeEnv {
             .map(|i| i.unwrap())
             .cloned()
             .collect::<Vec<Type>>()
+    }
+
+    pub fn add_name(&mut self, mod_name: &ModName, alias: &str, ty: ModName) {
+        let stack = self.modules.entry(mod_name.clone()).or_insert({
+            let mut q = VecDeque::new();
+            q.push_back(Scope::new());
+            q
+        });
+        let top = stack.len() - 1;
+        let scope = stack.get_mut(top).unwrap();
+        if scope.names.contains_key(alias) {
+            panic!("duplicate item");
+        }
+        let _ = scope.names.insert(alias.to_owned(), ty);
     }
 
     pub fn add_alias(&mut self, mod_name: &ModName, alias: &str, ty: Type) {
@@ -156,7 +202,7 @@ impl TypeEnv {
             }
             &NodeAssign::ValueAlias {
                 ident: ref id,
-                rhs: Term::Integer(num), // ...
+                rhs: Term::Integer(num),
             } => {
                 self.add_resolved_dim_alias(mod_name, id, num);
             }
@@ -170,5 +216,10 @@ impl TypeEnv {
 
     pub fn set_module(&mut self, scp: ModName) {
         self.current_mod = scp;
+    }
+
+    pub fn import_module(&mut self, path_name: &str, mod_name: &str) {
+        println!("{}::{}", path_name, mod_name);
+        unimplemented!()
     }
 }

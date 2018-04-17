@@ -49,25 +49,30 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TyTerm {
 
     while let Some(t) = it.next() {
         let prev_arg = TyFnAppArg {
-            name: String::from("x"),
+            name: Some(String::from("x")),
+            ty: tenv.fresh_var(),
             arg: Box::new(term0),
         };
         let t = match t {
             &Term::Ident(ref id) => TyTerm::TyFnApp(TyFnApp {
                 mod_name: None,
                 name: id.to_owned(),
+                arg_ty: tenv.fresh_var(),
                 args: vec![prev_arg],
                 ret_ty: tenv.fresh_var(),
             }),
             &Term::FnApp(ref fn_app) => {
                 let mut typed_fn_app = annotate_fn_app(&fn_app, tenv);
-                TyTerm::TyFnApp(typed_fn_app.extend_arg(prev_arg))
+                typed_fn_app.extend_arg(prev_arg);
+                TyTerm::TyFnApp(typed_fn_app)
             }
             &Term::FieldAccess(ref f_a) => {
                 let typed_f_a = annotate_field_access(&f_a, tenv);
                 match typed_f_a {
                     TyTerm::TyFnApp(ref fn_app) => {
-                        TyTerm::TyFnApp(fn_app.clone().extend_arg(prev_arg))
+                        let mut fn_app = fn_app.clone();
+                        fn_app.extend_arg(prev_arg);
+                        TyTerm::TyFnApp(fn_app)
                     }
                     _ => panic!("Error: for field access in a pipeline, use parenthesis: f()"),
                 }
@@ -133,9 +138,11 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
         &UseStmt(ref decl) => {
             // in global scope
             // import names into scope
+            // also import module and its associated functions
             for ref name in decl.imported_names.iter() {
                 let ty = tenv.fresh_var(); // ...
-                tenv.add_alias(&ModName::Global, &name, ty);
+                tenv.add_alias(&ModName::Global, name, ty);
+                tenv.import_module(&decl.mod_name, &name);
             }
 
             TyDecl::TyUseStmt(TyUseStmt {
@@ -172,6 +179,7 @@ fn annotate_weights_assign(w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> TyWe
     };
     let module = tenv.module().clone();
     tenv.add_alias(&module, &name, fn_ty.clone());
+    tenv.add_name(&module, &name, ModName::Named(w_assign.mod_name.to_string()));
 
     TyWeightsAssign {
         name: name,
@@ -189,17 +197,27 @@ fn annotate_weights_assign(w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> TyWe
 
 fn annotate_fn_app_arg(call: &FnAppArg, tenv: &mut TypeEnv) -> TyFnAppArg {
     TyFnAppArg {
-        name: call.name.clone(),
+        name: Some(call.name.clone()),
+        ty: tenv.fresh_var(),
         arg: Box::new(annotate(&call.arg, tenv)),
     }
 }
 
 fn annotate_fn_app(fn_app: &FnApp, tenv: &mut TypeEnv) -> TyFnApp {
     let FnApp { ref name, ref args } = fn_app;
+    let t_args: Vec<TyFnAppArg> = args
+        .iter()
+        .map(|a| annotate_fn_app_arg(&a, tenv))
+        .collect();
+    let arg_ty: Vec<(Option<String>, Type)> = t_args
+        .iter()
+        .map(|t_arg| (t_arg.name.clone(), t_arg.ty.clone()))
+        .collect();
     TyFnApp {
         mod_name: None,
         name: name.to_owned(),
-        args: args.iter().map(|a| annotate_fn_app_arg(&a, tenv)).collect(),
+        arg_ty: Type::FN_ARG(arg_ty),
+        args: t_args,
         ret_ty: tenv.fresh_var(),
     }
 }
@@ -281,10 +299,15 @@ fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TyTerm {
                 ty: tenv.fresh_var(),
             }),
             Some(ref v) => {
-                let args = v.iter().map(|arg| annotate_fn_app_arg(arg, tenv)).collect();
+                let args: Vec<TyFnAppArg> = v.iter().map(|arg| annotate_fn_app_arg(arg, tenv)).collect();
+                let arg_ty: Vec<(Option<String>, Type)> = args
+                    .iter()
+                    .map(|t_arg| (t_arg.name.clone(), t_arg.ty.clone()))
+                    .collect();
                 TyTerm::TyFnApp(TyFnApp {
                     mod_name: Some(f_a.mod_name.clone()),
                     name: f_a.field_name.clone(),
+                    arg_ty: Type::FN_ARG(arg_ty),
                     args,
                     ret_ty: tenv.fresh_var(),
                 })

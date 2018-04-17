@@ -68,6 +68,12 @@ fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
         } else {
             ty
         },
+        FN_ARG(args) => FN_ARG(
+            args
+                .into_iter()
+                .map(|(name, a)| (name, substitute(a, tvar, replacement)))
+                .collect()
+        ),
         FUN(p, r) => FUN(
             Box::new(substitute(*p, tvar, &replacement)),
             Box::new(substitute(*r, tvar, &replacement)),
@@ -105,6 +111,8 @@ fn unify_one(cs: Equals) -> Substitution {
 
         Equals(DIM(tvar), ty) => unify_var(tvar, ty),
         Equals(ty, DIM(tvar)) => unify_var(tvar, ty),
+
+        // ... FN_ARG(args)
 
         Equals(FUN(p1, r1), FUN(p2, r2)) => unify(Constraints(hashset!{
             Equals(*p1, *p2),

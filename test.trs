@@ -1,5 +1,5 @@
 use conv::{Conv2d, Dropout2d, maxpool2d};
-use nonlin::relu;
+use nonlin::{relu, log_softmax};
 use lin::Linear;
 
 node Mnist<IMAGE -> LABELS> {
@@ -19,7 +19,7 @@ weights Mnist<IMAGE -> [?,OUT]> {
     conv2 = Conv2d::<[?,C,H,W] -> [?,C,H,W]>::new(in_ch=10, out_ch=20, kernel_size=5);
     dropout = Dropout2d::<[?,C,H,W] -> [?,C,H,W]>::new(p=0.5);
     fc1 = Linear::<[?,FC1] -> [?,FC2]>::new();
-    fc2 = Linear::<[?,FC2] -> [?,OUT]>::new();
+    fc2 = Linear::new();
 }
 
 graph Mnist<[?,C,H,W] -> [?,OUT]> {
