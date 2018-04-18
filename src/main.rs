@@ -27,11 +27,12 @@ extern crate pest;
 extern crate pest_derive;
 #[macro_use]
 extern crate maplit;
-
+#[macro_use]
+mod typed_ast;
 mod core;
 mod parser;
 mod type_reconstruction;
-mod typed_ast;
+
 
 use type_reconstruction::constraint::Constraints;
 use type_reconstruction::subst::unify;

@@ -139,13 +139,14 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
     // println!("{:#?}", fn_app);
 
     let symbol_name = fn_app.mod_name.clone().unwrap();
-    let symbol_mod = ModName::Named(tenv.resolve_type(&current_mod, &symbol_name).unwrap().clone().as_str().to_owned()); // lol
+    let symbol_mod_ty = tenv.resolve_type(&current_mod, &symbol_name).unwrap().clone();
+    let symbol_modname = ModName::Named(symbol_mod_ty.as_str().to_owned());
     let fn_name = &fn_app.name;
-    let ty = tenv.resolve_type(&symbol_mod, fn_name);
+    let ty = tenv.resolve_type(&symbol_modname, fn_name);
 
-    if let Some(Type::UnresolvedModuleFun) = ty {
-        println!("{} | {:?} | {} | {:?}", symbol_name, symbol_mod, fn_name, ty);
-        // tenv.resolve_unresolved(&symbol_mod, fn_name);
+    if let Some(Type::UnresolvedModuleFun(_,_,_)) = ty {
+        println!("{} | {:?} | {} | {:?}", symbol_name, symbol_modname, fn_name, ty);
+        tenv.resolve_unresolved(ty.unwrap(), &symbol_name, &symbol_mod_ty, fn_name);
     }
 
 

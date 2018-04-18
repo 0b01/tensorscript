@@ -9,7 +9,7 @@ pub enum Type {
     INT,
     FLOAT,
     BOOL,
-    UnresolvedModuleFun,
+    UnresolvedModuleFun(&'static str, &'static str, &'static str),
     // type variables that need to be resolved
     VAR(TypeId),
     DIM(TypeId),
@@ -39,7 +39,7 @@ impl Type {
             INT => true,
             FLOAT => true,
             BOOL => true,
-            UnresolvedModuleFun => false,
+            UnresolvedModuleFun(_,_,_) => false,
 
             VAR(_) => false,
             DIM(_) => false,
@@ -64,7 +64,7 @@ impl Debug for Type {
             INT => write!(f, "int"),
             FLOAT => write!(f, "float"),
             BOOL => write!(f, "bool"),
-            UnresolvedModuleFun => write!(f, "UNRESOLVED"),
+            UnresolvedModuleFun(_,_,_) => write!(f, "UNRESOLVED"),
             VAR(ref t_id) => write!(f, "'{:?}", t_id),
             DIM(ref t_id) => write!(f, "!{:?}", t_id),
             FnArgs(ref args) => write!(f, "FnArgs({:?})", args),
@@ -85,4 +85,30 @@ impl Debug for Type {
             }
         }
     }
+}
+
+macro_rules! args {
+    ( $( $x:expr ),* ) => {
+        {
+            Type::FnArgs(vec![$($x)*])
+        }
+    };
+}
+
+macro_rules! arg {
+    ($name:expr, $ty:expr) => {
+        Type::FnArg(Some($name.to_owned()), box $ty)
+    };
+}
+
+macro_rules! fun {
+    ($e1:expr, $e2:expr) => {
+        Type::FUN(box $e1, box $e2)
+    };
+}
+
+macro_rules! module {
+    ($e1:expr) => {
+        Type::Module($e1.to_owned(), None)
+    };
 }

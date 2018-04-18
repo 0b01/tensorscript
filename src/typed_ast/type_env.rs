@@ -23,7 +23,7 @@ impl ModName {
     pub fn as_str(&self) -> &str {
         use self::ModName::*;
         match self {
-            &Global => "",
+            &Global => unimplemented!(),
             &Named(ref s) => s,
         }
     }
@@ -241,7 +241,21 @@ impl TypeEnv {
         }
     }
 
-    pub fn resolve_unresolved(&mut self, module: &ModName, fn_name: &str) -> Option<Type> {
-        unimplemented!();
+    pub fn resolve_unresolved(&mut self, ty: Type, symbol_name: &str, module: &Type, fn_name: &str) -> Option<Type> {
+        let (mod_name, mod_ty) = {
+            if let Type::Module(name, opty) = module {
+                (name, opty.clone().map(|i|*i))
+            } else {
+                panic!();
+            }
+        };
+        if let Type::UnresolvedModuleFun(p0, p1, p2) = ty {
+            assert_eq!(fn_name, &format!("self.{}", p2));
+            let op = Core::find(p0, p1);
+            let ty = op.resolve(self, mod_ty, fn_name);
+            ty
+        } else {
+            unimplemented!();
+        }
     }
 }

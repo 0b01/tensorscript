@@ -1,3 +1,6 @@
+#[macro_use]
+use typed_ast::types;
+
 use core::{MethodName, Op};
 use typed_ast::{Type, TypeEnv};
 
@@ -5,21 +8,21 @@ use typed_ast::{Type, TypeEnv};
 pub struct Linear;
 
 impl Op for Linear {
-    fn get_name() -> String {
+    fn get_name(&self) -> String {
         "Linear".to_owned()
     }
 
-    fn get_module_sig(tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         use self::Type::*;
         vec![
-            (
-                "init_normal",
-                FUN(
-                    box FnArgs(vec![FnArg(Some("std".to_owned()), box FLOAT)]),
-                    box Unit,
-                ),
-            ),
-            ("forward", UnresolvedModuleFun),
+            ("init_normal", fun!(args!(arg!("std", FLOAT)), Unit)),
+            ("new", fun!(args!(arg!("in", INT)), module!("Linear"))),
+            ("forward", UnresolvedModuleFun("lin", "Linear", "forward")),
         ]
+    }
+
+    /// output same shape as input
+    fn resolve(&self, tenv: &mut TypeEnv, _module: Option<Type>, _fn_name: &str) -> Option<Type> {
+        unimplemented!()
     }
 }
