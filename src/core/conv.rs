@@ -1,5 +1,5 @@
 use core::{MethodName, Op};
-use typed_ast::Type;
+use typed_ast::{Type, TypeEnv};
 
 pub struct Conv2d;
 pub struct Dropout2d;
@@ -9,9 +9,8 @@ impl Op for Conv2d {
         "Conv2d".to_owned()
     }
 
-    fn get_module_sig() -> Vec<(MethodName, Type)> {
-        vec![
-        ]
+    fn get_module_sig(tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+        vec![("forward", Type::UnresolvedModuleFun)]
     }
 }
 
@@ -20,9 +19,8 @@ impl Op for Dropout2d {
         "Dropout2d".to_owned()
     }
 
-    fn get_module_sig() -> Vec<(MethodName, Type)> {
-        vec![
-        ]
+    fn get_module_sig(tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+        vec![("forward", Type::UnresolvedModuleFun)]
     }
 }
 
@@ -34,8 +32,7 @@ impl Op for maxpool2d {
         "maxpool2d".to_owned()
     }
 
-    fn get_module_sig() -> Vec<(MethodName, Type)> {
-        vec![
-        ]
+    fn get_module_sig(tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+        vec![("forward", Type::UnresolvedModuleFun)]
     }
 }

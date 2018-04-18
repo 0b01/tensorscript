@@ -1,12 +1,12 @@
 /// Hindley-Milner type inference for type reconstruction
-/// 
+///
 /// This consists of three substeps:
-/// 
+///
 /// 1. Collect constraints. (handled in constraint.rs)
 ///     In this step, traverse typed ast and collect types of adjacent nodes that should
 ///     be equivalent. This generates a Constraint struct which is just a thin wrapper
 ///     around a hashset of (Type, Type) tuple.
-/// 
+///
 /// 2. Unify constraints by generating substitutions.
 ///     This is a variant to Algorithm W in H-M type inference. Bascially, unify_one
 ///     function tries to replace 1 type var with a concrete type. The parent function, unify,
@@ -14,15 +14,15 @@
 ///     variable from the constraint set. The process is iterated until one of these conditions are met:
 ///     a) all type variable are exhausted. b) equivalence that can never happen. c) circular
 ///     type dependence (handled by occurs check).
-/// 
+///
 /// 3. Generate Substitutions
 ///     Now after the unification is complete, the function returns a list of substitutions that
 ///     should remove all type variables from the typed AST.
-/// 
-
+///
 use std::collections::HashMap;
 use type_reconstruction::constraint::{Constraints, Equals};
 use typed_ast::Type;
+use typed_ast::type_env::TypeEnv;
 use typed_ast::type_env::TypeId;
 
 #[derive(Debug)]
@@ -36,12 +36,12 @@ impl Substitution {
 
     /// apply substitution to a set of constraints
     pub fn apply(&mut self, cs: &Constraints) -> Constraints {
-        Constraints(cs.0
-            .iter()
-            .map(|Equals(a,b)|
-                Equals(self.apply_ty(a), self.apply_ty(b))
-            )
-            .collect())
+        Constraints(
+            cs.0
+                .iter()
+                .map(|Equals(a, b)| Equals(self.apply_ty(a), self.apply_ty(b)))
+                .collect(),
+        )
     }
 
     pub fn apply_ty(&mut self, ty: &Type) -> Type {
@@ -98,13 +98,12 @@ fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
             }
         }
         FnArgs(args) => FnArgs(
-            args
-                .into_iter()
+            args.into_iter()
                 .map(|ty| match ty {
                     FnArg(name, a) => FnArg(name, box substitute(*a, tvar, replacement)),
                     _ => panic!(ty),
                 })
-                .collect()
+                .collect(),
         ),
         FUN(p, r) => FUN(
             Box::new(substitute(*p, tvar, &replacement)),
@@ -117,19 +116,19 @@ fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
     }
 }
 
-pub fn unify(constraints: Constraints) -> Substitution {
+pub fn unify(constraints: Constraints, tenv: &mut TypeEnv) -> Substitution {
     if constraints.0.is_empty() {
         Substitution::new()
     } else {
         let mut it = constraints.0.into_iter();
-        let mut subst = unify_one(it.next().unwrap());
+        let mut subst = unify_one(it.next().unwrap(), tenv);
         let subst_tail = subst.apply(&Constraints(it.collect()));
-        let subst_tail: Substitution = unify(subst_tail);
+        let subst_tail: Substitution = unify(subst_tail, tenv);
         subst.compose(subst_tail)
     }
 }
 
-fn unify_one(cs: Equals) -> Substitution {
+fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
     use self::Type::*;
     match cs {
         Equals(INT, INT) => Substitution::empty(),
@@ -148,40 +147,65 @@ fn unify_one(cs: Equals) -> Substitution {
         Equals(DIM(tvar), ty) => unify_var(tvar, ty),
         Equals(ty, DIM(tvar)) => unify_var(tvar, ty),
 
-        Equals(FnArgs(v1), FnArgs(v2)) => unify(Constraints(
-            v1.into_iter().zip(v2).map(|(i,j)|Equals(i,j)).collect()
-        )),
+        Equals(FnArgs(v1), FnArgs(v2)) => unify(
+            Constraints(v1.into_iter().zip(v2).map(|(i, j)| Equals(i, j)).collect()),
+            tenv,
+        ),
 
-        Equals(FnArg(Some(a), ty1), FnArg(Some(b), ty2))  => {
+        Equals(FnArg(Some(a), ty1), FnArg(Some(b), ty2)) => {
             if a == b {
-                unify(Constraints(hashset!{
-                    Equals(*ty1, *ty2),
-                }))
+                unify(
+                    Constraints(hashset!{
+                        Equals(*ty1, *ty2),
+                    }),
+                    tenv,
+                )
             } else {
                 panic!("supplied parameter is incorrect!");
             }
         }
-        Equals(FnArg(None, ty1), FnArg(Some(_), ty2))  => unify(Constraints(hashset!{
-            Equals(*ty1, *ty2),
-        })),
-        Equals(FnArg(Some(_), ty1), FnArg(None, ty2))  => unify(Constraints(hashset!{
-            Equals(*ty1, *ty2),
-        })),
-        Equals(FnArg(None, ty1), FnArg(None, ty2)) => unify(Constraints(hashset!{
-            Equals(*ty1, *ty2),
-        })),
+        Equals(FnArg(None, ty1), FnArg(Some(_), ty2)) => unify(
+            Constraints(hashset!{
+                Equals(*ty1, *ty2),
+            }),
+            tenv,
+        ),
+        Equals(FnArg(Some(_), ty1), FnArg(None, ty2)) => unify(
+            Constraints(hashset!{
+                Equals(*ty1, *ty2),
+            }),
+            tenv,
+        ),
+        Equals(FnArg(None, ty1), FnArg(None, ty2)) => unify(
+            Constraints(hashset!{
+                Equals(*ty1, *ty2),
+            }),
+            tenv,
+        ),
 
-        Equals(FUN(p1, r1), FUN(p2, r2)) => unify(Constraints(hashset!{
-            Equals(*p1, *p2),
-            Equals(*r1, *r2),
-        })),
-        Equals(TSR(dims1), TSR(dims2)) => unify(Constraints({
-            dims1
-                .into_iter()
-                .zip(dims2)
-                .map(|(i, j)| Equals(i, j))
-                .collect()
-        })),
+        Equals(FUN(p1, r1), FUN(p2, r2)) => unify(
+            Constraints(hashset!{
+                Equals(*p1, *p2),
+                Equals(*r1, *r2),
+            }),
+            tenv,
+        ),
+        Equals(TSR(dims1), TSR(dims2)) => unify(
+            Constraints({
+                dims1
+                    .into_iter()
+                    .zip(dims2)
+                    .map(|(i, j)| Equals(i, j))
+                    .collect()
+            }),
+            tenv,
+        ),
+
+        // Equals(Module(mod_name, Some(box optional_ty)), ty) => unify(Constraints(hashset!{
+        //     Equals(optional_ty, ty.clone()),
+        //     panic!(),
+        //     // Equals(tenv.resolve_module_ty(&mod_name), ty),
+        // }), tenv),
         _ => {
             panic!("{:#?}", cs);
         }
@@ -197,14 +221,14 @@ fn unify_var(tvar: TypeId, ty: Type) -> Substitution {
             } else {
                 Substitution(hashmap!{ tvar => ty })
             }
-        },
+        }
         DIM(tvar2) => {
             if tvar == tvar2 {
                 Substitution::empty()
             } else {
                 Substitution(hashmap!{ tvar => ty })
             }
-        },
+        }
         _ => if occurs(tvar, &ty) {
             panic!("circular type")
         } else {

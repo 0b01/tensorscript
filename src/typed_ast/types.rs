@@ -9,7 +9,7 @@ pub enum Type {
     INT,
     FLOAT,
     BOOL,
-
+    UnresolvedModuleFun,
     // type variables that need to be resolved
     VAR(TypeId),
     DIM(TypeId),
@@ -23,6 +23,15 @@ pub enum Type {
     TSR(Vec<Type>),
 }
 
+impl Type {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Type::Module(ref n, _) => n,
+            _ => unimplemented!(),
+        }
+    }
+}
+
 impl Debug for Type {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         use self::Type::*;
@@ -31,6 +40,7 @@ impl Debug for Type {
             INT => write!(f, "int"),
             FLOAT => write!(f, "float"),
             BOOL => write!(f, "bool"),
+            UnresolvedModuleFun => write!(f, "UNRESOLVED"),
             VAR(ref t_id) => write!(f, "'{:?}", t_id),
             DIM(ref t_id) => write!(f, "!{:?}", t_id),
             FnArgs(ref args) => write!(f, "FnArgs({:?})", args),

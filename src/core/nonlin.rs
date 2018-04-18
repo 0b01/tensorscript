@@ -1,5 +1,5 @@
 use core::{MethodName, Op};
-use typed_ast::Type;
+use typed_ast::{Type, TypeEnv};
 
 #[allow(non_camel_case_types)]
 pub struct relu;
@@ -11,9 +11,8 @@ impl Op for relu {
         "relu".to_owned()
     }
 
-    fn get_module_sig() -> Vec<(MethodName, Type)> {
-        vec![
-        ]
+    fn get_module_sig(tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+        vec![("forward", Type::UnresolvedModuleFun)]
     }
 }
 
@@ -22,8 +21,7 @@ impl Op for log_softmax {
         "log_softmax".to_owned()
     }
 
-    fn get_module_sig() -> Vec<(MethodName, Type)> {
-        vec![
-        ]
+    fn get_module_sig(tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+        vec![("forward", Type::UnresolvedModuleFun)]
     }
 }

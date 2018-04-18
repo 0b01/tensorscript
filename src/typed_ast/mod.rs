@@ -3,4 +3,5 @@ pub mod type_env;
 pub mod typed_term;
 pub mod types;
 
+pub use self::type_env::TypeEnv;
 pub use self::types::Type;

@@ -1,5 +1,5 @@
 /// Data structures for untyped AST.
-/// 
+///
 use std::fmt::{Display, Error, Formatter};
 
 type Expression = Box<Term>;

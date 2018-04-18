@@ -1,6 +1,6 @@
 /// Data structures for Typed AST
-/// 
-/// 
+///
+///
 use std::fmt::{Display, Error, Formatter};
 use typed_ast::Type;
 
@@ -122,7 +122,9 @@ pub struct TyWeightsAssign {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TyFnApp {
+    /// fc1
     pub mod_name: Option<String>,
+    /// init_normal
     pub name: String,
     pub arg_ty: Type,
     pub ret_ty: Type,
@@ -133,7 +135,9 @@ impl TyFnApp {
     pub fn extend_arg(&mut self, arg: TyFnAppArg) {
         self.args.insert(0, arg.clone());
         match &mut self.arg_ty {
-            &mut Type::FnArgs(ref mut args) => args.insert(0, Type::FnArg(arg.name.clone(), box arg.ty)),
+            &mut Type::FnArgs(ref mut args) => {
+                args.insert(0, Type::FnArg(arg.name.clone(), box arg.ty))
+            }
             &mut Type::VAR(_) => (),
             _ => unimplemented!(),
         };

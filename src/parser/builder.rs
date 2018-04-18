@@ -1,5 +1,5 @@
 /// builds untyped AST from token tree.
-/// 
+///
 macro_rules! err {
     ($msg:expr) => {
         TSSParseError {

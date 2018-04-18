@@ -36,11 +36,11 @@ graph Mnist<[?,C,H,W] -> [?,OUT]> {
         |> conv2 |> dropout |> maxpool2d(kernel_size=2)
         |> view(?, FC1)
         |> fc1 |> relu
-        |> self.fc2()
+        |> self.test()
         |> log_softmax(dim=1)
     }
 
-    def fc2(x: [?,FC2]) -> [?,OUT] {
+    def test(x: [?,FC2]) -> [?,OUT] {
         x |> fc2 |> relu
     }
 

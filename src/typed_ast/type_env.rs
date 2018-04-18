@@ -1,16 +1,15 @@
+use core::Core;
 /// Type Environment holds the state during type reconstruction
 /// which is really just a few tree traversals.
-/// 
+///
 /// It handles, in broad strokes, 3 things:
 /// 1. Type Aliasing during the first pass (annotate)
 /// 2. pushing and popping scopes (during `annotate` and `collect`)
 /// 3. module type and method type reconstruction
-
 use parser::term::{NodeAssign, TensorTy, Term};
 use std::collections::{HashMap, VecDeque};
+use std::fmt::{Debug, Error, Formatter};
 use typed_ast::Type;
-use core::Core;
-use std::fmt::{Debug, Formatter, Error};
 
 pub type TypeId = usize;
 
@@ -39,7 +38,6 @@ impl Debug for ModName {
         }
     }
 }
-
 
 /// Represents a single level of scope
 #[derive(Debug)]
@@ -108,9 +106,8 @@ impl TypeEnv {
     /// first check current mod name, if it doesn not exist,
     /// then check in the global scope
     pub fn resolve_type(&self, mod_name: &ModName, alias: &str) -> Option<Type> {
-        self.resolve_type_inner(mod_name, alias).or(
-            self.resolve_type_inner(&ModName::Global, alias)
-        )
+        self.resolve_type_inner(mod_name, alias)
+            .or(self.resolve_type_inner(&ModName::Global, alias))
     }
 
     /// inside the module or global scope, iterate over block scope and find
@@ -123,7 +120,8 @@ impl TypeEnv {
     /// iterate over scopes and find the alias in each
     fn get_scoped_types(&self, mod_name: &ModName, alias: &str) -> Vec<Type> {
         let stack = self.modules.get(mod_name).unwrap();
-        stack.0
+        stack
+            .0
             .iter()
             .rev()
             .map(|sc| sc.types.get(alias))
@@ -233,9 +231,13 @@ impl TypeEnv {
 
     /// import module type and associated methods into type environment
     pub fn import_module(&mut self, path_name: &str, mod_name: &str) {
-        let methods = Core::import(path_name, mod_name);
+        let methods = Core::import(path_name, mod_name, self);
         for &(ref name, ref ty) in methods.iter() {
-            self.add_type(&ModName::Named(mod_name.to_owned()), name, ty.clone());
+            self.add_type(
+                &ModName::Named(mod_name.to_owned()),
+                &format!("self.{}", name),
+                ty.clone(),
+            );
         }
     }
 }
