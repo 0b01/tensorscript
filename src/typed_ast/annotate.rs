@@ -55,7 +55,6 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TyTerm {
     while let Some(t) = it.next() {
         let prev_arg = TyFnAppArg {
             name: Some(String::from("x")),
-            ty: tenv.fresh_var(),
             arg: Box::new(term0),
         };
         let t = match t {
@@ -230,7 +229,6 @@ fn annotate_fn_app_arg(call: &FnAppArg, tenv: &mut TypeEnv) -> TyFnAppArg {
     // println!("{}", tyterm);
     TyFnAppArg {
         name: Some(call.name.clone()),
-        ty: tyterm.ty(),
         arg: tyterm,
     }
 }
@@ -271,8 +269,9 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
     match f.name.as_str() {
         // special function signatures
         "new" => {
-            decl.return_ty = mod_ty;
-            decl.fn_ty = tenv.resolve_type(&module, "self").unwrap().clone();
+            decl.return_ty = mod_ty.clone();
+            decl.param_ty = decl.fn_params.to_ty();
+            decl.fn_ty = Type::FUN(box decl.param_ty.clone(), box mod_ty);
         }
         "forward" => {
             if decl.fn_params.len() == 0 {
@@ -285,7 +284,7 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
                 decl.fn_params = vec![
                     TyFnDeclParam {
                         name: String::from(name0),
-                        ty_sig,
+                        ty: ty_sig,
                     },
                 ];
                 // type the function return parameter
@@ -297,7 +296,7 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
             };
         }
         _ => {
-            // ... todo: add parse argument type...
+            decl.param_ty = decl.fn_params.to_ty();
             decl.return_ty = tenv.resolve_tensor(&module, &f.return_ty);
         }
     };
@@ -315,11 +314,11 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
 fn annotate_fn_decl_param(p: &FnDeclParam, tenv: &mut TypeEnv) -> TyFnDeclParam {
     let module = tenv.module();
     let name = p.name.clone();
-    let ty = tenv.fresh_var(); // ... todo!!!!
+    let ty = tenv.resolve_tensor(&module, &p.ty_sig);
     tenv.add_type(&module, &name, ty.clone());
     let ret = TyFnDeclParam {
         name: name,
-        ty_sig: ty,
+        ty: ty,
     };
     ret
 }
@@ -338,7 +337,7 @@ fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TyTerm {
                 let args: Vec<TyFnAppArg> =
                     v.iter().map(|arg| annotate_fn_app_arg(arg, tenv)).collect();
                 let arg_ty = args.iter()
-                    .map(|t_arg| Type::FnArg(t_arg.name.clone(), box t_arg.ty.clone()))
+                    .map(|t_arg| Type::FnArg(t_arg.name.clone(), box t_arg.arg.ty().clone()))
                     .collect();
                 TyTerm::TyFnApp(TyFnApp {
                     mod_name: Some(f_a.mod_name.clone()),

@@ -145,7 +145,7 @@ impl TyFnApp {
         self.args.insert(0, arg.clone());
         match &mut self.arg_ty {
             &mut Type::FnArgs(ref mut args) => {
-                args.insert(0, Type::FnArg(arg.name.clone(), box arg.ty))
+                args.insert(0, Type::FnArg(arg.name.clone(), box arg.arg.ty().clone()))
             }
             &mut Type::VAR(_) => (),
             _ => unimplemented!(),
@@ -156,30 +156,44 @@ impl TyFnApp {
 #[derive(Debug, PartialEq, Clone)]
 pub struct TyFnAppArg {
     pub name: Option<String>,
-    pub ty: Type,
     pub arg: Box<TyTerm>,
 }
 
 pub trait ArgsVecInto {
     fn to_ty(&self) -> Type;
-    fn to_hashmap(&self) -> HashMap<String, Box<TyTerm>>;
+    fn to_hashmap(&self) -> Option<HashMap<String, Box<TyTerm>>>;
 }
 
 impl ArgsVecInto for [TyFnAppArg] {
     fn to_ty(&self) -> Type {
         Type::FnArgs(self
             .iter()
-            .map(|t_arg| Type::FnArg(t_arg.name.clone(), box t_arg.ty.clone()))
+            .map(|t_arg| Type::FnArg(t_arg.name.clone(), box t_arg.arg.ty().clone()))
             .collect())
     }
-    fn to_hashmap(&self) -> HashMap<String, Box<TyTerm>> {
-        self.iter().filter_map(|a| 
+    fn to_hashmap(&self) -> Option<HashMap<String, Box<TyTerm>>> {
+        Some(self.iter().filter_map(|a| 
             if a.name.is_some() {
                 Some((a.name.clone().unwrap(), a.arg.clone()))
             } else {
                 None
             }
-        ).collect()
+        ).collect())
+    }
+}
+
+impl ArgsVecInto for [TyFnDeclParam] {
+    fn to_ty(&self) -> Type {
+        Type::FnArgs(self
+            .iter()
+            .map(|t_arg| Type::FnArg(Some(t_arg.name.clone()), box t_arg.ty.clone()))
+            .collect())
+    }
+    fn to_hashmap(&self) -> Option<HashMap<String, Box<TyTerm>>> {
+        None
+        // self.iter().filter_map(|a| 
+        //     Some((a.name.clone(), box a.clone()))
+        // ).collect()
     }
 }
 
@@ -202,7 +216,7 @@ pub struct TyFnDecl {
 #[derive(Debug, PartialEq, Clone)]
 pub struct TyFnDeclParam {
     pub name: String,
-    pub ty_sig: Type,
+    pub ty: Type,
 }
 
 #[derive(Debug, PartialEq, Clone)]

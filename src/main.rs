@@ -48,17 +48,18 @@ fn main() {
 
     let mut tenv = TypeEnv::new();
     let ast = annotate(&program, &mut tenv);
-    // println!("{}", ast);
+    println!("{}", ast);
     println!("initial tenv: {:#?}", tenv);
 
     let mut cs = Constraints::new();
     cs.collect(&ast, &mut tenv);
-    // println!("{:#?}", cs);
+    println!("{:#?}", cs);
 
     let mut subs = unify(cs.clone(), &mut tenv);
     // println!("{:#?}", subs);
-    let test = subs.apply_ty(&ast.ty());
-    // println!("{:?}", test);
+    // println!("{:#?}", subs.apply(&cs));
+    let test = type_reconstruction::inferred_ast::subs(&ast, &mut subs);
+    println!("{:#?}", test);
 }
 
 // 1. initialize global scope

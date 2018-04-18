@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use typed_ast::Type;
 use typed_ast::type_env::{ModName, TypeEnv};
 use typed_ast::typed_term::*;
+use typed_ast::typed_term::Ty;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Equals(pub Type, pub Type);
@@ -74,7 +75,8 @@ fn collect_graph_decl(cs: &mut Constraints, decl: &TyGraphDecl, tenv: &mut TypeE
     let graph_ty_sig = tenv.resolve_type(&ModName::Global, decl.name.as_str())
         .unwrap()
         .clone();
-    cs.add(decl.ty_sig.clone(), graph_ty_sig);
+
+    cs.add(Type::Module(decl.name.to_owned(), Some(box decl.ty_sig.clone())), graph_ty_sig);
     // collect fn_decls
     decl.fns
         .iter()
@@ -105,7 +107,7 @@ fn collect_node_decl(cs: &mut Constraints, decl: &TyNodeDecl, tenv: &mut TypeEnv
     let graph_ty_sig = tenv.resolve_type(&ModName::Global, decl.name.as_str())
         .unwrap()
         .clone();
-    cs.add(decl.ty_sig.clone(), graph_ty_sig);
+    cs.add(Type::Module(decl.name.to_owned(), Some(box decl.ty_sig.clone())), graph_ty_sig);
 }
 
 fn collect_weights_decl(cs: &mut Constraints, decl: &TyWeightsDecl, tenv: &mut TypeEnv) {
@@ -114,7 +116,7 @@ fn collect_weights_decl(cs: &mut Constraints, decl: &TyWeightsDecl, tenv: &mut T
     let graph_ty_sig = tenv.resolve_type(&ModName::Global, decl.name.as_str())
         .unwrap()
         .clone();
-    cs.add(decl.ty_sig.clone(), graph_ty_sig);
+    cs.add(Type::Module(decl.name.to_owned(), Some(box decl.ty_sig.clone())), graph_ty_sig);
 
     // collect weight assigns
     decl.inits
@@ -143,7 +145,7 @@ fn collect_weights_assign(cs: &mut Constraints, w_a: &TyWeightsAssign, tenv: &mu
 
 fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
     let current_mod = tenv.module();
-    println!("{:#?}", fn_app);
+    // println!("{:#?}", fn_app);
     // println!("{}", fn_app.name);
     // println!("{:#?}", cs);
 
@@ -153,14 +155,26 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
     let fn_name = &fn_app.name;
     let ty = tenv.resolve_type(&symbol_modname, fn_name).unwrap();
 
-    println!("{} | {} | {:?} | {} | {:?}", fn_app.orig_name, symbol_name, symbol_modname, fn_name, ty);
-    if let Type::UnresolvedModuleFun(_,_,_) = ty {
+    println!("{} | {} | {:?} | {:?} | {} | {:?}", fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name, ty);
+
+    if let Type::UnresolvedModuleFun(_,_,_) = ty.clone() {
         let inits = tenv.resolve_init(&current_mod, &fn_app.orig_name);
-        if let Some(resolved_fn_ty) = tenv.resolve_unresolved(ty, &symbol_name, &symbol_mod_ty, fn_name, inits) {
+        if let Some(resolved_fn_ty) = tenv.resolve_unresolved(ty.clone(), &symbol_name, &symbol_mod_ty, fn_name, inits) {
+            panic!("{:?}", resolved_fn_ty); // ...
             cs.add(resolved_fn_ty, fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
+        } else {
+            cs.add(ty.clone(), fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
         }
     } else {
-        cs.add(ty, fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
+        cs.add(ty.clone(), fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
+    }
+
+    cs.add(fn_app.arg_ty.clone(), fn_app.args.to_ty());
+
+    if fn_name == "self.forward" {
+        if let Type::Module(_, Some(box supplied_ty)) = symbol_mod_ty {
+            cs.add(ty.clone(), supplied_ty.clone());
+        }
     }
 
     fn_app

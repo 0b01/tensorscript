@@ -13,7 +13,11 @@ impl Op for Conv2d {
 
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
-            ("new", fun!(args!(arg!("in", INT)), module!(self.get_name()))),
+            ("new", fun!(args!(
+                arg!("in_ch", INT),
+                arg!("out_ch", INT),
+                arg!("kernel_size", INT)
+                ), module!(self.get_name()))),
             ("forward", Type::UnresolvedModuleFun("conv", self.get_name(), "forward"))
         ]
     }
@@ -32,7 +36,7 @@ impl Op for Dropout2d {
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         let ty = tenv.fresh_var();
         vec![
-            ("new", fun!(args!(arg!("in", INT)), module!(self.get_name()))),
+            ("new", fun!(args!(arg!("p", FLOAT)), module!(self.get_name()))),
             ("forward", fun!(ty.clone(), ty))
         ]
     }

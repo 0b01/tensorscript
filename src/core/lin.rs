@@ -14,7 +14,7 @@ impl Op for Linear {
         use self::Type::*;
         vec![
             ("init_normal", fun!(args!(arg!("std", FLOAT)), Unit)),
-            ("new", fun!(args!(arg!("in", INT)), module!(self.get_name()))),
+            ("new", fun!(args!(arg!("in", INT), arg!("out", INT)), module!(self.get_name()))),
             ("forward", UnresolvedModuleFun("lin", self.get_name(), "forward")),
         ]
     }
@@ -22,7 +22,7 @@ impl Op for Linear {
     /// output same shape as input
     fn resolve(&self, tenv: &mut TypeEnv, module: Option<Type>, _fn_name: &str, inits: Option<Vec<TyFnAppArg>>) -> Option<Type> {
         if inits.is_some() {
-            let hm = inits.unwrap().to_hashmap();
+            let hm = inits.unwrap().to_hashmap().unwrap();
             if !hm.contains_key("in") {
                 panic!("Initatialize Linear with parameter in=");
             } else if !hm.contains_key("out") {

@@ -256,7 +256,7 @@ fn build_fn_decl_param(pair: Pair<Rule>) -> Result<FnDeclParam, TSSParseError> {
     let typ = if typ.is_err() {
         TensorTy::Generic(vec![])
     } else {
-        TensorTy::Generic(to_idents!(typ?))
+        TensorTy::Generic(to_idents!(typ?.into_inner().next().unwrap()))
     };
 
     Ok(FnDeclParam {

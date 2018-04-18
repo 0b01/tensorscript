@@ -1,6 +1,7 @@
 use core::{MethodName, Op};
 use typed_ast::{Type, TypeEnv};
 use typed_ast::typed_term::TyFnAppArg;
+use self::Type::*;
 
 #[allow(non_camel_case_types)]
 pub struct relu;
@@ -15,7 +16,7 @@ impl Op for relu {
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         let ty = tenv.fresh_var();
         vec![
-            ("forward", fun!(ty.clone(), ty)),
+            ("forward", fun!(args!(arg!("x", ty.clone())), ty)),
         ]
     }
 
@@ -34,7 +35,7 @@ impl Op for log_softmax {
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         let ty = tenv.fresh_var();
         vec![
-            ("forward", fun!(ty.clone(), ty)),
+            ("forward", fun!(args!(arg!("x", ty.clone()), arg!("dim", INT)), ty)),
         ]
     }
 

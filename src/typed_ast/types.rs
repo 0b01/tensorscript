@@ -21,6 +21,7 @@ pub enum Type {
     ResolvedDim(i64),
     FUN(Box<Type>, Box<Type>),
     TSR(Vec<Type>),
+    ToVerify(&'static str, &'static str, &'static str, Box<Type>),
 }
 
 impl Type {
@@ -65,14 +66,15 @@ impl Debug for Type {
             INT => write!(f, "int"),
             FLOAT => write!(f, "float"),
             BOOL => write!(f, "bool"),
-            UnresolvedModuleFun(_,_,_) => write!(f, "UNRESOLVED"),
+            UnresolvedModuleFun(ref a, ref b, ref c) => write!(f, "UNRESOLVED({}::{}::{})", a, b ,c),
             VAR(ref t_id) => write!(f, "'{:?}", t_id),
             DIM(ref t_id) => write!(f, "!{:?}", t_id),
             FnArgs(ref args) => write!(f, "FnArgs({:?})", args),
-            FnArg(ref name, ref ty) => write!(f, "{:?}={:?}", name, ty),
+            FnArg(ref name, ref ty) => write!(f, "ARG({:?}={:?})", name, ty),
             ResolvedDim(ref d) => write!(f, "<{}>", d),
             Module(ref s, ref ty) => write!(f, "MODULE({}, {:?})", s, ty),
             FUN(ref p, ref r) => write!(f, "({:?} -> {:?})", p, r),
+            ToVerify(ref a,ref b,ref c,ref t) =>  write!(f, "ToVerify({}::{}::{}, {:?})", a,b,c,t),
             TSR(ref dims) => {
                 if dims.len() > 0 {
                     write!(f, "[")?;
@@ -91,7 +93,7 @@ impl Debug for Type {
 macro_rules! args {
     ( $( $x:expr ),* ) => {
         {
-            Type::FnArgs(vec![$($x)*])
+            Type::FnArgs(vec![$($x),*])
         }
     };
 }
