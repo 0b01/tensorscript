@@ -2,7 +2,7 @@ use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTy
                    Term, ViewFn, WeightsAssign};
 use typed_ast::Type;
 use typed_ast::type_env::{ModName, TypeEnv};
-use typed_ast::typed_term::Ty;
+use typed_ast::typed_term::{Ty, ArgsVecInto};
 use typed_ast::typed_term::{TyDecl, TyFieldAccess, TyFnApp, TyFnAppArg, TyFnDecl, TyFnDeclParam,
                             TyGraphDecl, TyNodeDecl, TyTerm, TyUseStmt, TyViewFn, TyWeightsAssign,
                             TyWeightsDecl};
@@ -62,6 +62,7 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TyTerm {
             // this may be `fc1`
             &Term::Ident(ref id) => TyTerm::TyFnApp(TyFnApp {
                 mod_name: Some(tenv.resolve_type(&module, id).unwrap().as_str().to_owned()),
+                orig_name: id.to_owned(),
                 name: "self.forward".to_owned(),
                 arg_ty: tenv.fresh_var(),
                 args: vec![prev_arg],
@@ -206,16 +207,21 @@ fn annotate_weights_assign(w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> TyWe
         Type::Module(w_assign.mod_name.to_owned(), fn_ty.clone()),
     );
 
+    let fn_args: Vec<TyFnAppArg> = w_assign
+        .fn_args
+        .iter()
+        .map(|a| annotate_fn_app_arg(a, tenv))
+        .collect();
+    
+    tenv.add_init(&module, &name, fn_args.clone());
+
     TyWeightsAssign {
         name: name,
         ty: tenv.fresh_var(),
         mod_name: w_assign.mod_name.clone(),
         fn_name: w_assign.fn_name.clone(),
-        fn_args: w_assign
-            .fn_args
-            .iter()
-            .map(|a| annotate_fn_app_arg(a, tenv))
-            .collect(),
+        arg_ty: fn_args.to_ty(),
+        fn_args: fn_args,
     }
 }
 
@@ -232,14 +238,12 @@ fn annotate_fn_app_arg(call: &FnAppArg, tenv: &mut TypeEnv) -> TyFnAppArg {
 fn annotate_fn_app(fn_app: &FnApp, tenv: &mut TypeEnv) -> TyFnApp {
     let FnApp { ref name, ref args } = fn_app;
     let t_args: Vec<TyFnAppArg> = args.iter().map(|a| annotate_fn_app_arg(&a, tenv)).collect();
-    let arg_ty = t_args
-        .iter()
-        .map(|t_arg| Type::FnArg(t_arg.name.clone(), box t_arg.ty.clone()))
-        .collect();
+    let arg_ty = t_args.to_ty();
     TyFnApp {
         mod_name: None,
+        orig_name: name.to_owned(),
         name: name.to_owned(),
-        arg_ty: Type::FnArgs(arg_ty),
+        arg_ty: arg_ty,
         args: t_args,
         ret_ty: tenv.fresh_var(),
     }
@@ -338,6 +342,7 @@ fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TyTerm {
                     .collect();
                 TyTerm::TyFnApp(TyFnApp {
                     mod_name: Some(f_a.mod_name.clone()),
+                    orig_name: f_a.mod_name.clone(),
                     name: format!("self.{}", f_a.field_name),
                     arg_ty: Type::FnArgs(arg_ty),
                     args,

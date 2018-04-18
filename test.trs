@@ -18,8 +18,8 @@ weights Mnist<IMAGE -> [?,OUT]> {
     conv1 = Conv2d::new(in_ch=1, out_ch=10, kernel_size=5);
     conv2 = Conv2d::<[?,C,H,W] -> [?,C,H,W]>::new(in_ch=10, out_ch=20, kernel_size=5);
     dropout = Dropout2d::<[?,C,H,W] -> [?,C,H,W]>::new(p=0.5);
-    fc1 = Linear::<[?,FC1] -> [?,FC2]>::new();
-    fc2 = Linear::new();
+    fc1 = Linear::<[?,FC1] -> [?,FC2]>::new(in=FC1, out=FC2);
+    fc2 = Linear::new(in=FC2, out=OUT);
 }
 
 graph Mnist<[?,C,H,W] -> [?,OUT]> {

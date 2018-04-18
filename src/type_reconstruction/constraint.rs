@@ -127,32 +127,42 @@ fn collect_use_stmt(_cs: &mut Constraints, _decl: &TyUseStmt, _tenv: &TypeEnv) {
     ()
 }
 
-fn collect_weights_assign(_cs: &mut Constraints, _w_a: &TyWeightsAssign, _tenv: &TypeEnv) {
-    // w_a.fn_ty
-    // TODO:
-    // ...
+fn collect_weights_assign(cs: &mut Constraints, w_a: &TyWeightsAssign, tenv: &mut TypeEnv) {
+    let mod_name = &w_a.mod_name;
+    // convert into a fn_app and collect on `self.new` method
+    collect_fn_app(cs, &TyFnApp {
+        mod_name: Some(mod_name.to_string()),
+        orig_name: "".to_owned(), // don't need to supply one because it won't be used below
+        name: "self.new".to_ascii_lowercase(),
+        arg_ty: w_a.arg_ty.clone(),
+        ret_ty: tenv.fresh_var(),
+        args: w_a.fn_args.clone(),
+    }, tenv);
     ()
 }
 
 fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
     let current_mod = tenv.module();
-    // println!("{:#?}", fn_app);
+    println!("{:#?}", fn_app);
+    // println!("{}", fn_app.name);
+    // println!("{:#?}", cs);
 
     let symbol_name = fn_app.mod_name.clone().unwrap();
     let symbol_mod_ty = tenv.resolve_type(&current_mod, &symbol_name).unwrap().clone();
     let symbol_modname = ModName::Named(symbol_mod_ty.as_str().to_owned());
     let fn_name = &fn_app.name;
-    let ty = tenv.resolve_type(&symbol_modname, fn_name);
+    let ty = tenv.resolve_type(&symbol_modname, fn_name).unwrap();
 
-    if let Some(Type::UnresolvedModuleFun(_,_,_)) = ty {
-        println!("{} | {:?} | {} | {:?}", symbol_name, symbol_modname, fn_name, ty);
-        tenv.resolve_unresolved(ty.unwrap(), &symbol_name, &symbol_mod_ty, fn_name);
+    println!("{} | {} | {:?} | {} | {:?}", fn_app.orig_name, symbol_name, symbol_modname, fn_name, ty);
+    if let Type::UnresolvedModuleFun(_,_,_) = ty {
+        let inits = tenv.resolve_init(&current_mod, &fn_app.orig_name);
+        if let Some(resolved_fn_ty) = tenv.resolve_unresolved(ty, &symbol_name, &symbol_mod_ty, fn_name, inits) {
+            cs.add(resolved_fn_ty, fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
+        }
+    } else {
+        cs.add(ty, fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
     }
 
-
-    // println!("{:#?}", Equals(looked_up_fn_ty.clone(), Type::FUN(Box::new(fn_app.arg_ty.clone()), Box::new(fn_app.ret_ty.clone()))));
-
-    // cs.add(looked_up_fn_ty, Type::FUN(Box::new(fn_app.arg_ty.clone()), Box::new(fn_app.ret_ty.clone())));
     fn_app
         .args
         .iter()

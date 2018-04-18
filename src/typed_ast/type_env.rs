@@ -10,6 +10,7 @@ use parser::term::{NodeAssign, TensorTy, Term};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{Debug, Error, Formatter};
 use typed_ast::Type;
+use typed_ast::typed_term::TyFnAppArg;
 
 pub type TypeId = usize;
 
@@ -42,6 +43,7 @@ impl Debug for ModName {
 /// Represents a single level of scope
 #[derive(Debug)]
 pub struct Scope {
+    /// type information of aliases
     types: HashMap<String, Type>,
 }
 
@@ -57,7 +59,7 @@ impl Scope {
 pub struct TypeEnv {
     counter: TypeId,
     current_mod: ModName,
-    modules: HashMap<ModName, (VecDeque<Scope>, VecDeque<Scope>)>,
+    modules: HashMap<ModName, (VecDeque<Scope>, VecDeque<Scope>, HashMap<String, Vec<TyFnAppArg>>)>,
 }
 
 impl TypeEnv {
@@ -102,6 +104,11 @@ impl TypeEnv {
         stack.1.push_back(popped);
     }
 
+    pub fn resolve_init(&self, mod_name: &ModName, alias: &str) -> Option<Vec<TyFnAppArg>> {
+        let stack = self.modules.get(mod_name).unwrap();
+        stack.2.get(alias).cloned()
+    }
+
     /// resolve the type of an identifier
     /// first check current mod name, if it doesn not exist,
     /// then check in the global scope
@@ -128,7 +135,7 @@ impl TypeEnv {
             .filter(|i| i.is_some())
             .map(|i| i.unwrap())
             .cloned()
-            .collect::<Vec<Type>>()
+            .collect()
     }
 
     /// add type alias in current scope
@@ -137,7 +144,7 @@ impl TypeEnv {
             // if the module does not yet exist, add with an empty scope
             let mut q = VecDeque::new();
             q.push_back(Scope::new());
-            (q, VecDeque::new())
+            (q, VecDeque::new(), HashMap::new())
         });
 
         let top = stack.0.len() - 1;
@@ -146,6 +153,16 @@ impl TypeEnv {
             panic!("duplicate item");
         }
         let _ = scope.types.insert(alias.to_owned(), ty);
+    }
+
+    /// add stateful initialization in current scope
+    pub fn add_init(&mut self, mod_name: &ModName, alias: &str, ty: Vec<TyFnAppArg>) {
+        let stack = self.modules.get_mut(&mod_name).unwrap();
+
+        if stack.2.contains_key(alias) {
+            panic!("duplicate item");
+        }
+        let _ = stack.2.insert(alias.to_owned(), ty);
     }
 
     /// tie an alias with a type variable dimension
@@ -241,7 +258,7 @@ impl TypeEnv {
         }
     }
 
-    pub fn resolve_unresolved(&mut self, ty: Type, symbol_name: &str, module: &Type, fn_name: &str) -> Option<Type> {
+    pub fn resolve_unresolved(&mut self, ty: Type, symbol_name: &str, module: &Type, fn_name: &str, inits: Option<Vec<TyFnAppArg>>) -> Option<Type> {
         let (mod_name, mod_ty) = {
             if let Type::Module(name, opty) = module {
                 (name, opty.clone().map(|i|*i))
@@ -249,13 +266,15 @@ impl TypeEnv {
                 panic!();
             }
         };
+
         if let Type::UnresolvedModuleFun(p0, p1, p2) = ty {
             assert_eq!(fn_name, &format!("self.{}", p2));
             let op = Core::find(p0, p1);
-            let ty = op.resolve(self, mod_ty, fn_name);
+            let ty = op.resolve(self, mod_ty, fn_name, inits);
             ty
         } else {
             unimplemented!();
         }
+
     }
 }

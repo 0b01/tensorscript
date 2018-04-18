@@ -3,9 +3,11 @@
 ///
 use std::fmt::{Display, Error, Formatter};
 use typed_ast::Type;
+use std::collections::HashMap;
 
 pub trait Ty {
     fn ty(&self) -> Type;
+    fn int(&self) -> Option<i64> { None }
 }
 
 impl Ty for TyTerm {
@@ -25,6 +27,13 @@ impl Ty for TyTerm {
             &TyExpr { items: _, ref ty } => ty.clone(),
             &TyStmt { items: _ } => Unit,
             &TyViewFn(ref view_fn) => view_fn.ty(),
+        }
+    }
+
+    fn int(&self) -> Option<i64> {
+        match self {
+            &TyTerm::TyInteger(_, i) => Some(i),
+            _ => None,
         }
     }
 }
@@ -117,14 +126,14 @@ pub struct TyWeightsAssign {
     pub ty: Type,
     pub mod_name: String,
     pub fn_name: String,
+    pub arg_ty: Type,
     pub fn_args: Vec<TyFnAppArg>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TyFnApp {
-    /// fc1
     pub mod_name: Option<String>,
-    /// init_normal
+    pub orig_name: String,
     pub name: String,
     pub arg_ty: Type,
     pub ret_ty: Type,
@@ -149,6 +158,29 @@ pub struct TyFnAppArg {
     pub name: Option<String>,
     pub ty: Type,
     pub arg: Box<TyTerm>,
+}
+
+pub trait ArgsVecInto {
+    fn to_ty(&self) -> Type;
+    fn to_hashmap(&self) -> HashMap<String, Box<TyTerm>>;
+}
+
+impl ArgsVecInto for [TyFnAppArg] {
+    fn to_ty(&self) -> Type {
+        Type::FnArgs(self
+            .iter()
+            .map(|t_arg| Type::FnArg(t_arg.name.clone(), box t_arg.ty.clone()))
+            .collect())
+    }
+    fn to_hashmap(&self) -> HashMap<String, Box<TyTerm>> {
+        self.iter().filter_map(|a| 
+            if a.name.is_some() {
+                Some((a.name.clone().unwrap(), a.arg.clone()))
+            } else {
+                None
+            }
+        ).collect()
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

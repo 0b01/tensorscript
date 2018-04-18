@@ -1,28 +1,51 @@
-#[macro_use]
-use typed_ast::types;
-
 use core::{MethodName, Op};
 use typed_ast::{Type, TypeEnv};
+use typed_ast::typed_term::{TyFnAppArg, ArgsVecInto, Ty, TyTerm};
 
 // #[allow(non_camel_case_types)]
 pub struct Linear;
 
 impl Op for Linear {
-    fn get_name(&self) -> String {
-        "Linear".to_owned()
+    fn get_name(&self) -> &'static str {
+        "Linear"
     }
 
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         use self::Type::*;
         vec![
             ("init_normal", fun!(args!(arg!("std", FLOAT)), Unit)),
-            ("new", fun!(args!(arg!("in", INT)), module!("Linear"))),
-            ("forward", UnresolvedModuleFun("lin", "Linear", "forward")),
+            ("new", fun!(args!(arg!("in", INT)), module!(self.get_name()))),
+            ("forward", UnresolvedModuleFun("lin", self.get_name(), "forward")),
         ]
     }
 
     /// output same shape as input
-    fn resolve(&self, tenv: &mut TypeEnv, _module: Option<Type>, _fn_name: &str) -> Option<Type> {
-        unimplemented!()
+    fn resolve(&self, tenv: &mut TypeEnv, module: Option<Type>, _fn_name: &str, inits: Option<Vec<TyFnAppArg>>) -> Option<Type> {
+        if inits.is_some() {
+            let hm = inits.unwrap().to_hashmap();
+            if !hm.contains_key("in") {
+                panic!("Initatialize Linear with parameter in=");
+            } else if !hm.contains_key("out") {
+                panic!("Initatialize Linear with parameter out=");
+            }
+
+            let in_dim = hm.get("in").and_then(unwrap_dim).unwrap();
+            let out_dim = hm.get("out").and_then(unwrap_dim).unwrap();
+
+            // println!("({:?}, {:?})", in_dim, out_dim);
+            // println!("{:#?}", module);
+            // unimplemented!()
+            None
+        } else {
+            None
+        }
+    }
+}
+
+fn unwrap_dim(in_dim: &Box<TyTerm>) -> Option<i64> {
+    match in_dim.ty() {
+        Type::INT => in_dim.int(),
+        Type::ResolvedDim(num) => Some(num),
+        _ => panic!("not a numeric value!"),
     }
 }

@@ -32,7 +32,7 @@ impl Type {
         }
     }
 
-    pub fn is_unresolved(&self) -> bool {
+    pub fn is_resolved(&self) -> bool {
         use self::Type::*;
         match self {
             Unit => true,
@@ -44,12 +44,13 @@ impl Type {
             VAR(_) => false,
             DIM(_) => false,
 
-            // Module(String, Option<Box<Type>>),
-            // FnArgs(Vec<Type>),
-            // FnArg(Option<String>, Box<Type>),
-            // ResolvedDim(i64),
-            // FUN(Box<Type>, Box<Type>),
-            // TSR(Vec<Type>),
+            Module(_, Some(i)) => Type::is_resolved(i),
+            Module(_, None) => false,
+            FnArgs(ts) => ts.iter().map(|t| Type::is_resolved(t)).all(|t| t),
+            FnArg(_, t) => Type::is_resolved(t),
+            ResolvedDim(i64) => true,
+            FUN(p, r) => Type::is_resolved(p) && Type::is_resolved(r),
+            TSR(ts) => ts.iter().map(|t| Type::is_resolved(t)).all(|t|t),
             _ => unimplemented!(),
         }
     }
