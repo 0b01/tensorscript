@@ -240,4 +240,8 @@ impl TypeEnv {
             );
         }
     }
+
+    pub fn resolve_unresolved(&mut self, module: &ModName, fn_name: &str) -> Option<Type> {
+        unimplemented!();
+    }
 }

@@ -25,11 +25,35 @@ pub enum Type {
 
 impl Type {
     pub fn as_str(&self) -> &str {
+        use self::Type::*;
         match self {
-            Type::Module(ref n, _) => n,
+            Module(ref n, _) => n,
             _ => unimplemented!(),
         }
     }
+
+    pub fn is_unresolved(&self) -> bool {
+        use self::Type::*;
+        match self {
+            Unit => true,
+            INT => true,
+            FLOAT => true,
+            BOOL => true,
+            UnresolvedModuleFun => false,
+
+            VAR(_) => false,
+            DIM(_) => false,
+
+            // Module(String, Option<Box<Type>>),
+            // FnArgs(Vec<Type>),
+            // FnArg(Option<String>, Box<Type>),
+            // ResolvedDim(i64),
+            // FUN(Box<Type>, Box<Type>),
+            // TSR(Vec<Type>),
+            _ => unimplemented!(),
+        }
+    }
+
 }
 
 impl Debug for Type {

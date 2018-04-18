@@ -135,14 +135,19 @@ fn collect_weights_assign(_cs: &mut Constraints, _w_a: &TyWeightsAssign, _tenv: 
 }
 
 fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
-    let module = tenv.module();
+    let current_mod = tenv.module();
     // println!("{:#?}", fn_app);
 
-    let mod_name = fn_app.mod_name.clone().unwrap();
-    let symbol_mod = tenv.resolve_type(&module, &mod_name).unwrap().clone();
+    let symbol_name = fn_app.mod_name.clone().unwrap();
+    let symbol_mod = ModName::Named(tenv.resolve_type(&current_mod, &symbol_name).unwrap().clone().as_str().to_owned()); // lol
     let fn_name = &fn_app.name;
-    let ty = tenv.resolve_type(&ModName::Named(symbol_mod.as_str().to_owned()), fn_name);
-    println!("{:?} | {} | {:?}", symbol_mod, fn_name, ty);
+    let ty = tenv.resolve_type(&symbol_mod, fn_name);
+
+    if let Some(Type::UnresolvedModuleFun) = ty {
+        println!("{} | {:?} | {} | {:?}", symbol_name, symbol_mod, fn_name, ty);
+        // tenv.resolve_unresolved(&symbol_mod, fn_name);
+    }
+
 
     // println!("{:#?}", Equals(looked_up_fn_ty.clone(), Type::FUN(Box::new(fn_app.arg_ty.clone()), Box::new(fn_app.ret_ty.clone()))));
 
