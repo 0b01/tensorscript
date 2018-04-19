@@ -296,10 +296,15 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
             };
         }
         _ => {
-            decl.param_ty = decl.fn_params.to_ty();
+            decl.param_ty = decl.fn_params.to_ty().clone();
             decl.return_ty = tenv.resolve_tensor(&module, &f.return_ty);
+            decl.fn_ty = Type::FUN(box decl.param_ty.clone(), box decl.return_ty.clone());
         }
     };
+
+    // if decl.name == "test" {
+    //     panic!("{:#?}", decl);
+    // }
 
     decl.func_block = Box::new(annotate(&f.func_block, tenv));
 

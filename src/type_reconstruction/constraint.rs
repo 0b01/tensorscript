@@ -97,6 +97,10 @@ fn collect_fn_decl(cs: &mut Constraints, decl: &TyFnDecl, tenv: &mut TypeEnv) {
             Box::new(decl.return_ty.clone()),
         ),
     );
+
+    // if decl.name == "example" {
+    //     panic!("{:#?}", decl.return_ty);
+    // }
     tenv.pop_scope(&module);
     // ...
 }

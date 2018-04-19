@@ -215,7 +215,11 @@ fn build_fn_decl(pair: Pair<Rule>) -> Result<FnDecl, TSSParseError> {
             TensorTy::Generic(vec![])
         } else {
             let temp = temp?.into_inner().next().unwrap();
-            TensorTy::Generic(to_idents!(temp))
+            if temp.as_rule() == cap_ident {
+                TensorTy::TyAlias(temp.as_str().to_owned())
+            } else {
+                TensorTy::Generic(to_idents!(temp))
+            }
         }
     };
 

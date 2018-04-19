@@ -78,6 +78,7 @@ fn occurs(tvar: TypeId, ty: &Type) -> bool {
 fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
     use self::Type::*;
     match ty {
+        UnresolvedModuleFun(_,_,_) => ty,
         Unit => ty,
         INT => ty,
         BOOL => ty,
@@ -114,7 +115,6 @@ fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
         Module(n,Some(box ty)) => Module(n, Some(box substitute(ty, tvar, replacement))),
 
         Module(_, None) => ty,
-        UnresolvedModuleFun(_,_,_) => ty,
         FnArg(name, box ty) => FnArg(name, box substitute(ty, tvar, replacement)),
         _ => {
             panic!("{:?}", ty);
@@ -138,9 +138,12 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
     use self::Type::*;
     println!("{:?}", cs);
     match cs {
+        Equals(ToVerify(_,_,_,_), ty) => Substitution::empty(),
+
         Equals(INT, INT) => Substitution::empty(),
         Equals(FLOAT, FLOAT) => Substitution::empty(),
         Equals(BOOL, BOOL) => Substitution::empty(),
+
 
         Equals(INT, ResolvedDim(_)) => Substitution::empty(),
         Equals(ResolvedDim(_), INT) => Substitution::empty(),
@@ -149,8 +152,10 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
             Substitution::empty()
         } else {
             println!("{} {}", i, j );
+            panic!("{:#?}", tenv);
             panic!("dimension mismatch")
         },
+
 
         Equals(VAR(tvar), ty) => unify_var(tvar, ty),
         Equals(ty, VAR(tvar)) => unify_var(tvar, ty),
@@ -175,24 +180,24 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
                 panic!("supplied parameter is incorrect! {} != {}", a, b);
             }
         }
-        Equals(FnArg(None, ty1), FnArg(Some(_), ty2)) => unify(
-            Constraints(hashset!{
-                Equals(*ty1, *ty2),
-            }),
-            tenv,
-        ),
-        Equals(FnArg(Some(_), ty1), FnArg(None, ty2)) => unify(
-            Constraints(hashset!{
-                Equals(*ty1, *ty2),
-            }),
-            tenv,
-        ),
-        Equals(FnArg(None, ty1), FnArg(None, ty2)) => unify(
-            Constraints(hashset!{
-                Equals(*ty1, *ty2),
-            }),
-            tenv,
-        ),
+        // Equals(FnArg(None, ty1), FnArg(Some(_), ty2)) => unify(
+        //     Constraints(hashset!{
+        //         Equals(*ty1, *ty2),
+        //     }),
+        //     tenv,
+        // ),
+        // Equals(FnArg(Some(_), ty1), FnArg(None, ty2)) => unify(
+        //     Constraints(hashset!{
+        //         Equals(*ty1, *ty2),
+        //     }),
+        //     tenv,
+        // ),
+        // Equals(FnArg(None, ty1), FnArg(None, ty2)) => unify(
+        //     Constraints(hashset!{
+        //         Equals(*ty1, *ty2),
+        //     }),
+        //     tenv,
+        // ),
 
         Equals(FUN(p1, r1), FUN(p2, r2)) => unify(
             Constraints(hashset!{
@@ -222,13 +227,8 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
 
         //FUN(box VAR(_), box VAR(_))
         Equals(UnresolvedModuleFun(a,b,c), ty) => unify(Constraints(hashset!{
-            Equals(ty.clone(), ToVerify(a,b,c, box ty)),
+            Equals(ToVerify(a,b,c,box ty.clone()), ty.clone()),
         }), tenv),
-
-        Equals(ty, ToVerify(_,_,_,box t)) => {
-            if t == ty { Substitution::empty() }
-            else {panic!("Error!")}
-        },
 
         _ => {
             panic!("{:#?}", cs);

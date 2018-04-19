@@ -16,8 +16,8 @@ node Mnist<IMAGE -> LABELS> {
 
 weights Mnist<IMAGE -> [?,OUT]> {
     conv1 = Conv2d::new(in_ch=1, out_ch=10, kernel_size=5);
-    conv2 = Conv2d::<[?,C,H,W] -> [?,C,H,W]>::new(in_ch=10, out_ch=20, kernel_size=5);
-    dropout = Dropout2d::<[?,C,H,W] -> [?,C,H,W]>::new(p=0.5);
+    conv2 = Conv2d::new(in_ch=10, out_ch=20, kernel_size=5);
+    dropout = Dropout2d::new(p=0.5);
     fc1 = Linear::<[?,FC1] -> [?,FC2]>::new(in=FC1, out=FC2);
     fc2 = Linear::new(in=FC2, out=OUT);
 }
@@ -32,15 +32,17 @@ graph Mnist<[?,C,H,W] -> [?,OUT]> {
 
     def forward(b) -> LABELS {
         b
-        |> conv1            |> maxpool2d(kernel_size=2)
-        |> conv2 |> dropout |> maxpool2d(kernel_size=2)
-        |> view(?, FC1)
-        |> fc1 |> relu
-        |> self.test()
-        |> log_softmax(dim=1)
+        // |> conv1            |> maxpool2d(kernel_size=2)
+        // |> conv2 |> dropout |> maxpool2d(kernel_size=2)
+        // |> view(?, FC1)
+        // |> fc1 |> relu
+        // |> self.example()
+        // |> log_softmax(dim=1)
+        |> view(?, FC2)
+        |> self.example()
     }
 
-    def test(x: [?,FC2]) -> [?,OUT] {
+    def example(x: [?,FC2]) -> LABELS {
         x |> fc2 |> relu
     }
 
