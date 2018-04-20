@@ -21,13 +21,12 @@
 ///
 use std::collections::HashMap;
 use type_reconstruction::constraint::{Constraints, Equals};
-use typed_ast::Type;
 use typed_ast::type_env::TypeEnv;
 use typed_ast::type_env::TypeId;
+use typed_ast::Type;
 
 use codespan_reporting::termcolor::StandardStream;
 use codespan_reporting::{emit, ColorArg, Diagnostic, Label, Severity};
-
 
 use span::CSpan;
 
@@ -91,7 +90,7 @@ fn substitute_tvar(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
     use self::Type::*;
     // println!("\nTVAR:::\n{:?}, \n'{:?}, \n{:?}\n", ty, tvar, replacement);
     match ty {
-        UnresolvedModuleFun(_,_,_,_) => ty,
+        UnresolvedModuleFun(_, _, _, _) => ty,
         Unit(_) => ty,
         INT(_) => ty,
         BOOL(_) => ty,
@@ -118,18 +117,20 @@ fn substitute_tvar(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
                     _ => panic!(ty),
                 })
                 .collect(),
-                span,
+            span,
         ),
         FUN(p, r, s) => FUN(
             box substitute_tvar(*p, tvar, &replacement),
             box substitute_tvar(*r, tvar, &replacement),
             s,
         ),
-        TSR(_,_) => ty,
+        TSR(_, _) => ty,
 
-        Module(n,Some(box ty),s) => Module(n, Some(box substitute_tvar(ty, tvar, replacement)), s),
+        Module(n, Some(box ty), s) => {
+            Module(n, Some(box substitute_tvar(ty, tvar, replacement)), s)
+        }
 
-        Module(_, None,_) => ty,
+        Module(_, None, _) => ty,
         FnArg(name, box ty, s) => FnArg(name, box substitute_tvar(ty, tvar, replacement), s),
         _ => {
             panic!("{:?}", ty);
@@ -153,31 +154,28 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
     use self::Type::*;
     // println!("{:?}", cs);
     match cs {
-
         Equals(Unit(_), Unit(_)) => Substitution::empty(),
         Equals(INT(_), INT(_)) => Substitution::empty(),
         Equals(FLOAT(_), FLOAT(_)) => Substitution::empty(),
         Equals(BOOL(_), BOOL(_)) => Substitution::empty(),
 
+        Equals(INT(_), ResolvedDim(_, _)) => Substitution::empty(),
+        Equals(ResolvedDim(_, _), INT(_)) => Substitution::empty(),
 
-        Equals(INT(_), ResolvedDim(_,_)) => Substitution::empty(),
-        Equals(ResolvedDim(_,_), INT(_)) => Substitution::empty(),
-
-        Equals(a@ResolvedDim(_,_), b@ResolvedDim(_,_)) => {
+        Equals(a @ ResolvedDim(_, _), b @ ResolvedDim(_, _)) => {
             if a.as_num() == b.as_num() {
                 Substitution::empty()
             } else {
-                match (a,b) {
-                    (ResolvedDim(v1,s1), ResolvedDim(v2,s2)) => {
+                match (a, b) {
+                    (ResolvedDim(v1, s1), ResolvedDim(v2, s2)) => {
                         // let error = Diagnostic::new(Severity::Error, "Unexpected type in `+` application")
                         //     .with_label(
                         //         Label::new_primary(s1))
                         //     .with_message("Dimension mismatch.");
-                            
+
                         // let writer = StandardStream::stderr(opts.color.into());
                         // emit(&mut writer.lock(), &code_map, &error).unwrap();
                         // println!();
-
 
                         panic!("Dimension mismatch! {:?} != {:?} ({}/{})", v1, v2, s1, s2);
                     }
@@ -186,14 +184,13 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
             }
         }
 
-
         Equals(VAR(tvar, _), ty) => unify_var(tvar, ty),
         Equals(ty, VAR(tvar, _)) => unify_var(tvar, ty),
 
         Equals(DIM(tvar, _), ty) => unify_var(tvar, ty),
         Equals(ty, DIM(tvar, _)) => unify_var(tvar, ty),
 
-        Equals(FnArgs(v1,_), FnArgs(v2,_)) => unify(
+        Equals(FnArgs(v1, _), FnArgs(v2, _)) => unify(
             Constraints(v1.into_iter().zip(v2).map(|(i, j)| Equals(i, j)).collect()),
             tenv,
         ),
@@ -218,7 +215,7 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
             }),
             tenv,
         ),
-        Equals(TSR(dims1,_), TSR(dims2,_)) => unify(
+        Equals(TSR(dims1, _), TSR(dims2, _)) => unify(
             Constraints({
                 dims1
                     .into_iter()
@@ -229,15 +226,18 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
             tenv,
         ),
 
-        Equals(Module(n1, Some(box ty1),_), Module(n2, Some(box ty2),_)) => unify(Constraints(hashset!{
-            if n1 == n2 {
-                Equals(ty1, ty2)
-            } else {
-                panic!();
-            }
-        }), tenv),
+        Equals(Module(n1, Some(box ty1), _), Module(n2, Some(box ty2), _)) => unify(
+            Constraints(hashset!{
+                if n1 == n2 {
+                    Equals(ty1, ty2)
+                } else {
+                    panic!();
+                }
+            }),
+            tenv,
+        ),
 
-        Equals(UnresolvedModuleFun(_,_,_,_),_) => Substitution::empty(),
+        Equals(UnresolvedModuleFun(_, _, _, _), _) => Substitution::empty(),
 
         _ => {
             panic!("{:#?}", cs);

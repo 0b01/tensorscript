@@ -1,7 +1,7 @@
 use core::{MethodName, Op};
-use typed_ast::{Type, TypeEnv};
-use typed_ast::typed_term::{TyFnAppArg, ArgsVecInto, Ty, TyTerm};
 use span::CSpan;
+use typed_ast::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
+use typed_ast::{Type, TypeEnv};
 
 // #[allow(non_camel_case_types)]
 pub struct Linear;
@@ -15,13 +15,28 @@ impl Op for Linear {
         use self::Type::*;
         vec![
             ("init_normal", fun!(args!(arg!("std", float!())), unit!())),
-            ("new", fun!(args!(arg!("in", int!()), arg!("out", int!())), module!(self.get_name()))),
-            ("forward", UnresolvedModuleFun("lin", self.get_name(), "forward", CSpan::fresh_span())),
+            (
+                "new",
+                fun!(
+                    args!(arg!("in", int!()), arg!("out", int!())),
+                    module!(self.get_name())
+                ),
+            ),
+            (
+                "forward",
+                UnresolvedModuleFun("lin", self.get_name(), "forward", CSpan::fresh_span()),
+            ),
         ]
     }
 
     /// output same shape as input
-    fn resolve(&self, tenv: &mut TypeEnv, module: Option<Type>, _fn_name: &str, inits: Option<Vec<TyFnAppArg>>) -> Option<Type> {
+    fn resolve(
+        &self,
+        tenv: &mut TypeEnv,
+        module: Option<Type>,
+        _fn_name: &str,
+        inits: Option<Vec<TyFnAppArg>>,
+    ) -> Option<Type> {
         if inits.is_some() {
             let hm = inits.unwrap().to_hashmap().unwrap();
             if !hm.contains_key("in") {

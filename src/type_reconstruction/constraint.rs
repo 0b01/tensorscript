@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
-use typed_ast::Type;
-use typed_ast::type_env::{ModName, TypeEnv, Alias};
-use typed_ast::typed_term::*;
+use typed_ast::type_env::{Alias, ModName, TypeEnv};
 use typed_ast::typed_term::Ty;
+use typed_ast::typed_term::*;
+use typed_ast::Type;
 
 use span::CSpan;
 
@@ -31,8 +31,8 @@ impl Constraints {
                 .iter()
                 .map(|decl| collect_decl(self, &decl, tenv))
                 .collect(),
-            &TyInteger(_,_,_) => (),
-            &TyFloat(_,_,_) => (),
+            &TyInteger(_, _, _) => (),
+            &TyFloat(_, _, _) => (),
             &TyList(ref terms) => terms.iter().map(|t| self.collect(&t, tenv)).collect(),
             &TyIdent(ref t, ref name, _) => self.add(
                 t.clone(),
@@ -42,17 +42,25 @@ impl Constraints {
             ),
             // &TyFieldAccess(TyFieldAccess),
             &TyFnApp(ref fn_app) => collect_fn_app(self, &fn_app, tenv),
-            &TyBlock { ref stmts, ref ret, span:_ } => {
+            &TyBlock {
+                ref stmts,
+                ref ret,
+                span: _,
+            } => {
                 tenv.push_scope_collection(&module);
                 self.collect(&stmts, tenv);
                 self.collect(&ret, tenv);
                 tenv.pop_scope(&module);
             }
-            &TyExpr { ref items, ref ty, span:_ } => {
+            &TyExpr {
+                ref items,
+                ref ty,
+                span: _,
+            } => {
                 self.collect(&items, tenv);
                 self.add(ty.clone(), items.ty());
             }
-            &TyStmt { ref items , span:_ } => self.collect(&items, tenv),
+            &TyStmt { ref items, span: _ } => self.collect(&items, tenv),
             &TyViewFn(ref view_fn) => {
                 self.collect(&view_fn.arg.arg, tenv);
             }
@@ -81,11 +89,14 @@ fn collect_graph_decl(cs: &mut Constraints, decl: &TyGraphDecl, tenv: &mut TypeE
         .unwrap()
         .clone();
 
-    cs.add(Type::Module(
-        decl.name.to_owned(),
-        Some(box decl.ty_sig.clone()),
-        decl.span.clone(),
-    ), graph_ty_sig);
+    cs.add(
+        Type::Module(
+            decl.name.to_owned(),
+            Some(box decl.ty_sig.clone()),
+            decl.span.clone(),
+        ),
+        graph_ty_sig,
+    );
     // collect fn_decls
     decl.fns
         .iter()
@@ -126,7 +137,7 @@ fn collect_node_decl(cs: &mut Constraints, decl: &TyNodeDecl, tenv: &mut TypeEnv
             Some(box decl.ty_sig.clone()),
             decl.span.clone(),
         ),
-        graph_ty_sig
+        graph_ty_sig,
     );
 }
 
@@ -138,10 +149,12 @@ fn collect_weights_decl(cs: &mut Constraints, decl: &TyWeightsDecl, tenv: &mut T
         .clone();
     cs.add(
         Type::Module(
-            decl.name.to_owned(), 
+            decl.name.to_owned(),
             Some(box decl.ty_sig.clone()),
             decl.span.clone(),
-        ), graph_ty_sig);
+        ),
+        graph_ty_sig,
+    );
 
     // collect weight assigns
     decl.inits
@@ -157,15 +170,19 @@ fn collect_use_stmt(_cs: &mut Constraints, _decl: &TyUseStmt, _tenv: &TypeEnv) {
 fn collect_weights_assign(cs: &mut Constraints, w_a: &TyWeightsAssign, tenv: &mut TypeEnv) {
     let mod_name = &w_a.mod_name;
     // convert into a fn_app and collect on `self.new` method
-    collect_fn_app(cs, &TyFnApp {
-        mod_name: Some(mod_name.to_string()),
-        orig_name: "".to_owned(), // don't need to supply one because it won't be used below
-        name: Alias::Function("new".to_owned()),
-        arg_ty: w_a.arg_ty.clone(),
-        ret_ty: tenv.fresh_var(&w_a.span),
-        args: w_a.fn_args.clone(),
-        span: w_a.span.clone(),
-    }, tenv);
+    collect_fn_app(
+        cs,
+        &TyFnApp {
+            mod_name: Some(mod_name.to_string()),
+            orig_name: "".to_owned(), // don't need to supply one because it won't be used below
+            name: Alias::Function("new".to_owned()),
+            arg_ty: w_a.arg_ty.clone(),
+            ret_ty: tenv.fresh_var(&w_a.span),
+            args: w_a.fn_args.clone(),
+            span: w_a.span.clone(),
+        },
+        tenv,
+    );
     ()
 }
 
@@ -176,30 +193,31 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
     // println!("{:#?}", cs);
 
     let symbol_name = fn_app.mod_name.clone().unwrap();
-    let symbol_mod_ty = tenv.resolve_type(&current_mod, &Alias::Variable(symbol_name.clone())).unwrap().clone();
+    let symbol_mod_ty = tenv.resolve_type(&current_mod, &Alias::Variable(symbol_name.clone()))
+        .unwrap()
+        .clone();
     let symbol_modname = ModName::Named(symbol_mod_ty.as_str().to_owned());
     let fn_name = &fn_app.name;
-    println!("{} | {} | {:?} | {:?} | {:?} ", fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name);
+    println!(
+        "{} | {} | {:?} | {:?} | {:?} ",
+        fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name
+    );
     let ty = tenv.resolve_type(&symbol_modname, &fn_name).unwrap();
 
-
-    if let Type::UnresolvedModuleFun(_,_,_, _) = ty {
-    //     let inits = tenv.resolve_init(&current_mod, &fn_app.orig_name);
-    //     // if let Some(resolved_fn_ty) = tenv.resolve_unresolved(ty.clone(), &symbol_name, &symbol_mod_ty, fn_name, inits) {
-    //     //     cs.add(resolved_fn_ty, fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
-    //     // } else {
-    //     // }
-    //     cs.add(ty.clone(), fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
+    if let Type::UnresolvedModuleFun(_, _, _, _) = ty {
+        //     let inits = tenv.resolve_init(&current_mod, &fn_app.orig_name);
+        //     // if let Some(resolved_fn_ty) = tenv.resolve_unresolved(ty.clone(), &symbol_name, &symbol_mod_ty, fn_name, inits) {
+        //     //     cs.add(resolved_fn_ty, fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
+        //     // } else {
+        //     // }
+        //     cs.add(ty.clone(), fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
         tenv.add_unverified(ty.clone());
     }
     cs.add(
         ty.clone(),
-        fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone())
+        fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()),
     );
-    cs.add(
-        fn_app.arg_ty.clone(),
-        fn_app.args.to_ty(&fn_app.span)
-    );
+    cs.add(fn_app.arg_ty.clone(), fn_app.args.to_ty(&fn_app.span));
 
     if let "forward" = fn_name.as_str() {
         if let Type::Module(_, Some(box supplied_ty), _) = symbol_mod_ty {

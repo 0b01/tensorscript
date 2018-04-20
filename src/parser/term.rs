@@ -1,7 +1,7 @@
+use codespan::{ByteIndex, Span};
 /// Data structures for untyped AST.
 ///
 use std::fmt::{Display, Error, Formatter};
-use codespan::{Span, ByteIndex};
 
 type Expression = Box<Term>;
 type Statements = Box<Term>;
@@ -31,7 +31,7 @@ pub enum Term {
         items: Box<Term>,
         span: Span<ByteIndex>,
     },
-    Pipes(Vec<Term>, ),
+    Pipes(Vec<Term>),
 }
 
 impl Term {

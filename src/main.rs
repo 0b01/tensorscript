@@ -31,14 +31,12 @@ extern crate maplit;
 extern crate codespan;
 extern crate codespan_reporting;
 
-
 #[macro_use]
 mod typed_ast;
 mod core;
 mod parser;
-mod type_reconstruction;
 mod span;
-
+mod type_reconstruction;
 
 use type_reconstruction::constraint::Constraints;
 use type_reconstruction::subst::unify;

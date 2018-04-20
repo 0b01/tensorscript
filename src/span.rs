@@ -1,4 +1,4 @@
-use codespan::{Span, ByteIndex};
+use codespan::{ByteIndex, Span};
 use pest::Span as PestSpan;
 
 pub struct CSpan;

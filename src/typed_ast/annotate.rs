@@ -1,13 +1,13 @@
+use codespan::{ByteIndex, Span};
 use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, TensorTy,
                    Term, ViewFn, WeightsAssign};
 use span::CSpan;
-use codespan::{Span, ByteIndex};
-use typed_ast::Type;
-use typed_ast::type_env::{ModName, TypeEnv, Alias};
-use typed_ast::typed_term::{Ty, ArgsVecInto};
+use typed_ast::type_env::{Alias, ModName, TypeEnv};
+use typed_ast::typed_term::{ArgsVecInto, Ty};
 use typed_ast::typed_term::{TyDecl, TyFieldAccess, TyFnApp, TyFnAppArg, TyFnDecl, TyFnDeclParam,
                             TyGraphDecl, TyNodeDecl, TyTerm, TyUseStmt, TyViewFn, TyWeightsAssign,
                             TyWeightsDecl};
+use typed_ast::Type;
 
 pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TyTerm {
     use self::Term::*;
@@ -16,14 +16,18 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TyTerm {
     let module = tenv.module();
     match term {
         Ident(ref id, ref span) => {
-            let ty = tenv.resolve_type(&module, &Alias::Variable(id.clone())).unwrap();
+            let ty = tenv.resolve_type(&module, &Alias::Variable(id.clone()))
+                .unwrap();
             let alias = Alias::Variable(id.to_owned());
             TyTerm::TyIdent(ty, alias, span.clone())
-        },
+        }
 
         &Program(ref decls) => TyProgram(decls.iter().map(|d| annotate_decl(d, tenv)).collect()),
 
-        &Expr { ref items, ref span } => {
+        &Expr {
+            ref items,
+            ref span,
+        } => {
             let ret = Box::new(annotate(&items, tenv));
             TyExpr {
                 ty: ret.ty(),
@@ -32,9 +36,13 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TyTerm {
             }
         }
 
-        &Integer(i,s) => TyInteger(Type::INT(s.clone()), i, s),
-        &Float(i,s) => TyFloat(Type::FLOAT(s.clone()), i, s),
-        &Block { ref stmts, ref ret, ref span } => {
+        &Integer(i, s) => TyInteger(Type::INT(s.clone()), i, s),
+        &Float(i, s) => TyFloat(Type::FLOAT(s.clone()), i, s),
+        &Block {
+            ref stmts,
+            ref ret,
+            ref span,
+        } => {
             let module = tenv.module();
             tenv.push_scope(&module);
             let ret = TyBlock {
@@ -46,7 +54,10 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TyTerm {
             ret
         }
         &List(ref stmts) => TyList(stmts.iter().map(|s| annotate(&s, tenv)).collect()),
-        &Stmt { ref items, ref span } => TyStmt {
+        &Stmt {
+            ref items,
+            ref span,
+        } => TyStmt {
             items: Box::new(annotate(&items, tenv)),
             span: span.clone(),
         },
@@ -73,7 +84,12 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TyTerm {
         let t = match t {
             // this may be `fc1`
             &Term::Ident(ref id, ref span) => TyTerm::TyFnApp(TyFnApp {
-                mod_name: Some(tenv.resolve_type(&module, &Alias::Variable(id.clone())).unwrap().as_str().to_owned()),
+                mod_name: Some(
+                    tenv.resolve_type(&module, &Alias::Variable(id.clone()))
+                        .unwrap()
+                        .as_str()
+                        .to_owned(),
+                ),
                 orig_name: id.to_owned(),
                 name: Alias::Function("forward".to_owned()),
                 arg_ty: tenv.fresh_var(span),
@@ -119,7 +135,11 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TyTerm {
 fn annotate_view_fn(v_fn: &ViewFn, arg: TyFnAppArg, tenv: &mut TypeEnv) -> TyViewFn {
     let module = tenv.module();
     let tsr = tenv.create_tensor(&module, &v_fn.dims, &v_fn.span);
-    TyViewFn { ty: tsr, arg, span: v_fn.span.clone() }
+    TyViewFn {
+        ty: tsr,
+        arg,
+        span: v_fn.span.clone(),
+    }
 }
 
 fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
@@ -134,13 +154,25 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
                 .map(|a| tenv.import_node_assign(&module, a))
                 .collect::<Vec<()>>();
             let ty_sig = annotate_fn_ty_sig(&decl.ty_sig, tenv, &decl.span);
-            let mod_ty_sig = Type::Module(decl.name.clone(), Some(box ty_sig.clone()), decl.span.clone());
+            let mod_ty_sig = Type::Module(
+                decl.name.clone(),
+                Some(box ty_sig.clone()),
+                decl.span.clone(),
+            );
 
             // add current name into global scope
-            tenv.add_type(&ModName::Global, &Alias::Variable(decl.name.to_string()), mod_ty_sig.clone());
+            tenv.add_type(
+                &ModName::Global,
+                &Alias::Variable(decl.name.to_string()),
+                mod_ty_sig.clone(),
+            );
 
             // add "self" into module scope
-            tenv.add_type(&module, &Alias::Variable("self".to_owned()), mod_ty_sig.clone());
+            tenv.add_type(
+                &module,
+                &Alias::Variable("self".to_owned()),
+                mod_ty_sig.clone(),
+            );
 
             // // add "forward" function into module scope
             // tenv.add_type(&module, "self.forward", ty_sig.clone());
@@ -207,7 +239,9 @@ fn annotate_tensor_ty_sig(sig: &TensorTy, tenv: &mut TypeEnv, span: &Span<ByteIn
     let module = tenv.module();
     match sig {
         &Generic(ref dims) => tenv.create_tensor(&module, dims, span),
-        &TyAlias(ref als) => tenv.resolve_type(&module, &Alias::Variable(als.clone())).unwrap().clone(),
+        &TyAlias(ref als) => tenv.resolve_type(&module, &Alias::Variable(als.clone()))
+            .unwrap()
+            .clone(),
     }
 }
 
@@ -222,7 +256,11 @@ fn annotate_weights_assign(w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> TyWe
     tenv.add_type(
         &module,
         &Alias::Variable(name.to_owned()),
-        Type::Module(w_assign.mod_name.to_owned(), fn_ty.clone(), w_assign.span.clone()),
+        Type::Module(
+            w_assign.mod_name.to_owned(),
+            fn_ty.clone(),
+            w_assign.span.clone(),
+        ),
     );
 
     let fn_args: Vec<TyFnAppArg> = w_assign
@@ -230,7 +268,7 @@ fn annotate_weights_assign(w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> TyWe
         .iter()
         .map(|a| annotate_fn_app_arg(a, tenv))
         .collect();
-    
+
     tenv.add_init(&module, &name, fn_args.clone());
 
     TyWeightsAssign {
@@ -255,7 +293,11 @@ fn annotate_fn_app_arg(call: &FnAppArg, tenv: &mut TypeEnv) -> TyFnAppArg {
 }
 
 fn annotate_fn_app(fn_app: &FnApp, tenv: &mut TypeEnv) -> TyFnApp {
-    let FnApp { ref name, ref args, ref span } = fn_app;
+    let FnApp {
+        ref name,
+        ref args,
+        ref span,
+    } = fn_app;
     let t_args: Vec<TyFnAppArg> = args.iter().map(|a| annotate_fn_app_arg(&a, tenv)).collect();
     let arg_ty = t_args.to_ty(&fn_app.span);
     TyFnApp {
@@ -272,8 +314,10 @@ fn annotate_fn_app(fn_app: &FnApp, tenv: &mut TypeEnv) -> TyFnApp {
 fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
     let module = tenv.module();
     tenv.push_scope(&module);
-    let mod_ty = tenv.resolve_type(&ModName::Global, &Alias::Variable(module.as_str().to_owned()))
-        .unwrap()
+    let mod_ty = tenv.resolve_type(
+        &ModName::Global,
+        &Alias::Variable(module.as_str().to_owned()),
+    ).unwrap()
         .clone();
 
     let mut decl = TyFnDecl {
@@ -284,8 +328,8 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
             .collect(),
         // fn_ty: tenv.fresh_var(),
         param_ty: tenv.fresh_var(&f.span),
-        return_ty: Type::Unit(f.span.clone()),                // put a placeholder here
-        func_block: Box::new(TyTerm::TyNone), // same here
+        return_ty: Type::Unit(f.span.clone()), // put a placeholder here
+        func_block: Box::new(TyTerm::TyNone),  // same here
         span: f.span.clone(),
     };
 
@@ -301,17 +345,15 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
                 panic!("self.forward(x) must have at least 1 param");
             }
             let name0 = decl.fn_params[0].name.clone();
-            if let Type::Module(_, Some(box Type::FUN(ref p, ref r,_)), _) = mod_ty.clone() {
+            if let Type::Module(_, Some(box Type::FUN(ref p, ref r, _)), _) = mod_ty.clone() {
                 let ty_sig = *p.clone();
 
                 // type the first parameter
-                decl.fn_params = vec![
-                    TyFnDeclParam {
-                        name: String::from(name0.clone()),
-                        ty: ty_sig.clone(),
-                        span: f.span.clone(),
-                    },
-                ];
+                decl.fn_params = vec![TyFnDeclParam {
+                    name: String::from(name0.clone()),
+                    ty: ty_sig.clone(),
+                    span: f.span.clone(),
+                }];
 
                 // todo: support multiple arguments
 
@@ -322,8 +364,8 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
 
                 // type the function return parameter
                 decl.return_ty = *r.clone();
-                // type the function itself...
-                // decl.fn_ty = Type::FUN(p.clone(), r.clone());
+            // type the function itself...
+            // decl.fn_ty = Type::FUN(p.clone(), r.clone());
             } else {
                 panic!("Signature of module is incorrect!");
             };
@@ -345,9 +387,14 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
     tenv.pop_scope(&module);
 
     // insert this function into typeenv
-    tenv.add_type(&module,
+    tenv.add_type(
+        &module,
         &Alias::Function(f.name.clone()),
-        Type::FUN(box decl.param_ty.clone(), box decl.return_ty.clone(), decl.span.clone())
+        Type::FUN(
+            box decl.param_ty.clone(),
+            box decl.return_ty.clone(),
+            decl.span.clone(),
+        ),
     );
 
     decl
@@ -381,11 +428,13 @@ fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TyTerm {
                 let args: Vec<TyFnAppArg> =
                     v.iter().map(|arg| annotate_fn_app_arg(arg, tenv)).collect();
                 let arg_ty = args.iter()
-                    .map(|t_arg| Type::FnArg(
+                    .map(|t_arg| {
+                        Type::FnArg(
                             t_arg.name.clone(),
                             box t_arg.arg.ty().clone(),
                             t_arg.span.clone(),
-                        ))
+                        )
+                    })
                     .collect();
                 TyTerm::TyFnApp(TyFnApp {
                     mod_name: Some(f_a.mod_name.clone()),

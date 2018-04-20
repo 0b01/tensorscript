@@ -51,16 +51,16 @@ macro_rules! to_idents {
     };
 }
 
+use codespan::{ByteIndex, CodeMap, Span};
 use parser::grammar::Rule::*;
 use parser::grammar::{Rule, TensorScriptParser};
 use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, GraphDecl,
                    NodeAssign, NodeDecl, TensorTy, Term, UseStmt, ViewFn, WeightsAssign,
                    WeightsDecl};
-use codespan::{CodeMap, Span, ByteIndex};
-use span::CSpan;
-use pest::Parser;
 use pest::iterators::Pair;
+use pest::Parser;
 use pest::Span as PestSpan;
+use span::CSpan;
 
 #[derive(Debug)]
 pub struct TSSParseError {
@@ -199,7 +199,7 @@ fn build_expr(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
             let sp = p.clone().into_span();
             let span = CSpan::from_pest(sp);
             Term::Ident(p.as_str().to_owned(), span)
-        },
+        }
         _ => consume(p).unwrap(),
     };
     Ok(Term::Expr {

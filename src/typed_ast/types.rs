@@ -1,8 +1,8 @@
+use codespan::{ByteIndex, Span};
+use std::fmt::{Debug, Error, Formatter};
 /// Types for typed AST
 use std::hash::{Hash, Hasher};
-use std::fmt::{Debug, Error, Formatter};
 use typed_ast::type_env::TypeId;
-use codespan::{Span, ByteIndex};
 
 #[derive(PartialEq, Clone, Eq)]
 pub enum Type {
@@ -34,17 +34,48 @@ impl Hash for Type {
             FLOAT(_) => 1.hash(state),
             BOOL(_) => 2.hash(state),
             // UnresolvedModuleFun(_,_,_) => false,
+            VAR(a, _) => {
+                3.hash(state);
+                a.hash(state)
+            }
+            DIM(b, _) => {
+                4.hash(state);
+                b.hash(state)
+            }
 
-            VAR(a, _) => {3.hash(state); a.hash(state)},
-            DIM(b, _) => {4.hash(state); b.hash(state)},
-
-            Module(a, b, _) => {5.hash(state);a.hash(state);b.hash(state);},
-            FnArgs(ts, _) => {6.hash(state); ts.hash(state)},
-            FnArg(n, t, _) => {7.hash(state); n.hash(state); t.hash(state);}
-            ResolvedDim(a, _) => {8.hash(state); a.hash(state)},
-            FUN(p, r, _) => {9.hash(state); p.hash(state); r.hash(state);},
-            TSR(ts, _) => {10.hash(state); ts.hash(state);}
-            UnresolvedModuleFun(a,b,c,_) => {11.hash(state);a.hash(state);b.hash(state);c.hash(state);},
+            Module(a, b, _) => {
+                5.hash(state);
+                a.hash(state);
+                b.hash(state);
+            }
+            FnArgs(ts, _) => {
+                6.hash(state);
+                ts.hash(state)
+            }
+            FnArg(n, t, _) => {
+                7.hash(state);
+                n.hash(state);
+                t.hash(state);
+            }
+            ResolvedDim(a, _) => {
+                8.hash(state);
+                a.hash(state)
+            }
+            FUN(p, r, _) => {
+                9.hash(state);
+                p.hash(state);
+                r.hash(state);
+            }
+            TSR(ts, _) => {
+                10.hash(state);
+                ts.hash(state);
+            }
+            UnresolvedModuleFun(a, b, c, _) => {
+                11.hash(state);
+                a.hash(state);
+                b.hash(state);
+                c.hash(state);
+            }
             // MismatchedDim(_,_) => true,
             _ => {
                 panic!("{:?}", self);
@@ -54,32 +85,30 @@ impl Hash for Type {
 }
 
 impl Type {
-
     pub fn with_span(&self, sp: &Span<ByteIndex>) -> Type {
         use self::Type::*;
         match self {
             Unit(_) => Unit(sp.clone()),
-            VAR(ref a,_) => VAR(*a, sp.clone()),
-            DIM(ref a,_) => DIM(*a, sp.clone()),
+            VAR(ref a, _) => VAR(*a, sp.clone()),
+            DIM(ref a, _) => DIM(*a, sp.clone()),
             INT(_) => INT(sp.clone()),
             FLOAT(_) => FLOAT(sp.clone()),
             BOOL(_) => BOOL(sp.clone()),
-            UnresolvedModuleFun(ref a, ref b, ref c,_) => UnresolvedModuleFun(a,b,c,sp.clone()),
-            FnArgs(ref args,_) => FnArgs(args.clone(), sp.clone()),
-            FnArg(ref name, ref ty,_) => FnArg(name.clone(), ty.clone(), sp.clone()),
-            ResolvedDim(ref d,_) => ResolvedDim(d.clone(), sp.clone()),
-            Module(ref s, ref ty,_) => Module(s.clone(),ty.clone(),sp.clone()),
-            FUN(ref p, ref r,_) => FUN(p.clone(), r.clone(),sp.clone()),
-            TSR(ref dims,_) => TSR(dims.clone(),sp.clone()),
+            UnresolvedModuleFun(ref a, ref b, ref c, _) => UnresolvedModuleFun(a, b, c, sp.clone()),
+            FnArgs(ref args, _) => FnArgs(args.clone(), sp.clone()),
+            FnArg(ref name, ref ty, _) => FnArg(name.clone(), ty.clone(), sp.clone()),
+            ResolvedDim(ref d, _) => ResolvedDim(d.clone(), sp.clone()),
+            Module(ref s, ref ty, _) => Module(s.clone(), ty.clone(), sp.clone()),
+            FUN(ref p, ref r, _) => FUN(p.clone(), r.clone(), sp.clone()),
+            TSR(ref dims, _) => TSR(dims.clone(), sp.clone()),
             _ => panic!("{:?}", self),
-            
         }
     }
 
     pub fn as_str(&self) -> &str {
         use self::Type::*;
         match self {
-            Module(ref n, _,_) => n,
+            Module(ref n, _, _) => n,
             _ => unimplemented!(),
         }
     }
@@ -115,7 +144,6 @@ impl Type {
     //         _ => unimplemented!(),
     //     }
     // }
-
 }
 
 impl Debug for Type {
@@ -126,15 +154,17 @@ impl Debug for Type {
             INT(_) => write!(f, "int"),
             FLOAT(_) => write!(f, "float"),
             BOOL(_) => write!(f, "bool"),
-            UnresolvedModuleFun(ref a, ref b, ref c,_) => write!(f, "UNRESOLVED({}::{}::{})", a, b ,c),
-            VAR(ref t_id,_) => write!(f, "'{:?}", t_id),
-            DIM(ref t_id,_) => write!(f, "!{:?}", t_id),
-            FnArgs(ref args,_) => write!(f, "FnArgs({:?})", args),
-            FnArg(ref name, ref ty,_) => write!(f, "ARG({:?}={:?})", name, ty),
+            UnresolvedModuleFun(ref a, ref b, ref c, _) => {
+                write!(f, "UNRESOLVED({}::{}::{})", a, b, c)
+            }
+            VAR(ref t_id, _) => write!(f, "'{:?}", t_id),
+            DIM(ref t_id, _) => write!(f, "!{:?}", t_id),
+            FnArgs(ref args, _) => write!(f, "FnArgs({:?})", args),
+            FnArg(ref name, ref ty, _) => write!(f, "ARG({:?}={:?})", name, ty),
             ResolvedDim(ref d, ref s) => write!(f, "<{}({})>", d, s),
-            Module(ref s, ref ty,_) => write!(f, "MODULE({}, {:?})", s, ty),
-            FUN(ref p, ref r,_) => write!(f, "({:?} -> {:?})", p, r),
-            TSR(ref dims,_) => {
+            Module(ref s, ref ty, _) => write!(f, "MODULE({}, {:?})", s, ty),
+            FUN(ref p, ref r, _) => write!(f, "({:?} -> {:?})", p, r),
+            TSR(ref dims, _) => {
                 if dims.len() > 0 {
                     write!(f, "[")?;
                     for i in dims[0..dims.len() - 1].iter() {

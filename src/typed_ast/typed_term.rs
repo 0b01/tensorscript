@@ -1,17 +1,19 @@
+use codespan::{ByteIndex, Span};
+use span::CSpan;
+use std::collections::HashMap;
 /// Data structures for Typed AST
 ///
 ///
 use std::fmt::{Display, Error, Formatter};
-use typed_ast::Type;
-use std::collections::HashMap;
 use typed_ast::type_env::Alias;
-use codespan::{Span, ByteIndex};
-use span::CSpan;
+use typed_ast::Type;
 
 pub trait Ty {
     fn ty(&self) -> Type;
     fn span(&self) -> Span<ByteIndex>;
-    fn int(&self) -> Option<i64> { None }
+    fn int(&self) -> Option<i64> {
+        None
+    }
 }
 
 impl Ty for TyTerm {
@@ -20,14 +22,22 @@ impl Ty for TyTerm {
         match self {
             &TyNone => CSpan::fresh_span(),
             &TyProgram(_) => CSpan::fresh_span(),
-            &TyInteger(_,_,ref  s) => s.clone(),
-            &TyFloat(_,_,ref s) => s.clone(),
+            &TyInteger(_, _, ref s) => s.clone(),
+            &TyFloat(_, _, ref s) => s.clone(),
             // &TyList(_) => Unit(CSpan::fresh_span()),
-            &TyIdent(_,_,ref s) => s.clone(),
+            &TyIdent(_, _, ref s) => s.clone(),
             &TyFieldAccess(ref f_a) => f_a.span(),
             &TyFnApp(ref f_a) => f_a.span(),
-            &TyBlock { stmts: _, ret:_, ref span } => span.clone(),
-            &TyExpr { items: _, ty: _, ref span } => span.clone(),
+            &TyBlock {
+                stmts: _,
+                ret: _,
+                ref span,
+            } => span.clone(),
+            &TyExpr {
+                items: _,
+                ty: _,
+                ref span,
+            } => span.clone(),
             &TyStmt { items: _, ref span } => span.clone(),
             &TyViewFn(ref view_fn) => view_fn.span(),
             _ => panic!("{:?}", self),
@@ -40,22 +50,30 @@ impl Ty for TyTerm {
         match self {
             &TyNone => Unit(CSpan::fresh_span()),
             &TyProgram(_) => Unit(CSpan::fresh_span()),
-            &TyInteger(ref t,_,_) => t.clone(),
-            &TyFloat(ref t,_,_) => t.clone(),
+            &TyInteger(ref t, _, _) => t.clone(),
+            &TyFloat(ref t, _, _) => t.clone(),
             &TyList(_) => Unit(CSpan::fresh_span()),
             &TyIdent(ref t, _, _) => t.clone(),
             &TyFieldAccess(ref f_a) => f_a.ty(),
             &TyFnApp(ref f_a) => f_a.ty(),
-            &TyBlock { stmts: _, ref ret, span:_} => ret.ty(),
-            &TyExpr { items: _, ref ty, span:_ } => ty.clone(),
-            &TyStmt { items: _ , span:_} => Unit(CSpan::fresh_span()),
+            &TyBlock {
+                stmts: _,
+                ref ret,
+                span: _,
+            } => ret.ty(),
+            &TyExpr {
+                items: _,
+                ref ty,
+                span: _,
+            } => ty.clone(),
+            &TyStmt { items: _, span: _ } => Unit(CSpan::fresh_span()),
             &TyViewFn(ref view_fn) => view_fn.ty(),
         }
     }
 
     fn int(&self) -> Option<i64> {
         match self {
-            &TyTerm::TyInteger(_, i,_) => Some(i),
+            &TyTerm::TyInteger(_, i, _) => Some(i),
             _ => None,
         }
     }
@@ -185,9 +203,10 @@ impl TyFnApp {
     pub fn extend_arg(&mut self, arg: TyFnAppArg) {
         self.args.insert(0, arg.clone());
         match &mut self.arg_ty {
-            &mut Type::FnArgs(ref mut args, ref span) => {
-                args.insert(0, Type::FnArg(arg.name.clone(), box arg.arg.ty().clone(), span.clone()))
-            }
+            &mut Type::FnArgs(ref mut args, ref span) => args.insert(
+                0,
+                Type::FnArg(arg.name.clone(), box arg.arg.ty().clone(), span.clone()),
+            ),
             &mut Type::VAR(_, _) => (),
             _ => unimplemented!(),
         };
@@ -208,36 +227,52 @@ pub trait ArgsVecInto {
 
 impl ArgsVecInto for [TyFnAppArg] {
     fn to_ty(&self, span: &Span<ByteIndex>) -> Type {
-        Type::FnArgs(self
-            .iter()
-            .map(|t_arg| Type::FnArg(t_arg.name.clone(), box t_arg.arg.ty().clone(), t_arg.span.clone()))
-            .collect(), span.clone())
+        Type::FnArgs(
+            self.iter()
+                .map(|t_arg| {
+                    Type::FnArg(
+                        t_arg.name.clone(),
+                        box t_arg.arg.ty().clone(),
+                        t_arg.span.clone(),
+                    )
+                })
+                .collect(),
+            span.clone(),
+        )
     }
     fn to_hashmap(&self) -> Option<HashMap<String, Box<TyTerm>>> {
-        Some(self.iter().filter_map(|a| 
-            if a.name.is_some() {
-                Some((a.name.clone().unwrap(), a.arg.clone()))
-            } else {
-                None
-            }
-        ).collect())
+        Some(
+            self.iter()
+                .filter_map(|a| {
+                    if a.name.is_some() {
+                        Some((a.name.clone().unwrap(), a.arg.clone()))
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+        )
     }
 }
 
 impl ArgsVecInto for [TyFnDeclParam] {
     fn to_ty(&self, span: &Span<ByteIndex>) -> Type {
-        Type::FnArgs(self
-            .iter()
-            .map(|t_arg| Type::FnArg(
-                Some(t_arg.name.clone()),
-                box t_arg.ty.clone(),
-                t_arg.span.clone()
-            ))
-            .collect(), span.clone())
+        Type::FnArgs(
+            self.iter()
+                .map(|t_arg| {
+                    Type::FnArg(
+                        Some(t_arg.name.clone()),
+                        box t_arg.ty.clone(),
+                        t_arg.span.clone(),
+                    )
+                })
+                .collect(),
+            span.clone(),
+        )
     }
     fn to_hashmap(&self) -> Option<HashMap<String, Box<TyTerm>>> {
         None
-        // self.iter().filter_map(|a| 
+        // self.iter().filter_map(|a|
         //     Some((a.name.clone(), box a.clone()))
         // ).collect()
     }

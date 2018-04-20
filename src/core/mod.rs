@@ -1,6 +1,5 @@
-
-use typed_ast::{Type, TypeEnv};
 use typed_ast::typed_term::TyFnAppArg;
+use typed_ast::{Type, TypeEnv};
 
 mod conv;
 mod lin;
@@ -9,7 +8,13 @@ mod nonlin;
 pub trait Op {
     fn get_name(&self) -> &'static str;
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)>;
-    fn resolve(&self, tenv: &mut TypeEnv, module: Option<Type>, fn_name: &str, inits: Option<Vec<TyFnAppArg>>) -> Option<Type> {
+    fn resolve(
+        &self,
+        tenv: &mut TypeEnv,
+        module: Option<Type>,
+        fn_name: &str,
+        inits: Option<Vec<TyFnAppArg>>,
+    ) -> Option<Type> {
         unimplemented!();
     }
 }
@@ -43,5 +48,4 @@ impl Core {
             _ => unimplemented!(),
         }
     }
-
 }

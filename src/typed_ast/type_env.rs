@@ -1,3 +1,4 @@
+use codespan::{ByteIndex, Span};
 use core::Core;
 /// Type Environment holds the state during type reconstruction
 /// which is really just a few tree traversals.
@@ -7,11 +8,10 @@ use core::Core;
 /// 2. pushing and popping scopes (during `annotate` and `collect`)
 /// 3. module type and method type reconstruction
 use parser::term::{NodeAssign, TensorTy, Term};
-use std::collections::{HashMap, VecDeque, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt::{Debug, Error, Formatter};
-use typed_ast::Type;
 use typed_ast::typed_term::TyFnAppArg;
-use codespan::{Span, ByteIndex};
+use typed_ast::Type;
 
 pub type TypeId = usize;
 
@@ -89,7 +89,6 @@ impl Alias {
         }
     }
 }
-
 
 impl TypeEnv {
     pub fn new() -> Self {
@@ -219,13 +218,25 @@ impl TypeEnv {
     }
 
     /// tie an alias with a resolved dimension
-    pub fn add_resolved_dim_alias(&mut self, mod_name: &ModName, alias: &Alias, num: i64, span: &Span<ByteIndex>) {
+    pub fn add_resolved_dim_alias(
+        &mut self,
+        mod_name: &ModName,
+        alias: &Alias,
+        num: i64,
+        span: &Span<ByteIndex>,
+    ) {
         let tyvar = Type::ResolvedDim(num, span.clone());
         self.add_type(mod_name, alias, tyvar);
     }
 
     /// tie an alias with a tensor
-    pub fn add_tsr_alias(&mut self, mod_name: &ModName, alias: &Alias, tsr: &[String], span: &Span<ByteIndex>) {
+    pub fn add_tsr_alias(
+        &mut self,
+        mod_name: &ModName,
+        alias: &Alias,
+        tsr: &[String],
+        span: &Span<ByteIndex>,
+    ) {
         // first insert all the dims
         tsr.iter()
             .map(|t| Alias::Variable(t.to_string()))
@@ -242,20 +253,37 @@ impl TypeEnv {
     }
 
     // make a new tensor based on type signature
-    pub fn create_tensor(&mut self, mod_name: &ModName, dims: &[String], span: &Span<ByteIndex>) -> Type {
+    pub fn create_tensor(
+        &mut self,
+        mod_name: &ModName,
+        dims: &[String],
+        span: &Span<ByteIndex>,
+    ) -> Type {
         // each dimension alias in the tensor type signature must exist
         let dims_ty = dims.iter()
-            .map(|t| self.resolve_type(mod_name, &Alias::Variable(t.to_string())).unwrap().clone())
+            .map(|t| {
+                self.resolve_type(mod_name, &Alias::Variable(t.to_string()))
+                    .unwrap()
+                    .clone()
+            })
             .collect();
         // create the tensor type
         Type::TSR(dims_ty, span.clone())
     }
 
     /// generate a tensor from untyped ast tensor signature
-    pub fn resolve_tensor(&mut self, mod_name: &ModName, t: &TensorTy, span: &Span<ByteIndex>) -> Type {
+    pub fn resolve_tensor(
+        &mut self,
+        mod_name: &ModName,
+        t: &TensorTy,
+        span: &Span<ByteIndex>,
+    ) -> Type {
         match t {
             &TensorTy::Generic(ref dims) => self.create_tensor(mod_name, &dims, span),
-            &TensorTy::TyAlias(ref alias) => self.resolve_type(mod_name, &Alias::Variable(alias.to_string())).unwrap(),
+            &TensorTy::TyAlias(ref alias) => {
+                self.resolve_type(mod_name, &Alias::Variable(alias.to_string()))
+                    .unwrap()
+            }
         }
     }
 
@@ -308,10 +336,17 @@ impl TypeEnv {
         }
     }
 
-    pub fn resolve_unresolved(&mut self, ty: Type, symbol_name: &str, module: &Type, fn_name: &str, inits: Option<Vec<TyFnAppArg>>) -> Option<Type> {
+    pub fn resolve_unresolved(
+        &mut self,
+        ty: Type,
+        symbol_name: &str,
+        module: &Type,
+        fn_name: &str,
+        inits: Option<Vec<TyFnAppArg>>,
+    ) -> Option<Type> {
         let (mod_name, mod_ty) = {
             if let Type::Module(name, opty, span) = module {
-                (name, opty.clone().map(|i|*i))
+                (name, opty.clone().map(|i| *i))
             } else {
                 panic!();
             }
