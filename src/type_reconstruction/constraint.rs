@@ -14,8 +14,13 @@ pub struct Equals(pub Type, pub Type);
 pub struct Constraints(pub HashSet<Equals>);
 
 impl Constraints {
+
     pub fn new() -> Self {
         Constraints(HashSet::new())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 
     fn add(&mut self, a: Type, b: Type) {
@@ -198,10 +203,10 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
         .clone();
     let symbol_modname = ModName::Named(symbol_mod_ty.as_str().to_owned());
     let fn_name = &fn_app.name;
-    println!(
-        "{} | {} | {:?} | {:?} | {:?} ",
-        fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name
-    );
+    // println!(
+    //     "{} | {} | {:?} | {:?} | {:?} ",
+    //     fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name
+    // );
     let ty = tenv.resolve_type(&symbol_modname, &fn_name).unwrap();
 
     if let Type::UnresolvedModuleFun(_, _, _, _) = ty {

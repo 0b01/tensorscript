@@ -3,14 +3,19 @@ use nonlin::{relu, log_softmax};
 use lin::Linear;
 
 node Mnist<IMAGE -> LABELS> {
-    // declare type level constants
+    // this is where you declare type level constants
     dim FC1 = 320;
     dim FC2 = 50;
-    dim OUT = 10;               // Prediction
-    dim C = 3;                  // Channel
+
+    // Prediction
+    dim OUT = 10;
+    // Channel
+    dim C = 3;
+    
     dim W = 28;                 // Image Width
     dim H = 28;                 // Image Height
     tsr IMAGE = [?,C,H,W];      // Tensor alias
+
     tsr LABELS = [?,OUT];
 }
 

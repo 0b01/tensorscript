@@ -39,13 +39,19 @@ mod span;
 mod type_reconstruction;
 
 use type_reconstruction::constraint::Constraints;
-use type_reconstruction::subst::unify;
+use type_reconstruction::unifier::Unifier;
 use typed_ast::annotate::annotate;
 use typed_ast::type_env::TypeEnv;
 
-const TEST_STR: &str = include_str!("../test.trs");
+use codespan::CodeMap;
+
+const TEST_STR: &str = include_str!("../examples/test.trs");
 
 fn main() {
+
+    let mut code_map = CodeMap::new();
+    let file_map = code_map.add_filemap("test".into(), TEST_STR.to_string());
+
     let program = parser::parse_str(TEST_STR).unwrap();
     // println!("{:#?}", program);
 
@@ -58,12 +64,14 @@ fn main() {
     cs.collect(&ast, &mut tenv);
     // println!("{:#?}", cs);
 
-    let mut subs = unify(cs.clone(), &mut tenv);
+    let mut unifier = Unifier::new();
+    let mut subs = unifier.unify(cs.clone(), &mut tenv);
+    unifier.print_errs(&code_map);
     // println!("{:#?}", subs);
     // println!("{:#?}", subs.apply(&cs));
-    let test = type_reconstruction::inferred_ast::subs(&ast, &mut subs);
-    println!("{:#?}", test);
-    println!("{:#?}", tenv);
+    // let test = type_reconstruction::inferred_ast::subs(&ast, &mut subs);
+    // println!("{:#?}", test);
+    // println!("{:#?}", tenv);
 }
 
 // 1. initialize global scope
