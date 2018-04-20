@@ -1,4 +1,4 @@
-use codespan::{ByteIndex, Span};
+use codespan::ByteSpan;
 use span::CSpan;
 use std::collections::HashMap;
 /// Data structures for Typed AST
@@ -10,14 +10,14 @@ use typed_ast::Type;
 
 pub trait Ty {
     fn ty(&self) -> Type;
-    fn span(&self) -> Span<ByteIndex>;
+    fn span(&self) -> ByteSpan;
     fn int(&self) -> Option<i64> {
         None
     }
 }
 
 impl Ty for TyTerm {
-    fn span(&self) -> Span<ByteIndex> {
+    fn span(&self) -> ByteSpan {
         use self::TyTerm::*;
         match self {
             &TyNone => CSpan::fresh_span(),
@@ -80,7 +80,7 @@ impl Ty for TyTerm {
 }
 
 impl Ty for TyFieldAccess {
-    fn span(&self) -> Span<ByteIndex> {
+    fn span(&self) -> ByteSpan {
         self.span.clone()
     }
     fn ty(&self) -> Type {
@@ -89,7 +89,7 @@ impl Ty for TyFieldAccess {
 }
 
 impl Ty for TyFnApp {
-    fn span(&self) -> Span<ByteIndex> {
+    fn span(&self) -> ByteSpan {
         self.span.clone()
     }
     fn ty(&self) -> Type {
@@ -98,7 +98,7 @@ impl Ty for TyFnApp {
 }
 
 impl Ty for TyViewFn {
-    fn span(&self) -> Span<ByteIndex> {
+    fn span(&self) -> ByteSpan {
         self.span.clone()
     }
     fn ty(&self) -> Type {
@@ -110,25 +110,25 @@ impl Ty for TyViewFn {
 pub enum TyTerm {
     TyNone,
     TyProgram(Vec<TyDecl>),
-    TyInteger(Type, i64, Span<ByteIndex>),
-    TyFloat(Type, f64, Span<ByteIndex>),
+    TyInteger(Type, i64, ByteSpan),
+    TyFloat(Type, f64, ByteSpan),
     TyList(Vec<TyTerm>),
-    TyIdent(Type, Alias, Span<ByteIndex>),
+    TyIdent(Type, Alias, ByteSpan),
     TyFieldAccess(TyFieldAccess),
     TyFnApp(TyFnApp),
     TyBlock {
         stmts: Box<TyTerm>,
         ret: Box<TyTerm>,
-        span: Span<ByteIndex>,
+        span: ByteSpan,
     },
     TyExpr {
         items: Box<TyTerm>,
         ty: Type,
-        span: Span<ByteIndex>,
+        span: ByteSpan,
     },
     TyStmt {
         items: Box<TyTerm>,
-        span: Span<ByteIndex>,
+        span: ByteSpan,
     },
     TyViewFn(TyViewFn),
 }
@@ -151,14 +151,14 @@ pub enum TyDecl {
 pub struct TyUseStmt {
     pub mod_name: String,
     pub imported_names: Vec<String>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TyNodeDecl {
     pub name: String,
     pub ty_sig: Type,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -166,7 +166,7 @@ pub struct TyGraphDecl {
     pub name: String,
     pub ty_sig: Type,
     pub fns: Vec<TyFnDecl>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -174,7 +174,7 @@ pub struct TyWeightsDecl {
     pub name: String,
     pub ty_sig: Type,
     pub inits: Vec<TyWeightsAssign>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -185,7 +185,7 @@ pub struct TyWeightsAssign {
     pub fn_name: String,
     pub arg_ty: Type,
     pub fn_args: Vec<TyFnAppArg>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -196,7 +196,7 @@ pub struct TyFnApp {
     pub arg_ty: Type,
     pub ret_ty: Type,
     pub args: Vec<TyFnAppArg>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 impl TyFnApp {
@@ -217,16 +217,16 @@ impl TyFnApp {
 pub struct TyFnAppArg {
     pub name: Option<String>,
     pub arg: Box<TyTerm>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 pub trait ArgsVecInto {
-    fn to_ty(&self, span: &Span<ByteIndex>) -> Type;
+    fn to_ty(&self, span: &ByteSpan) -> Type;
     fn to_hashmap(&self) -> Option<HashMap<String, Box<TyTerm>>>;
 }
 
 impl ArgsVecInto for [TyFnAppArg] {
-    fn to_ty(&self, span: &Span<ByteIndex>) -> Type {
+    fn to_ty(&self, span: &ByteSpan) -> Type {
         Type::FnArgs(
             self.iter()
                 .map(|t_arg| {
@@ -256,7 +256,7 @@ impl ArgsVecInto for [TyFnAppArg] {
 }
 
 impl ArgsVecInto for [TyFnDeclParam] {
-    fn to_ty(&self, span: &Span<ByteIndex>) -> Type {
+    fn to_ty(&self, span: &ByteSpan) -> Type {
         Type::FnArgs(
             self.iter()
                 .map(|t_arg| {
@@ -282,7 +282,7 @@ impl ArgsVecInto for [TyFnDeclParam] {
 pub struct TyViewFn {
     pub ty: Type,
     pub arg: TyFnAppArg,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -292,14 +292,14 @@ pub struct TyFnDecl {
     pub param_ty: Type,
     pub return_ty: Type,
     pub func_block: Box<TyTerm>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TyFnDeclParam {
     pub name: String,
     pub ty: Type,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -307,5 +307,5 @@ pub struct TyFieldAccess {
     pub mod_name: String,
     pub field_name: String,
     pub ty: Type,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }

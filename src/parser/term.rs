@@ -1,4 +1,4 @@
-use codespan::{ByteIndex, Span};
+use codespan::ByteSpan;
 /// Data structures for untyped AST.
 ///
 use std::fmt::{Display, Error, Formatter};
@@ -11,31 +11,31 @@ pub enum Term {
     None,
     /// a vector of decls
     Program(Vec<Decl>),
-    Integer(i64, Span<ByteIndex>),
-    Float(f64, Span<ByteIndex>),
+    Integer(i64, ByteSpan),
+    Float(f64, ByteSpan),
     List(Vec<Term>),
-    Ident(String, Span<ByteIndex>),
+    Ident(String, ByteSpan),
     ViewFn(ViewFn),
     FieldAccess(FieldAccess),
     FnApp(FnApp),
     Block {
         stmts: Statements,
         ret: Expression,
-        span: Span<ByteIndex>,
+        span: ByteSpan,
     },
     Expr {
         items: Box<Term>,
-        span: Span<ByteIndex>,
+        span: ByteSpan,
     },
     Stmt {
         items: Box<Term>,
-        span: Span<ByteIndex>,
+        span: ByteSpan,
     },
     Pipes(Vec<Term>),
 }
 
 impl Term {
-    pub fn span(&self) -> Span<ByteIndex> {
+    pub fn span(&self) -> ByteSpan {
         use self::Term::*;
         match self {
             // None,
@@ -44,22 +44,22 @@ impl Term {
             // Integer(i64),
             // Float(f64),
             // List(Vec<Term>),
-            // Ident(String, Span<ByteIndex>),
+            // Ident(String, ByteSpan),
             // ViewFn(ViewFn),
             // FieldAccess(FieldAccess),
             // FnApp(FnApp),
             // Block {
             //     stmts: Statements,
             //     ret: Expression,
-            //     span: Span<ByteIndex>,
+            //     span: ByteSpan,
             // },
             // Expr {
             //     items: Box<Term>,
-            //     span: Span<ByteIndex>,
+            //     span: ByteSpan,
             // },
             // Stmt {
             //     items: Box<Term>,
-            //     span: Span<ByteIndex>,
+            //     span: ByteSpan,
             // },
             // Pipes(Vec<Term>, ),
             _ => unimplemented!(),
@@ -79,7 +79,7 @@ pub enum Decl {
 pub struct UseStmt {
     pub mod_name: String,
     pub imported_names: Vec<String>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -87,7 +87,7 @@ pub struct NodeDecl {
     pub name: String,
     pub ty_sig: FnTySig,
     pub defs: Vec<NodeAssign>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -95,7 +95,7 @@ pub struct GraphDecl {
     pub name: String,
     pub ty_sig: FnTySig,
     pub fns: Vec<FnDecl>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -103,14 +103,14 @@ pub struct WeightsDecl {
     pub name: String,
     pub ty_sig: FnTySig,
     pub inits: Vec<WeightsAssign>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FnDeclParam {
     pub name: String,
     pub ty_sig: TensorTy,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -118,21 +118,21 @@ pub struct FieldAccess {
     pub mod_name: String,
     pub field_name: String,
     pub func_call: Option<Vec<FnAppArg>>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FnApp {
     pub name: String,
     pub args: Vec<FnAppArg>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FnAppArg {
     pub name: String,
     pub arg: Box<Term>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -142,7 +142,7 @@ pub struct WeightsAssign {
     pub fn_name: String,
     pub mod_sig: Option<FnTySig>,
     pub fn_args: Vec<FnAppArg>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -157,7 +157,7 @@ pub struct FnDecl {
     pub fn_params: Vec<FnDeclParam>,
     pub return_ty: TensorTy,
     pub func_block: Box<Term>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -165,25 +165,25 @@ pub enum NodeAssign {
     ValueAlias {
         ident: String,
         rhs: Term,
-        span: Span<ByteIndex>,
+        span: ByteSpan,
     },
     TyAlias {
         ident: String,
         rhs: TensorTy,
-        span: Span<ByteIndex>,
+        span: ByteSpan,
     },
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TensorTy {
-    TyAlias(String),
-    Generic(Vec<String>),
+    TyAlias(String, ByteSpan),
+    Generic(Vec<String>, ByteSpan),
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ViewFn {
     pub dims: Vec<String>,
-    pub span: Span<ByteIndex>,
+    pub span: ByteSpan,
 }
 
 impl Term {

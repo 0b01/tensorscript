@@ -11,7 +11,36 @@ use type_reconstruction::constraint::{Constraints, Equals};
 use type_reconstruction::subst::Substitution;
 
 pub enum TypeError {
+    RankMismatch(Type, Type),
     DimensionMismatch(Type, Type),
+}
+
+impl TypeError {
+    pub fn into_diagnostic(&self) -> Diagnostic {
+        use self::TypeError::*;
+        match self {
+            DimensionMismatch(Type::ResolvedDim(v1, s1), Type::ResolvedDim(v2,s2)) => {
+                Diagnostic::new(
+                    Severity::Error,
+                    format!("Dimension mismatch: {} != {}", v1, v2),
+                )
+                .with_label(Label::new_primary(s1.clone()))
+                .with_label(Label::new_primary(s2.clone()))
+            }
+
+            RankMismatch(Type::TSR(dims1, s1), Type::TSR(dims2, s2)) => {
+                Diagnostic::new(
+                    Severity::Error,
+                    format!("Tensor rank mismatch: {} != {} where LHS is {:?} and RHS is {:?}", 
+                        dims1.len(), dims2.len(), dims1, dims2),
+                )
+                .with_label(Label::new_primary(s1.clone()))
+                .with_label(Label::new_primary(s2.clone()))
+            }
+
+            _ => panic!("impossible errors")
+        }
+    }
 }
 
 pub struct Unifier {
@@ -40,7 +69,7 @@ impl Unifier {
 
     fn unify_one(&mut self, cs: Equals, tenv: &mut TypeEnv) -> Substitution {
         use self::Type::*;
-        // println!("{:?}", cs);
+        println!("{:?}", cs);
         match cs {
             Equals(Unit(_), Unit(_)) => Substitution::empty(),
             Equals(INT(_), INT(_)) => Substitution::empty(),
@@ -54,14 +83,8 @@ impl Unifier {
                 if a.as_num() == b.as_num() {
                     Substitution::empty()
                 } else {
-                    self.errs.push(TypeError::DimensionMismatch(a.clone(),b.clone()));
+                    self.add_err(TypeError::DimensionMismatch(a.clone(), b.clone()));
                     Substitution::empty()
-                    // match (a, b) {
-                    //     (ResolvedDim(v1, s1), ResolvedDim(v2, s2)) => {
-                    //         // panic!("Dimension mismatch! {:?} != {:?} ({}/{})", v1, v2, s1, s2);
-                    //     }
-                    //     _ => unimplemented!(),
-                    // }
                 }
             }
 
@@ -96,16 +119,26 @@ impl Unifier {
                 }),
                 tenv,
             ),
-            Equals(TSR(dims1, _), TSR(dims2, _)) => self.unify(
-                Constraints({
-                    dims1
-                        .into_iter()
-                        .zip(dims2)
-                        .map(|(i, j)| Equals(i, j))
-                        .collect()
-                }),
-                tenv,
-            ),
+            Equals(ts1 @ TSR(_, _), ts2 @ TSR(_, _)) => {
+                if ts1.as_rank() == ts2.as_rank() {
+                    match (ts1, ts2) {
+                        (TSR(dims1, s1), TSR(dims2, s2)) => self.unify(
+                            Constraints({
+                                dims1
+                                    .into_iter()
+                                    .zip(dims2)
+                                    .map(|(i, j)| Equals(i.with_span(&s1), j.with_span(&s2)))
+                                    .collect()
+                            }),
+                            tenv,
+                        ),
+                        _ => unimplemented!(),
+                    }
+                } else {
+                    self.add_err(TypeError::RankMismatch(ts1, ts2));
+                    Substitution::empty()
+                }
+            }
 
             Equals(Module(n1, Some(box ty1), _), Module(n2, Some(box ty2), _)) => self.unify(
                 Constraints(hashset!{
@@ -154,29 +187,16 @@ impl Unifier {
     }
 
     pub fn print_errs(&self, code_map: &CodeMap) {
-
-        for e in self.errs.iter() {
-            match e {
-                TypeError::DimensionMismatch(Type::ResolvedDim(v1, s1), Type::ResolvedDim(v2,s2)) => {
-                    let warning = Diagnostic::new(
-                        Severity::Error,
-                        format!("Demension mismatch: {} != {}", v1, v2),
-                    )
-                    .with_label(Label::new_primary(s1.clone()))
-                    .with_label(Label::new_secondary(s2.clone()));
-
-                    let diagnostics = [warning];
-                    let writer = StandardStream::stderr(ColorArg::from_str("auto").unwrap().into());
-                    for diagnostic in &diagnostics {
-                        emit(&mut writer.lock(), &code_map, &diagnostic).unwrap();
-                        println!();
-                    }
-                }
-                _ => unimplemented!()
-            }
+        let diagnostics: Vec<Diagnostic> = self.errs.iter().map(|e|e.into_diagnostic()).collect();
+        let writer = StandardStream::stderr(ColorArg::from_str("auto").unwrap().into());
+        for diagnostic in &diagnostics {
+            emit(&mut writer.lock(), &code_map, &diagnostic).unwrap();
+            println!();
         }
+    }
 
-
+    pub fn add_err(&mut self, err: TypeError) {
+        self.errs.push(err);
     }
 }
 

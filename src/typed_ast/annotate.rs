@@ -1,4 +1,4 @@
-use codespan::{ByteIndex, Span};
+use codespan::ByteSpan;
 use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, TensorTy,
                    Term, ViewFn, WeightsAssign};
 use span::CSpan;
@@ -226,7 +226,7 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
     ret
 }
 
-fn annotate_fn_ty_sig(sig: &FnTySig, tenv: &mut TypeEnv, span: &Span<ByteIndex>) -> Type {
+fn annotate_fn_ty_sig(sig: &FnTySig, tenv: &mut TypeEnv, span: &ByteSpan) -> Type {
     Type::FUN(
         Box::new(annotate_tensor_ty_sig(&sig.from, tenv, span)),
         Box::new(annotate_tensor_ty_sig(&sig.to, tenv, span)),
@@ -234,14 +234,15 @@ fn annotate_fn_ty_sig(sig: &FnTySig, tenv: &mut TypeEnv, span: &Span<ByteIndex>)
     )
 }
 
-fn annotate_tensor_ty_sig(sig: &TensorTy, tenv: &mut TypeEnv, span: &Span<ByteIndex>) -> Type {
+fn annotate_tensor_ty_sig(sig: &TensorTy, tenv: &mut TypeEnv, span: &ByteSpan) -> Type {
     use self::TensorTy::*;
     let module = tenv.module();
     match sig {
-        &Generic(ref dims) => tenv.create_tensor(&module, dims, span),
-        &TyAlias(ref als) => tenv.resolve_type(&module, &Alias::Variable(als.clone()))
+        &Generic(ref dims, ref sp) => tenv.create_tensor(&module, dims, sp),
+        &TyAlias(ref als, ref sp) => tenv.resolve_type(&module, &Alias::Variable(als.clone()))
             .unwrap()
-            .clone(),
+            .clone()
+            .with_span(sp),
     }
 }
 

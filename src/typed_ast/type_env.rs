@@ -1,4 +1,4 @@
-use codespan::{ByteIndex, Span};
+use codespan::ByteSpan;
 use core::Core;
 /// Type Environment holds the state during type reconstruction
 /// which is really just a few tree traversals.
@@ -101,13 +101,13 @@ impl TypeEnv {
     }
 
     /// create new dimension type variable
-    pub fn fresh_dim(&mut self, span: &Span<ByteIndex>) -> Type {
+    pub fn fresh_dim(&mut self, span: &ByteSpan) -> Type {
         self.counter += 1;
         Type::DIM(self.counter, span.clone())
     }
 
     /// create new type variable
-    pub fn fresh_var(&mut self, span: &Span<ByteIndex>) -> Type {
+    pub fn fresh_var(&mut self, span: &ByteSpan) -> Type {
         self.counter += 1;
         // println!("new_var: {}", self.counter);
         Type::VAR(self.counter, span.clone())
@@ -212,7 +212,7 @@ impl TypeEnv {
     }
 
     /// tie an alias with a type variable dimension
-    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &Alias, span: &Span<ByteIndex>) {
+    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &Alias, span: &ByteSpan) {
         let tyvar = self.fresh_dim(span);
         self.add_type(mod_name, alias, tyvar);
     }
@@ -223,7 +223,7 @@ impl TypeEnv {
         mod_name: &ModName,
         alias: &Alias,
         num: i64,
-        span: &Span<ByteIndex>,
+        span: &ByteSpan,
     ) {
         let tyvar = Type::ResolvedDim(num, span.clone());
         self.add_type(mod_name, alias, tyvar);
@@ -235,7 +235,7 @@ impl TypeEnv {
         mod_name: &ModName,
         alias: &Alias,
         tsr: &[String],
-        span: &Span<ByteIndex>,
+        span: &ByteSpan,
     ) {
         // first insert all the dims
         tsr.iter()
@@ -257,7 +257,7 @@ impl TypeEnv {
         &mut self,
         mod_name: &ModName,
         dims: &[String],
-        span: &Span<ByteIndex>,
+        span: &ByteSpan,
     ) -> Type {
         // each dimension alias in the tensor type signature must exist
         let dims_ty = dims.iter()
@@ -276,13 +276,13 @@ impl TypeEnv {
         &mut self,
         mod_name: &ModName,
         t: &TensorTy,
-        span: &Span<ByteIndex>,
+        span: &ByteSpan,
     ) -> Type {
         match t {
-            &TensorTy::Generic(ref dims) => self.create_tensor(mod_name, &dims, span),
-            &TensorTy::TyAlias(ref alias) => {
+            &TensorTy::Generic(ref dims, ref sp) => self.create_tensor(mod_name, &dims, sp),
+            &TensorTy::TyAlias(ref alias, ref sp) => {
                 self.resolve_type(mod_name, &Alias::Variable(alias.to_string()))
-                    .unwrap()
+                    .unwrap().with_span(sp)
             }
         }
     }
@@ -298,10 +298,10 @@ impl TypeEnv {
         match a {
             &NodeAssign::TyAlias {
                 ident: ref id,
-                rhs: TensorTy::Generic(ref tys),
-                ref span,
+                rhs: TensorTy::Generic(ref tys, ref sp),
+                span: _,
             } => {
-                self.add_tsr_alias(mod_name, &Alias::Variable(id.to_string()), tys, span);
+                self.add_tsr_alias(mod_name, &Alias::Variable(id.to_string()), tys, sp);
             }
             &NodeAssign::ValueAlias {
                 ident: ref id,

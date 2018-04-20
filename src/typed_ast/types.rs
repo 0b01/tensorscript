@@ -1,4 +1,4 @@
-use codespan::{ByteIndex, Span};
+use codespan::ByteSpan;
 use std::fmt::{Debug, Error, Formatter};
 /// Types for typed AST
 use std::hash::{Hash, Hasher};
@@ -7,22 +7,22 @@ use typed_ast::type_env::TypeId;
 #[derive(PartialEq, Clone, Eq)]
 pub enum Type {
     // literals
-    Unit(Span<ByteIndex>),
-    INT(Span<ByteIndex>),
-    FLOAT(Span<ByteIndex>),
-    BOOL(Span<ByteIndex>),
-    UnresolvedModuleFun(&'static str, &'static str, &'static str, Span<ByteIndex>),
+    Unit(ByteSpan),
+    INT(ByteSpan),
+    FLOAT(ByteSpan),
+    BOOL(ByteSpan),
+    UnresolvedModuleFun(&'static str, &'static str, &'static str, ByteSpan),
     // type variables that need to be resolved
-    VAR(TypeId, Span<ByteIndex>),
-    DIM(TypeId, Span<ByteIndex>),
+    VAR(TypeId, ByteSpan),
+    DIM(TypeId, ByteSpan),
 
     // recursive types
-    Module(String, Option<Box<Type>>, Span<ByteIndex>),
-    FnArgs(Vec<Type>, Span<ByteIndex>),
-    FnArg(Option<String>, Box<Type>, Span<ByteIndex>),
-    ResolvedDim(i64, Span<ByteIndex>),
-    FUN(Box<Type>, Box<Type>, Span<ByteIndex>),
-    TSR(Vec<Type>, Span<ByteIndex>),
+    Module(String, Option<Box<Type>>, ByteSpan),
+    FnArgs(Vec<Type>, ByteSpan),
+    FnArg(Option<String>, Box<Type>, ByteSpan),
+    ResolvedDim(i64, ByteSpan),
+    FUN(Box<Type>, Box<Type>, ByteSpan),
+    TSR(Vec<Type>, ByteSpan),
 }
 
 impl Hash for Type {
@@ -85,7 +85,7 @@ impl Hash for Type {
 }
 
 impl Type {
-    pub fn with_span(&self, sp: &Span<ByteIndex>) -> Type {
+    pub fn with_span(&self, sp: &ByteSpan) -> Type {
         use self::Type::*;
         match self {
             Unit(_) => Unit(sp.clone()),
@@ -117,6 +117,14 @@ impl Type {
         use self::Type::*;
         match self {
             ResolvedDim(ref i, _) => *i,
+            _ => unimplemented!(),
+        }
+    }
+
+    pub fn as_rank(&self) -> usize {
+        use self::Type::*;
+        match self {
+            TSR(ref i, _) => i.len(),
             _ => unimplemented!(),
         }
     }
@@ -161,7 +169,7 @@ impl Debug for Type {
             DIM(ref t_id, _) => write!(f, "!{:?}", t_id),
             FnArgs(ref args, _) => write!(f, "FnArgs({:?})", args),
             FnArg(ref name, ref ty, _) => write!(f, "ARG({:?}={:?})", name, ty),
-            ResolvedDim(ref d, ref s) => write!(f, "<{}({})>", d, s),
+            ResolvedDim(ref d, ref s) => write!(f, "<{}>", d),
             Module(ref s, ref ty, _) => write!(f, "MODULE({}, {:?})", s, ty),
             FUN(ref p, ref r, _) => write!(f, "({:?} -> {:?})", p, r),
             TSR(ref dims, _) => {

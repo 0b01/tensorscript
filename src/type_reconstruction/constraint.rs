@@ -24,6 +24,7 @@ impl Constraints {
     }
 
     fn add(&mut self, a: Type, b: Type) {
+        // println!("{:?} {:?}", a, b);
         self.0.insert(Equals(a, b));
     }
 
@@ -39,11 +40,12 @@ impl Constraints {
             &TyInteger(_, _, _) => (),
             &TyFloat(_, _, _) => (),
             &TyList(ref terms) => terms.iter().map(|t| self.collect(&t, tenv)).collect(),
-            &TyIdent(ref t, ref name, _) => self.add(
+            &TyIdent(ref t, ref name, ref sp) => self.add(
                 t.clone(),
                 tenv.resolve_type(&module, &name)
                     .expect(&format!("{:#?}", tenv))
-                    .clone(),
+                    .clone()
+                    .with_span(&sp),
             ),
             // &TyFieldAccess(TyFieldAccess),
             &TyFnApp(ref fn_app) => collect_fn_app(self, &fn_app, tenv),
@@ -90,7 +92,8 @@ fn collect_decl(cs: &mut Constraints, decl: &TyDecl, tenv: &mut TypeEnv) {
 fn collect_graph_decl(cs: &mut Constraints, decl: &TyGraphDecl, tenv: &mut TypeEnv) {
     // type decl should be the same
     tenv.set_module(ModName::Named(decl.name.clone()));
-    let graph_ty_sig = tenv.resolve_type(&ModName::Global, &Alias::Variable(decl.name.clone()))
+    let graph_ty_sig = tenv
+        .resolve_type(&ModName::Global, &Alias::Variable(decl.name.clone()))
         .unwrap()
         .clone();
 
@@ -102,6 +105,7 @@ fn collect_graph_decl(cs: &mut Constraints, decl: &TyGraphDecl, tenv: &mut TypeE
         ),
         graph_ty_sig,
     );
+
     // collect fn_decls
     decl.fns
         .iter()

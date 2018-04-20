@@ -51,8 +51,9 @@ fn main() {
 
     let mut code_map = CodeMap::new();
     let file_map = code_map.add_filemap("test".into(), TEST_STR.to_string());
+    let cspan = span::CSpan::new(file_map.span());
 
-    let program = parser::parse_str(TEST_STR).unwrap();
+    let program = parser::parse_str(TEST_STR, &cspan).unwrap();
     // println!("{:#?}", program);
 
     let mut tenv = TypeEnv::new();
@@ -65,7 +66,7 @@ fn main() {
     // println!("{:#?}", cs);
 
     let mut unifier = Unifier::new();
-    let mut subs = unifier.unify(cs.clone(), &mut tenv);
+    let subs = unifier.unify(cs.clone(), &mut tenv);
     unifier.print_errs(&code_map);
     // println!("{:#?}", subs);
     // println!("{:#?}", subs.apply(&cs));
