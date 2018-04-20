@@ -230,3 +230,22 @@ macro_rules! module {
         Type::Module($e1.to_owned(), None, CSpan::fresh_span())
     };
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use codespan::{Span, ByteIndex};
+    #[test]
+    fn should_not_take_span_into_hash() {
+        let h = hashset!(
+            Type::VAR(1, Span::new(ByteIndex(1), ByteIndex(1))),
+            Type::VAR(1, Span::new(ByteIndex(2), ByteIndex(2))),
+
+            Type::VAR(2, Span::new(ByteIndex(1), ByteIndex(1))),
+            Type::VAR(2, Span::new(ByteIndex(2), ByteIndex(2))),
+        );
+        println!("{:#?}", h);
+        assert_eq!(h.len(), 2);
+    }
+}

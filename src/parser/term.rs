@@ -34,38 +34,38 @@ pub enum Term {
     Pipes(Vec<Term>),
 }
 
-impl Term {
-    pub fn span(&self) -> ByteSpan {
-        use self::Term::*;
-        match self {
-            // None,
-            // /// a vector of decls
-            // Program(Vec<Decl>),
-            // Integer(i64),
-            // Float(f64),
-            // List(Vec<Term>),
-            // Ident(String, ByteSpan),
-            // ViewFn(ViewFn),
-            // FieldAccess(FieldAccess),
-            // FnApp(FnApp),
-            // Block {
-            //     stmts: Statements,
-            //     ret: Expression,
-            //     span: ByteSpan,
-            // },
-            // Expr {
-            //     items: Box<Term>,
-            //     span: ByteSpan,
-            // },
-            // Stmt {
-            //     items: Box<Term>,
-            //     span: ByteSpan,
-            // },
-            // Pipes(Vec<Term>, ),
-            _ => unimplemented!(),
-        }
-    }
-}
+// impl Term {
+//     pub fn span(&self) -> ByteSpan {
+//         use self::Term::*;
+//         match self {
+//             None,
+//             /// a vector of decls
+//             Program(Vec<Decl>),
+//             Integer(i64),
+//             Float(f64),
+//             List(Vec<Term>),
+//             Ident(String, ByteSpan),
+//             ViewFn(ViewFn),
+//             FieldAccess(FieldAccess),
+//             FnApp(FnApp),
+//             Block {
+//                 stmts: Statements,
+//                 ret: Expression,
+//                 span: ByteSpan,
+//             },
+//             Expr {
+//                 items: Box<Term>,
+//                 span: ByteSpan,
+//             },
+//             Stmt {
+//                 items: Box<Term>,
+//                 span: ByteSpan,
+//             },
+//             Pipes(Vec<Term>, ),
+//             _ => unimplemented!(),
+//         }
+//     }
+// }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Decl {

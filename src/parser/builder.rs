@@ -51,7 +51,7 @@ macro_rules! to_idents {
     };
 }
 
-use codespan::{ByteSpan, ByteIndex, CodeMap, Span};
+use codespan::{ByteSpan};
 use parser::grammar::Rule::*;
 use parser::grammar::{Rule, TensorScriptParser};
 use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, GraphDecl,
@@ -59,7 +59,6 @@ use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTy
                    WeightsDecl};
 use pest::iterators::Pair;
 use pest::Parser;
-use pest::Span as PestSpan;
 use span::CSpan;
 
 #[derive(Debug)]
@@ -71,9 +70,6 @@ pub fn parse_str(source: &str, cspan: &CSpan) -> Result<Term, TSSParseError> {
     // let program = TensorScriptParser::parse(dim_assign, "dim T = 1;");
     // println!("{}", program.unwrap());
     // panic!("test...");
-
-    let mut code_map = CodeMap::new();
-    let file_map = code_map.add_filemap("test".into(), source.to_string());
 
     let parser = TensorScriptParser::parse(Rule::input, source);
     if parser.is_err() {
@@ -399,8 +395,7 @@ fn _process_level(curr: Pair<Rule>, cspan: &CSpan) -> Term {
     } else if curr.as_rule() == field_access {
         Term::FieldAccess(build_field_access(curr, cspan).unwrap())
     } else if curr.as_rule() == ident {
-        let sp = curr.clone().into_span();
-        let span = Span::new(ByteIndex(sp.start() as u32), ByteIndex(sp.end() as u32));
+        let span = cspan.from_pest(curr.clone().into_span());
         Term::Ident(curr.as_str().to_owned(), span)
     } else if curr.as_rule() == view_fn {
         Term::ViewFn(build_view_fn(curr, cspan).unwrap())

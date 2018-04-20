@@ -19,9 +19,9 @@
 /// 5. ...
 ///
 /// TODO:
-/// 1. implement module pattern matching
-/// 2. type level computation (resolved tensor dimension)
-///
+/// 1. [*] implement module pattern matching
+/// 2. [ ] type level computation (resolved tensor dimension)
+
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;

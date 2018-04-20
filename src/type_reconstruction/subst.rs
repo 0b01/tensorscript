@@ -21,14 +21,8 @@
 ///
 use std::collections::HashMap;
 use type_reconstruction::constraint::{Constraints, Equals};
-use typed_ast::type_env::TypeEnv;
 use typed_ast::type_env::TypeId;
 use typed_ast::Type;
-
-use codespan_reporting::termcolor::StandardStream;
-use codespan_reporting::{emit, ColorArg, Diagnostic, Label, Severity};
-
-use span::CSpan;
 
 #[derive(Debug)]
 pub struct Substitution(pub HashMap<Type, Type>);
