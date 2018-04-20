@@ -230,7 +230,7 @@ fn build_fn_decl(pair: Pair<Rule>, cspan: &CSpan) -> Result<FnDecl, TSSParseErro
         } else {
             let temp = temp?.into_inner().next().unwrap();
             if temp.as_rule() == cap_ident {
-                TensorTy::TyAlias(temp.as_str().to_owned(), sp.clone())
+                TensorTy::Tensor(temp.as_str().to_owned(), sp.clone())
             } else {
                 TensorTy::Generic(to_idents!(temp), sp.clone())
             }
@@ -531,7 +531,7 @@ fn build_node_assign(pair: Pair<Rule>, cspan: &CSpan) -> Result<NodeAssign, TSSP
 
     let handle_lit = move |token: Pair<Rule>, id: String, sp: ByteSpan| {
         let lit = consume(token, cspan)?;
-        Ok(NodeAssign::ValueAlias {
+        Ok(NodeAssign::Dimension {
             ident: id,
             rhs: lit,
             span: sp,
@@ -540,7 +540,7 @@ fn build_node_assign(pair: Pair<Rule>, cspan: &CSpan) -> Result<NodeAssign, TSSP
 
     let handle_ty = move |ty: Pair<Rule>, id: String, sp: ByteSpan| {
         let ty = to_idents!(ty);
-        Ok(NodeAssign::TyAlias {
+        Ok(NodeAssign::Tensor {
             ident: id,
             rhs: TensorTy::Generic(ty, sp.clone()),
             span: sp,
@@ -573,7 +573,7 @@ fn build_fn_ty_sig(pair: Pair<Rule>, cspan: &CSpan) -> Result<FnTySig, TSSParseE
     let mut tokens = pair.into_inner();
 
     let handle_tensor_ty = |token: Pair<Rule>| TensorTy::Generic(to_idents!(token), sp.clone());
-    let handle_alias = |token: Pair<Rule>| TensorTy::TyAlias(token.as_str().to_owned(), sp);
+    let handle_alias = |token: Pair<Rule>| TensorTy::Tensor(token.as_str().to_owned(), sp);
     let handle = |tok: Pair<Rule>| match tok.as_rule() {
         ty_ident_list => handle_tensor_ty(tok),
         cap_ident => handle_alias(tok),

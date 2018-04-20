@@ -27,6 +27,7 @@
 /// 6. [ ] set up examples and tests
 /// 7. [*] set up commandline
 /// 8. [ ] more examples
+/// 9. [ ] better errors in parser
 
 extern crate pest;
 #[macro_use]
@@ -106,8 +107,8 @@ fn main() {
     // println!("{:#?}", subs);
     // println!("{:#?}", subs.apply(&cs));
     let test = type_reconstruction::inferred_ast::subs(&ast, &mut subs);
-    // println!("{:#?}", test);
-    // println!("{:#?}", tenv);
+    println!("{:#?}", test);
+    println!("{:#?}", tenv);
 }
 
 // 1. initialize global scope

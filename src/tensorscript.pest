@@ -2,6 +2,8 @@ whitespace = _{ space | newline  }
 comment = _{ line_comment }
 line_comment = _{  "//" ~ (!newline ~ any)* }
 
+semicolon = { ";" }
+
 newline = _{ "\n" | "\r\n" }
 space   = _{ " " | "\t" }
 
@@ -116,12 +118,11 @@ ident_list = { ident ~ ("," ~ ident)+ ~ ","? }
 cap_ident = @{ upper ~ (alpha|digit| "_")* }
 upper_ident = @{ (upper|digit)* }
 
-use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident ) ~ ";"}
+use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident ) ~ semicolon}
 
 // type signature
 
-// type identifier cannot be just an integer
-ty_ident = @{ !int_lit ~  (upper | digit | "?" | "_")+ }
+ty_ident = @{ (upper | digit | "?" | "_")+ }
 ty_ident_list = { ty_ident ~ ("," ~ ty_ident)* }
 fn_ty_sig = { "<" ~ tensor_ty ~ "->" ~ tensor_ty ~ ">" }
 ty_sig = { "<"? ~ tensor_ty ~ ">"? }
@@ -129,8 +130,8 @@ tensor_ty_sig = _{ "[" ~ ty_ident_list ~ "]" }
 tensor_ty = _{ tensor_alias_ty | tensor_ty_sig }
 tensor_alias_ty = _{ cap_ident }
 
-dim_assign = _{ dim_lit ~ ( upper_ident | batch_lit ) ~ op_assign ~ int_lit ~ ";" }
-tsr_assign = _{ tsr_lit ~ upper_ident ~ op_assign ~ tensor_ty ~ ";" }
+dim_assign = _{ dim_lit ~ ( upper_ident | batch_lit ) ~ op_assign ~ int_lit ~ semicolon }
+tsr_assign = _{ tsr_lit ~ upper_ident ~ op_assign ~ tensor_ty ~ semicolon }
 node_assign = { dim_assign | tsr_assign }
 node_decl_body = { "{" ~ node_assign* ~ "}" }
 node_decl_head = { node_lit ~ cap_ident ~ fn_ty_sig }
@@ -138,7 +139,7 @@ node_decl = { node_decl_head ~ node_decl_body }
 
 
 weights_assign = { ident ~ op_assign ~
-                   cap_ident ~ ("::" ~ fn_ty_sig)? ~ "::" ~ fn_app ~ ";"
+                   cap_ident ~ ("::" ~ fn_ty_sig)? ~ "::" ~ fn_app ~ semicolon
                  }
 weights_decl_body = { "{" ~ weights_assign* ~ "}" }
 weights_decl_head = { weights_lit ~ cap_ident ~ fn_ty_sig }
@@ -187,9 +188,9 @@ bool_not = _{ op_not ~ expr }
 block = { "{" ~ stmts ~ expr? ~ "}" }
 stmts = { stmt* }
 
-stmt = { assignment | while_loop | conditional | (expr ~ ";") | comment }
+stmt = { assignment | while_loop | conditional | (expr ~ semicolon) | comment }
 
-assignment = { ident ~ op_assign ~ expr ~ ";" }
+assignment = { ident ~ op_assign ~ expr ~ semicolon }
 
 
 

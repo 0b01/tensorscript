@@ -39,6 +39,7 @@ impl Core {
             "nonlin" => match mod_name {
                 "relu" => box self::nonlin::relu,
                 "log_softmax" => box self::nonlin::log_softmax,
+                "sigmoid" => box self::nonlin::sigmoid,
                 _ => unimplemented!(),
             },
             "lin" => match mod_name {

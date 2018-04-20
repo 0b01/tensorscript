@@ -162,12 +162,12 @@ pub struct FnDecl {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum NodeAssign {
-    ValueAlias {
+    Dimension {
         ident: String,
         rhs: Term,
         span: ByteSpan,
     },
-    TyAlias {
+    Tensor {
         ident: String,
         rhs: TensorTy,
         span: ByteSpan,
@@ -176,7 +176,7 @@ pub enum NodeAssign {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TensorTy {
-    TyAlias(String, ByteSpan),
+    Tensor(String, ByteSpan),
     Generic(Vec<String>, ByteSpan),
 }
 

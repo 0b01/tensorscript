@@ -155,7 +155,7 @@ impl TypeEnv {
 
     /// iterate over scopes and find the alias in each
     fn get_scoped_types(&self, mod_name: &ModName, alias: &Alias) -> Vec<Type> {
-        let stack = self.modules.get(mod_name).unwrap();
+        let stack = self.modules.get(mod_name).expect(&format!("BUG: Unable to find {:?} in {:?}. TypeEnv: {:#?}", alias, mod_name, self));
         stack
             .0
             .iter()
@@ -165,6 +165,17 @@ impl TypeEnv {
             .map(|i| i.unwrap())
             .cloned()
             .collect()
+    }
+
+    pub fn upsert_module(&mut self, mod_name: &ModName) {
+        if !self.modules.contains_key(mod_name) {
+            self.modules.insert(mod_name.clone(), {
+                // if the module does not yet exist, add with an empty scope
+                let mut q = VecDeque::new();
+                q.push_back(Scope::new());
+                (q, VecDeque::new(), HashMap::new())
+            });
+        }
     }
 
     /// add type alias in current scope
@@ -280,7 +291,7 @@ impl TypeEnv {
     ) -> Type {
         match t {
             &TensorTy::Generic(ref dims, ref sp) => self.create_tensor(mod_name, &dims, sp),
-            &TensorTy::TyAlias(ref alias, ref sp) => {
+            &TensorTy::Tensor(ref alias, ref sp) => {
                 self.resolve_type(mod_name, &Alias::Variable(alias.to_string()))
                     .unwrap().with_span(sp)
             }
@@ -296,14 +307,14 @@ impl TypeEnv {
     /// create aliases for an untyped AST node assign
     pub fn import_node_assign(&mut self, mod_name: &ModName, a: &NodeAssign) {
         match a {
-            &NodeAssign::TyAlias {
+            &NodeAssign::Tensor {
                 ident: ref id,
                 rhs: TensorTy::Generic(ref tys, ref sp),
                 span: _,
             } => {
                 self.add_tsr_alias(mod_name, &Alias::Variable(id.to_string()), tys, sp);
             }
-            &NodeAssign::ValueAlias {
+            &NodeAssign::Dimension {
                 ident: ref id,
                 rhs: Term::Integer(num, _),
                 ref span,
@@ -311,6 +322,20 @@ impl TypeEnv {
                 self.add_resolved_dim_alias(mod_name, &Alias::Variable(id.to_string()), num, span);
             }
             _ => unimplemented!(),
+        }
+    }
+
+    pub fn import_top_level_ty_sig(&mut self, mod_name: &ModName, ty_sig: &TensorTy) {
+        if let TensorTy::Generic(dims, span) = ty_sig {
+            // first insert all the dims
+            dims.iter()
+                .map(|t| Alias::Variable(t.to_string()))
+                .map(|t| {
+                    if !self.exists(mod_name, &t) {
+                        self.add_dim_alias(mod_name, &t, span);
+                    }
+                })
+                .collect::<Vec<()>>();
         }
     }
 

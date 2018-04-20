@@ -153,6 +153,12 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
                 .into_iter()
                 .map(|a| tenv.import_node_assign(&module, a))
                 .collect::<Vec<()>>();
+
+            tenv.upsert_module(&module);
+            // if some dimension alias are not imported, create them
+            tenv.import_top_level_ty_sig(&module, &decl.ty_sig.from);
+            tenv.import_top_level_ty_sig(&module, &decl.ty_sig.to);
+
             let ty_sig = annotate_fn_ty_sig(&decl.ty_sig, tenv, &decl.span);
             let mod_ty_sig = Type::Module(
                 decl.name.clone(),
@@ -239,7 +245,7 @@ fn annotate_tensor_ty_sig(sig: &TensorTy, tenv: &mut TypeEnv, span: &ByteSpan) -
     let module = tenv.module();
     match sig {
         &Generic(ref dims, ref sp) => tenv.create_tensor(&module, dims, sp),
-        &TyAlias(ref als, ref sp) => tenv.resolve_type(&module, &Alias::Variable(als.clone()))
+        &Tensor(ref als, ref sp) => tenv.resolve_type(&module, &Alias::Variable(als.clone()))
             .unwrap()
             .clone()
             .with_span(sp),
