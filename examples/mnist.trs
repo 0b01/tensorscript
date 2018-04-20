@@ -36,15 +36,15 @@ graph Mnist<[?,C,H,W] -> [?,OUT]> {
     }
 
     def forward(b) -> LABELS {
-        b
+        b |> view(?, FC2) |> self.example()
+
+        // b
         // |> conv1            |> maxpool2d(kernel_size=2)
         // |> conv2 |> dropout |> maxpool2d(kernel_size=2)
         // |> view(?, FC1)
         // |> fc1 |> relu
         // |> self.example()
         // |> log_softmax(dim=1)
-        // |> view(?, FC2)
-        |> self.example()
     }
 
     def example(x: [?,FC2]) -> LABELS {

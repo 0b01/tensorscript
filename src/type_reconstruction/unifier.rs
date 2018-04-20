@@ -31,8 +31,7 @@ impl TypeError {
             RankMismatch(Type::TSR(dims1, s1), Type::TSR(dims2, s2)) => {
                 Diagnostic::new(
                     Severity::Error,
-                    format!("Tensor rank mismatch: {} != {} where LHS is {:?} and RHS is {:?}", 
-                        dims1.len(), dims2.len(), dims1, dims2),
+                    format!("Tensor rank mismatch: rank({:?}) != rank({:?})", dims1, dims2),
                 )
                 .with_label(Label::new_primary(s1.clone()))
                 .with_label(Label::new_primary(s2.clone()))
@@ -69,7 +68,7 @@ impl Unifier {
 
     fn unify_one(&mut self, cs: Equals, tenv: &mut TypeEnv) -> Substitution {
         use self::Type::*;
-        println!("{:?}", cs);
+        // println!("{:?}", cs);
         match cs {
             Equals(Unit(_), Unit(_)) => Substitution::empty(),
             Equals(INT(_), INT(_)) => Substitution::empty(),

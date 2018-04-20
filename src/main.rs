@@ -21,6 +21,12 @@
 /// TODO:
 /// 1. [*] implement module pattern matching
 /// 2. [ ] type level computation (resolved tensor dimension)
+/// 3. [ ] BUG: dimension mismatch
+/// 4. [ ] BUG: non-determinism
+/// 5. [ ] BUG: impl Hash for Type
+/// 6. [ ] set up examples and tests
+/// 7. [*] set up commandline
+/// 8. [ ] more examples
 
 extern crate pest;
 #[macro_use]
@@ -29,6 +35,7 @@ extern crate pest_derive;
 extern crate maplit;
 
 extern crate codespan;
+extern crate clap;
 extern crate codespan_reporting;
 
 #[macro_use]
@@ -38,22 +45,50 @@ mod parser;
 mod span;
 mod type_reconstruction;
 
+use std::fs::File;
+use std::io::Read;
+
 use type_reconstruction::constraint::Constraints;
 use type_reconstruction::unifier::Unifier;
 use typed_ast::annotate::annotate;
 use typed_ast::type_env::TypeEnv;
 
 use codespan::CodeMap;
+use clap::{Arg, App, ArgMatches};
 
-const TEST_STR: &str = include_str!("../examples/test.trs");
+fn get_matches<'a>() -> ArgMatches<'a> {
+    App::new("tsrc")
+        .version("0.0")
+        .author("Ricky Han <rickylqhan@gmail.com>")
+        .about("Compiler for Tensorscript")
+        .arg(Arg::with_name("input")
+            .short("f")
+            .long("in")
+            .value_name("FILE")
+            .help("Sets a custom config file")
+            .takes_value(true)
+            .required(true))
+        .arg(Arg::with_name("v")
+            .short("v")
+            .multiple(true)
+            .help("Sets the level of verbosity"))
+        .get_matches()
+}
 
 fn main() {
+    let matches = get_matches();
+    let fname = matches.value_of("input").unwrap();
+
+    let mut file = File::open(fname).expect("Unable to open the file");
+    let mut src = String::new();
+    file.read_to_string(&mut src).expect("Unable to read the file");
+
 
     let mut code_map = CodeMap::new();
-    let file_map = code_map.add_filemap("test".into(), TEST_STR.to_string());
+    let file_map = code_map.add_filemap("test".into(), src.clone());
     let cspan = span::CSpan::new(file_map.span());
 
-    let program = parser::parse_str(TEST_STR, &cspan).unwrap();
+    let program = parser::parse_str(&src, &cspan).unwrap();
     // println!("{:#?}", program);
 
     let mut tenv = TypeEnv::new();
@@ -66,11 +101,11 @@ fn main() {
     // println!("{:#?}", cs);
 
     let mut unifier = Unifier::new();
-    let subs = unifier.unify(cs.clone(), &mut tenv);
+    let mut subs = unifier.unify(cs.clone(), &mut tenv);
     unifier.print_errs(&code_map);
     // println!("{:#?}", subs);
     // println!("{:#?}", subs.apply(&cs));
-    // let test = type_reconstruction::inferred_ast::subs(&ast, &mut subs);
+    let test = type_reconstruction::inferred_ast::subs(&ast, &mut subs);
     // println!("{:#?}", test);
     // println!("{:#?}", tenv);
 }

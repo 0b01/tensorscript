@@ -85,6 +85,7 @@ impl Hash for Type {
 }
 
 impl Type {
+    /// modifies the span parameter in type to the most relevant
     pub fn with_span(&self, sp: &ByteSpan) -> Type {
         use self::Type::*;
         match self {

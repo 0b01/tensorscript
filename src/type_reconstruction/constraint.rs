@@ -222,10 +222,13 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
         //     cs.add(ty.clone(), fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
         tenv.add_unverified(ty.clone());
     }
+
+    // BUG: creates a mismatch in dimension
     cs.add(
         ty.clone(),
         fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()),
     );
+
     cs.add(fn_app.arg_ty.clone(), fn_app.args.to_ty(&fn_app.span));
 
     if let "forward" = fn_name.as_str() {

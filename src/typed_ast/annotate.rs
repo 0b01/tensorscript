@@ -17,7 +17,7 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TyTerm {
     match term {
         Ident(ref id, ref span) => {
             let ty = tenv.resolve_type(&module, &Alias::Variable(id.clone()))
-                .unwrap();
+                .unwrap().with_span(&span);
             let alias = Alias::Variable(id.to_owned());
             TyTerm::TyIdent(ty, alias, span.clone())
         }
@@ -319,7 +319,7 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
         &ModName::Global,
         &Alias::Variable(module.as_str().to_owned()),
     ).unwrap()
-        .clone();
+        .clone().with_span(&f.span);
 
     let mut decl = TyFnDecl {
         name: Alias::Function(f.name.clone()),
