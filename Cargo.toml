@@ -1,5 +1,5 @@
 [package]
-name = "tensorscript"
+name = "tsrc"
 version = "0.1.0"
 authors = ["ricky han <rickylqhan@gmail.com>"]
 

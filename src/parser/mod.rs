@@ -1,3 +1,5 @@
+#[macro_use]
+mod macros;
 mod builder;
 mod grammar;
 pub mod term;

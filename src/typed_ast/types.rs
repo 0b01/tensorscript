@@ -4,7 +4,7 @@ use std::fmt::{Debug, Error, Formatter};
 use std::hash::{Hash, Hasher};
 use typed_ast::type_env::TypeId;
 
-#[derive(PartialEq, Clone, Eq)]
+#[derive(Clone, Eq)]
 pub enum Type {
     // literals
     Unit(ByteSpan),
@@ -23,6 +23,33 @@ pub enum Type {
     ResolvedDim(i64, ByteSpan),
     FUN(Box<Type>, Box<Type>, ByteSpan),
     TSR(Vec<Type>, ByteSpan),
+}
+
+impl PartialEq for Type {
+    fn eq(&self, other: &Type) -> bool {
+        use self::Type::*;
+        match (self, other) {
+            (Unit(_), Unit(_)) => true,
+            (INT(_), INT(_)) => true,
+            (FLOAT(_), FLOAT(_)) => true,
+            (BOOL(_), BOOL(_)) => true,
+            // // UnresolvedModuleFun(_,_,_) => false,
+            (VAR(a, _), VAR(b, _)) => a == b,
+            (DIM(b, _), DIM(a, _)) => a == b,
+            (Module(a1, b1, _), Module(a2, b2, _)) => (a1 == a2) && (b1 == b2),
+            (FnArgs(ta, _), FnArgs(tb, _)) => ta == tb,
+            (FnArg(n1, t1, _), FnArg(n2, t2, _)) => (n1 == n2) && (t1 == t2),
+            (ResolvedDim(a, _), ResolvedDim(b, _)) => a == b,
+            (FUN(p1, r1, _), FUN(p2, r2, _)) => (p1 == p2) && (r1 == r2),
+            (TSR(ts1, _), TSR(ts2, _)) => ts1 == ts2,
+            (UnresolvedModuleFun(a1, b1, c1, _), UnresolvedModuleFun(a2, b2, c2, _)) => 
+                (a1 == a2) && (b1 == b2) && (c1 == c2),
+            // MismatchedDim(_,_) => true,
+            _ => {
+                panic!("{:?}", self);
+            }
+        }
+    }
 }
 
 impl Hash for Type {
@@ -246,7 +273,6 @@ mod tests {
             Type::VAR(2, Span::new(ByteIndex(1), ByteIndex(1))),
             Type::VAR(2, Span::new(ByteIndex(2), ByteIndex(2))),
         );
-        println!("{:#?}", h);
         assert_eq!(h.len(), 2);
     }
 }

@@ -1,56 +1,21 @@
-use std::str::FromStr;
 use typed_ast::{Type, TypeEnv};
 use typed_ast::type_env::TypeId;
 use span::CSpan;
+use errors::{TensorScriptDiagnostic, Errors};
 
-use codespan::CodeMap;
-use codespan_reporting::termcolor::StandardStream;
-use codespan_reporting::{emit, ColorArg, Diagnostic, Label, Severity};
 
 use type_reconstruction::constraint::{Constraints, Equals};
 use type_reconstruction::subst::Substitution;
 
-pub enum TypeError {
-    RankMismatch(Type, Type),
-    DimensionMismatch(Type, Type),
-}
-
-impl TypeError {
-    pub fn into_diagnostic(&self) -> Diagnostic {
-        use self::TypeError::*;
-        match self {
-            DimensionMismatch(Type::ResolvedDim(v1, s1), Type::ResolvedDim(v2,s2)) => {
-                Diagnostic::new(
-                    Severity::Error,
-                    format!("Dimension mismatch: {} != {}", v1, v2),
-                )
-                .with_label(Label::new_primary(s1.clone()))
-                .with_label(Label::new_primary(s2.clone()))
-            }
-
-            RankMismatch(Type::TSR(dims1, s1), Type::TSR(dims2, s2)) => {
-                Diagnostic::new(
-                    Severity::Error,
-                    format!("Tensor rank mismatch: rank({:?}) != rank({:?})", dims1, dims2),
-                )
-                .with_label(Label::new_primary(s1.clone()))
-                .with_label(Label::new_primary(s2.clone()))
-            }
-
-            _ => panic!("impossible errors")
-        }
-    }
-}
-
 pub struct Unifier {
-    pub errs: Vec<TypeError>,
+    pub errs: Errors
 }
 
 impl Unifier {
 
     pub fn new() -> Unifier {
         Unifier {
-            errs: Vec::new(),
+            errs: Errors::new(),
         }
     }
 
@@ -82,7 +47,7 @@ impl Unifier {
                 if a.as_num() == b.as_num() {
                     Substitution::empty()
                 } else {
-                    self.add_err(TypeError::DimensionMismatch(a.clone(), b.clone()));
+                    self.add_err(TensorScriptDiagnostic::DimensionMismatch(a.clone(), b.clone()));
                     Substitution::empty()
                 }
             }
@@ -134,7 +99,7 @@ impl Unifier {
                         _ => unimplemented!(),
                     }
                 } else {
-                    self.add_err(TypeError::RankMismatch(ts1, ts2));
+                    self.add_err(TensorScriptDiagnostic::RankMismatch(ts1, ts2));
                     Substitution::empty()
                 }
             }
@@ -185,17 +150,9 @@ impl Unifier {
         }
     }
 
-    pub fn print_errs(&self, code_map: &CodeMap) {
-        let diagnostics: Vec<Diagnostic> = self.errs.iter().map(|e|e.into_diagnostic()).collect();
-        let writer = StandardStream::stderr(ColorArg::from_str("auto").unwrap().into());
-        for diagnostic in &diagnostics {
-            emit(&mut writer.lock(), &code_map, &diagnostic).unwrap();
-            println!();
-        }
-    }
 
-    pub fn add_err(&mut self, err: TypeError) {
-        self.errs.push(err);
+    pub fn add_err(&mut self, err: TensorScriptDiagnostic) {
+        self.errs.add(err);
     }
 }
 

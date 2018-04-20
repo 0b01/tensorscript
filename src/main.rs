@@ -21,13 +21,13 @@
 /// TODO:
 /// 1. [*] implement module pattern matching
 /// 2. [ ] type level computation (resolved tensor dimension)
-/// 3. [ ] BUG: dimension mismatch
+/// 3. [ ] BUG: dimension mismatch for mnist example
 /// 4. [ ] BUG: non-determinism
-/// 5. [ ] BUG: impl Hash for Type
+/// 5. [*] BUG: impl Hash, Eq for Type
 /// 6. [ ] set up examples and tests
 /// 7. [*] set up commandline
 /// 8. [ ] more examples
-/// 9. [ ] better errors in parser
+/// 9. [*] better errors in parser
 
 extern crate pest;
 #[macro_use]
@@ -44,6 +44,7 @@ mod typed_ast;
 mod core;
 mod parser;
 mod span;
+mod errors;
 mod type_reconstruction;
 
 use std::fs::File;
@@ -89,8 +90,15 @@ fn main() {
     let file_map = code_map.add_filemap("test".into(), src.clone());
     let cspan = span::CSpan::new(file_map.span());
 
-    let program = parser::parse_str(&src, &cspan).unwrap();
-    // println!("{:#?}", program);
+    let parsed_terms = parser::parse_str(&src, &cspan);
+    let program = match parsed_terms {
+        Ok(program) => program,
+        Err(e) => {
+            println!("{:#?}", e);
+            e.print_err(&code_map);
+            panic!()
+        },
+    };
 
     let mut tenv = TypeEnv::new();
     let ast = annotate(&program, &mut tenv);
@@ -103,34 +111,10 @@ fn main() {
 
     let mut unifier = Unifier::new();
     let mut subs = unifier.unify(cs.clone(), &mut tenv);
-    unifier.print_errs(&code_map);
+    unifier.errs.print_errs(&code_map);
     // println!("{:#?}", subs);
     // println!("{:#?}", subs.apply(&cs));
     let test = type_reconstruction::inferred_ast::subs(&ast, &mut subs);
     println!("{:#?}", test);
     println!("{:#?}", tenv);
 }
-
-// 1. initialize global scope
-// 2. insert use::symbols, types into scope
-// 3. insert node_decl symbols, types into scope
-// 4. resolve weights and graph decls which should have the same type
-// 5. create local scope
-// 6. insert macros to scope macros
-// 7. typecheck weights body against global_scope
-// 8. for each functions in graph_decl, create scope and typecheck.
-
-// a note on typechecking
-// 1. for each generic type in the node type decl, create in scope
-// 2. for each symbol on the RHS of fn_ty_sig, check macro, global types and LHS types
-// 3. for user defined functions, check macro, global
-
-// a note on generics
-// 1. generics are constraints on tensor dims
-// 2. f(x) does not typecheck given f::<?,10 -> ?,1>, x::<4,8>
-// 3. f<?->n>(x<1>) does not typecheck
-// algorithm
-// 1. fix function type
-// 2. for each arg, check rank against corresponding param rank
-// 3. for each dimension, deref generic types, check referential equality
-// 4. x::<1,1> + y::<1,1> is <1,1>

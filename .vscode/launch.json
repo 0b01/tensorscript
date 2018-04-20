@@ -8,8 +8,8 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug",
-            "program": "${workspaceFolder}/target/debug/bitwise",
-            "args": [],
+            "program": "${workspaceFolder}/target/debug/tsrc",
+            "args": ["--in", "examples/xor.trs"],
             "cwd": "${workspaceFolder}"
         }
     ]
