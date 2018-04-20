@@ -168,7 +168,7 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
 
             TyDecl::TyUseStmt(TyUseStmt {
                 mod_name: decl.mod_name.clone(),
-                imported_names: decl.imported_names.clone(), // ...
+                imported_names: decl.imported_names.clone(),
             })
         }
     };

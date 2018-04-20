@@ -21,7 +21,6 @@ pub enum Type {
     ResolvedDim(i64),
     FUN(Box<Type>, Box<Type>),
     TSR(Vec<Type>),
-    ToVerify(&'static str, &'static str, &'static str, Box<Type>),
 }
 
 impl Type {
@@ -33,29 +32,37 @@ impl Type {
         }
     }
 
-    pub fn is_resolved(&self) -> bool {
+    pub fn as_num(&self) -> i64 {
         use self::Type::*;
         match self {
-            Unit => true,
-            INT => true,
-            FLOAT => true,
-            BOOL => true,
-            UnresolvedModuleFun(_,_,_) => false,
-
-            VAR(_) => false,
-            DIM(_) => false,
-
-            Module(_, Some(i)) => i.is_resolved(),
-            Module(_, None) => false,
-            FnArgs(ts) => ts.iter().map(|t| t.is_resolved()).all(|t| t),
-            FnArg(_, t) => t.is_resolved(),
-            ResolvedDim(_) => true,
-            FUN(p, r) => Type::is_resolved(p) && r.is_resolved(),
-            TSR(ts) => ts.iter().map(|t| t.is_resolved()).all(|t|t),
-            ToVerify(_,_,_,box ty) => ty.is_resolved(),
+            ResolvedDim(ref i) => *i,
             _ => unimplemented!(),
         }
     }
+
+    // pub fn is_resolved(&self) -> bool {
+    //     use self::Type::*;
+    //     match self {
+    //         Unit => true,
+    //         INT => true,
+    //         FLOAT => true,
+    //         BOOL => true,
+    //         UnresolvedModuleFun(_,_,_) => false,
+
+    //         VAR(_) => false,
+    //         DIM(_) => false,
+
+    //         Module(_, Some(i)) => i.is_resolved(),
+    //         Module(_, None) => false,
+    //         FnArgs(ts) => ts.iter().map(|t| t.is_resolved()).all(|t| t),
+    //         FnArg(_, t) => t.is_resolved(),
+    //         ResolvedDim(_) => true,
+    //         FUN(p, r) => Type::is_resolved(p) && r.is_resolved(),
+    //         TSR(ts) => ts.iter().map(|t| t.is_resolved()).all(|t|t),
+    //         MismatchedDim(_,_) => true,
+    //         _ => unimplemented!(),
+    //     }
+    // }
 
 }
 
@@ -75,7 +82,6 @@ impl Debug for Type {
             ResolvedDim(ref d) => write!(f, "<{}>", d),
             Module(ref s, ref ty) => write!(f, "MODULE({}, {:?})", s, ty),
             FUN(ref p, ref r) => write!(f, "({:?} -> {:?})", p, r),
-            ToVerify(ref a,ref b,ref c,ref t) =>  write!(f, "ToVerify({}::{}::{}, {:?})", a,b,c,t),
             TSR(ref dims) => {
                 if dims.len() > 0 {
                     write!(f, "[")?;

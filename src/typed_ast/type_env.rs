@@ -142,7 +142,6 @@ impl TypeEnv {
     /// first check current mod name, if it doesn not exist,
     /// then check in the global scope
     pub fn resolve_type(&self, mod_name: &ModName, alias: &AliasType) -> Option<Type> {
-        println!("{:?}", alias);
         self.resolve_type_inner(mod_name, alias)
             .or(self.resolve_type_inner(&ModName::Global, alias))
     }

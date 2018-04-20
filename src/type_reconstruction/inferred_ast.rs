@@ -1,5 +1,3 @@
-use typed_ast::Type;
-use typed_ast::type_env::{ModName, TypeEnv};
 use typed_ast::typed_term::*;
 use typed_ast::typed_term;
 use type_reconstruction::subst::Substitution;
@@ -69,7 +67,7 @@ fn subs_node_decl(decl: &TyNodeDecl, s: &mut Substitution) -> TyNodeDecl {
 fn subs_weights_decl(decl: &TyWeightsDecl, s: &mut Substitution) -> TyWeightsDecl {
     let mut c = decl.clone();
     c.ty_sig = s.apply_ty(&c.ty_sig);
-    // ...
+    c.inits = c.inits.iter().map(|w_a| subs_weights_assign(w_a, s)).collect::<Vec<_>>();
     c
 }
 
@@ -78,7 +76,11 @@ fn subs_use_stmt(decl: &TyUseStmt, _tenv: &mut Substitution) -> TyUseStmt {
 }
 
 fn subs_weights_assign(w_a: &TyWeightsAssign, s: &mut Substitution) -> TyWeightsAssign {
-    w_a.clone()
+    let mut c = w_a.clone();
+    c.ty = s.apply_ty(&c.ty);
+    c.arg_ty = s.apply_ty(&c.arg_ty);
+    c.fn_args = c.fn_args.iter().map(|a| subs_fn_app_arg(a, s)).collect();
+    c
 }
 
 fn subs_fn_app(fn_app: &typed_term::TyFnApp, s: &mut Substitution) -> typed_term::TyFnApp {

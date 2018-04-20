@@ -146,6 +146,7 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
     // println!("{:?}", cs);
     match cs {
 
+        Equals(Unit, Unit) => Substitution::empty(),
         Equals(INT, INT) => Substitution::empty(),
         Equals(FLOAT, FLOAT) => Substitution::empty(),
         Equals(BOOL, BOOL) => Substitution::empty(),
@@ -154,12 +155,14 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
         Equals(INT, ResolvedDim(_)) => Substitution::empty(),
         Equals(ResolvedDim(_), INT) => Substitution::empty(),
 
-        Equals(ResolvedDim(i), ResolvedDim(j)) => if i == j {
-            Substitution::empty()
-        } else {
-            panic!("{:#?}", tenv);
-            panic!("dimension mismatch")
-        },
+        Equals(a@ResolvedDim(_), b@ResolvedDim(_)) => {
+            if a.as_num() == b.as_num() {
+                Substitution::empty()
+            } else {
+                // Substitution(hashmap!(A => B))
+                panic!("Dimension mismatch! {:?} vs {:?}", a, b);
+            }
+        }
 
 
         Equals(VAR(tvar), ty) => unify_var(tvar, ty),

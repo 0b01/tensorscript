@@ -46,7 +46,10 @@ impl Constraints {
                 self.collect(&ret, tenv);
                 tenv.pop_scope(&module);
             }
-            &TyExpr { ref items, ty: _ } => self.collect(&items, tenv), // ... need to use ty?
+            &TyExpr { ref items, ref ty } => {
+                self.collect(&items, tenv);
+                self.add(ty.clone(), items.ty());
+            }
             &TyStmt { ref items } => self.collect(&items, tenv),
             &TyViewFn(ref view_fn) => {
                 self.collect(&view_fn.arg.arg, tenv);
@@ -164,7 +167,6 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
     if let Type::UnresolvedModuleFun(_,_,_) = ty {
     //     let inits = tenv.resolve_init(&current_mod, &fn_app.orig_name);
     //     // if let Some(resolved_fn_ty) = tenv.resolve_unresolved(ty.clone(), &symbol_name, &symbol_mod_ty, fn_name, inits) {
-    //     //     panic!("{:?}", resolved_fn_ty); // ...
     //     //     cs.add(resolved_fn_ty, fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
     //     // } else {
     //     // }
