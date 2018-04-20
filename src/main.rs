@@ -27,18 +27,23 @@ extern crate pest;
 extern crate pest_derive;
 #[macro_use]
 extern crate maplit;
+
+extern crate codespan;
+extern crate codespan_reporting;
+
+
 #[macro_use]
 mod typed_ast;
 mod core;
 mod parser;
 mod type_reconstruction;
+mod span;
 
 
 use type_reconstruction::constraint::Constraints;
 use type_reconstruction::subst::unify;
 use typed_ast::annotate::annotate;
 use typed_ast::type_env::TypeEnv;
-use typed_ast::typed_term::Ty;
 
 const TEST_STR: &str = include_str!("../test.trs");
 

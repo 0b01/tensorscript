@@ -56,8 +56,11 @@ use parser::grammar::{Rule, TensorScriptParser};
 use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, GraphDecl,
                    NodeAssign, NodeDecl, TensorTy, Term, UseStmt, ViewFn, WeightsAssign,
                    WeightsDecl};
+use codespan::{CodeMap, Span, ByteIndex};
+use span::CSpan;
 use pest::Parser;
 use pest::iterators::Pair;
+use pest::Span as PestSpan;
 
 #[derive(Debug)]
 pub struct TSSParseError {
@@ -69,13 +72,16 @@ pub fn parse_str(source: &str) -> Result<Term, TSSParseError> {
     // println!("{}", program.unwrap());
     // panic!("test...");
 
+    let mut code_map = CodeMap::new();
+    let file_map = code_map.add_filemap("test".into(), source.to_string());
+
     let parser = TensorScriptParser::parse(Rule::input, source);
     if parser.is_err() {
         panic!(format!("{:#}", parser.err().unwrap()));
     }
 
-    let decls = parser
-        .unwrap()
+    let decls = parser.unwrap();
+    let terms = decls
         .map(|pair| match pair.as_rule() {
             use_stmt => build_use_stmt(pair).unwrap(),
             weights_decl => build_weights_decl(pair).unwrap(),
@@ -85,7 +91,7 @@ pub fn parse_str(source: &str) -> Result<Term, TSSParseError> {
         })
         .collect();
 
-    Ok(Term::Program(decls))
+    Ok(Term::Program(terms))
 }
 
 fn consume(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
@@ -134,6 +140,7 @@ fn consume(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
 }
 
 fn build_block(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let statements = eat!(tokens, stmts, "Cannot parse statements");
     let possible_expr = eat!(tokens, expr, "Does not have a dangling expr");
@@ -146,6 +153,7 @@ fn build_block(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
     Ok(Term::Block {
         stmts: Box::new(consume(statements?)?),
         ret: Box::new(ret),
+        span: CSpan::from_pest(sp),
     })
 }
 
@@ -160,6 +168,7 @@ fn build_fn_app_param(pair: Pair<Rule>) -> Result<Vec<FnAppArg>, TSSParseError> 
 }
 
 fn build_field_access(pair: Pair<Rule>) -> Result<FieldAccess, TSSParseError> {
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let var_name = eat!(tokens, ident, "Failed to parse variable name")?;
     let field_name = eat!(tokens, ident, "Failed to parse field name")?;
@@ -174,33 +183,43 @@ fn build_field_access(pair: Pair<Rule>) -> Result<FieldAccess, TSSParseError> {
         mod_name: var_name.as_str().to_owned(),
         field_name: field_name.as_str().to_owned(),
         func_call: func_call,
+        span: CSpan::from_pest(sp),
     })
 }
 
 fn build_expr(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let p = tokens.next().unwrap();
     assert!(tokens.next().is_none());
     let val = match p.as_rule() {
         field_access => Term::FieldAccess(build_field_access(p).unwrap()),
         fn_app => Term::FnApp(build_fn_app(p).unwrap()),
-        ident => Term::Ident(p.as_str().to_owned()),
+        ident => {
+            let sp = p.clone().into_span();
+            let span = CSpan::from_pest(sp);
+            Term::Ident(p.as_str().to_owned(), span)
+        },
         _ => consume(p).unwrap(),
     };
     Ok(Term::Expr {
         items: Box::new(val),
+        span: CSpan::from_pest(sp),
     })
 }
 
 fn build_stmt(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
+    let sp = pair.clone().into_span();
     let tokens = pair.into_inner();
     let vals = tokens.map(|p| consume(p).unwrap()).collect();
     Ok(Term::Stmt {
         items: Box::new(Term::List(vals)),
+        span: CSpan::from_pest(sp),
     })
 }
 
 fn build_fn_decl(pair: Pair<Rule>) -> Result<FnDecl, TSSParseError> {
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, fn_decl_head, "Failed to parse fn_decl_head")?.into_inner();
     let name = eat!(head, ident, "Failed to parse fn_decl_head ident")?;
@@ -234,6 +253,7 @@ fn build_fn_decl(pair: Pair<Rule>) -> Result<FnDecl, TSSParseError> {
         fn_params: params,
         return_ty: return_ty,
         func_block: Box::new(consume(func_block)?),
+        span: CSpan::from_pest(sp),
     })
 }
 
@@ -254,6 +274,7 @@ fn build_fn_decls(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
 }
 
 fn build_fn_decl_param(pair: Pair<Rule>) -> Result<FnDeclParam, TSSParseError> {
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let param = eat!(tokens, ident, "Failed to parse function parameter")?;
     let typ = eat!(tokens, ty_sig, "Failed to parse type signature");
@@ -266,6 +287,7 @@ fn build_fn_decl_param(pair: Pair<Rule>) -> Result<FnDeclParam, TSSParseError> {
     Ok(FnDeclParam {
         name: param.as_str().to_owned(),
         ty_sig: typ,
+        span: CSpan::from_pest(sp),
     })
 }
 
@@ -276,12 +298,15 @@ fn build_fn_decl_params(pair: Pair<Rule>) -> Result<Vec<FnDeclParam>, TSSParseEr
 }
 
 fn build_view_fn(pair: Pair<Rule>) -> Result<ViewFn, TSSParseError> {
+    let sp = pair.clone().into_span();
     let tokens = pair.into_inner();
     let dims = tokens.map(|p| String::from(p.as_str())).collect();
-    Ok(ViewFn { dims })
+    let span = CSpan::from_pest(sp);
+    Ok(ViewFn { dims, span })
 }
 
 fn build_fn_app(pair: Pair<Rule>) -> Result<FnApp, TSSParseError> {
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let name = eat!(tokens, ident, "Cannot parse function call identifier")?;
     let args = if let Some(args) = tokens.next() {
@@ -293,10 +318,12 @@ fn build_fn_app(pair: Pair<Rule>) -> Result<FnApp, TSSParseError> {
     Ok(FnApp {
         name: name.as_str().to_owned(),
         args: args,
+        span: CSpan::from_pest(sp),
     })
 }
 
 fn build_fn_app_arg(pair: Pair<Rule>) -> Result<FnAppArg, TSSParseError> {
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let param = eat!(tokens, ident, "Failed to parse function call argument")?;
     let param_val = eat!(tokens, expr, "Failed to parse function call parameter")?;
@@ -304,6 +331,7 @@ fn build_fn_app_arg(pair: Pair<Rule>) -> Result<FnAppArg, TSSParseError> {
     Ok(FnAppArg {
         name: param.as_str().to_owned(),
         arg: Box::new(consume(param_val)?),
+        span: CSpan::from_pest(sp),
     })
 }
 
@@ -314,6 +342,7 @@ fn build_fn_app_args(pair: Pair<Rule>) -> Result<Vec<FnAppArg>, TSSParseError> {
 }
 
 fn build_weights_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, weights_decl_head, "Parsing `weight_head` error")?.into_inner();
     let weights_name = eat!(head, cap_ident, "Does not have a weight name")?.as_str();
@@ -330,10 +359,12 @@ fn build_weights_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
         name: weights_name.to_owned(),
         ty_sig: build_fn_ty_sig(ty_decl)?,
         inits: weights_body,
+        span: CSpan::from_pest(sp),
     }))
 }
 
 fn build_weights_assign(body: Pair<Rule>) -> Result<WeightsAssign, TSSParseError> {
+    let sp = body.clone().into_span();
     let mut tokens = body.into_inner();
     let name = eat!(tokens, ident, "Failed to parse ident")?;
     let _assign = eat!(tokens, op_assign, "Failed to parse `=`")?;
@@ -348,6 +379,7 @@ fn build_weights_assign(body: Pair<Rule>) -> Result<WeightsAssign, TSSParseError
             fn_name: fncall.name,
             mod_sig: Some(build_fn_ty_sig(nxt).expect("Cannot parse function type signature!")),
             fn_args: fncall.args,
+            span: CSpan::from_pest(sp),
         })
     } else {
         let fncall = build_fn_app(nxt)?;
@@ -357,6 +389,7 @@ fn build_weights_assign(body: Pair<Rule>) -> Result<WeightsAssign, TSSParseError
             fn_name: fncall.name,
             mod_sig: None,
             fn_args: fncall.args,
+            span: CSpan::from_pest(sp),
         })
     }
 }
@@ -367,7 +400,9 @@ fn _process_level(curr: Pair<Rule>) -> Term {
     } else if curr.as_rule() == field_access {
         Term::FieldAccess(build_field_access(curr).unwrap())
     } else if curr.as_rule() == ident {
-        Term::Ident(curr.as_str().to_owned())
+        let sp = curr.clone().into_span();
+        let span = Span::new(ByteIndex(sp.start() as u32), ByteIndex(sp.end() as u32));
+        Term::Ident(curr.as_str().to_owned(), span)
     } else if curr.as_rule() == view_fn {
         Term::ViewFn(build_view_fn(curr).unwrap())
     } else {
@@ -432,6 +467,7 @@ fn build_pipes(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
 }
 
 fn build_graph_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, graph_decl_head, "Parsing `graph_head` error")?.into_inner();
     let node_name = eat!(head, cap_ident, "Does not have a graph name")?.as_str();
@@ -449,6 +485,7 @@ fn build_graph_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
         name: node_name.to_owned(),
         ty_sig: build_fn_ty_sig(ty_decl)?,
         fns: func_decls,
+        span: CSpan::from_pest(sp),
     }))
 }
 
@@ -460,6 +497,7 @@ fn build_graph_decl_body(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
 }
 
 fn build_node_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let mut head = eat!(tokens, node_decl_head, "Parsing `node_head` error")?.into_inner();
     let node_name = eat!(head, cap_ident, "Does not have a node name")?.as_str();
@@ -475,6 +513,7 @@ fn build_node_decl(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
         name: node_name.to_owned(),
         ty_sig: ty_signature,
         defs: macros,
+        span: CSpan::from_pest(sp),
     }))
 }
 
@@ -489,45 +528,50 @@ fn build_node_assign(pair: Pair<Rule>) -> Result<NodeAssign, TSSParseError> {
     if pair.as_rule() != node_assign {
         return Err(err!(format!("ty mismatch: {:?}", node_assign)));
     }
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let identifier = eat!(tokens, upper_ident, "Failed to parse `upper_ident`")?;
     let _assign = eat!(tokens, op_assign, "Cannot parse `=`")?;
 
     let identifier = identifier.as_str().to_owned();
 
-    let handle_lit = move |token: Pair<Rule>, id: String| {
+    let handle_lit = move |token: Pair<Rule>, id: String, sp: PestSpan| {
         let lit = consume(token)?;
         Ok(NodeAssign::ValueAlias {
             ident: id,
             rhs: lit,
+            span: CSpan::from_pest(sp),
         })
     };
 
-    let handle_ty = move |ty: Pair<Rule>, id: String| {
+    let handle_ty = move |ty: Pair<Rule>, id: String, sp: PestSpan| {
         let ty = to_idents!(ty);
         Ok(NodeAssign::TyAlias {
             ident: id,
             rhs: TensorTy::Generic(ty),
+            span: CSpan::from_pest(sp),
         })
     };
 
     let tok = tokens.next().unwrap();
     match tok.as_rule() {
-        int_lit => handle_lit(tok, identifier),
-        float_lit => handle_lit(tok, identifier),
-        ty_ident_list => handle_ty(tok, identifier),
+        int_lit => handle_lit(tok, identifier, sp),
+        float_lit => handle_lit(tok, identifier, sp),
+        ty_ident_list => handle_ty(tok, identifier, sp),
         _ => unimplemented!(),
     }
 }
 
 fn build_float_lit(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
     let ret = pair.as_str().parse().unwrap();
-    Ok(Term::Float(ret))
+    let span = CSpan::from_pest(pair.into_span());
+    Ok(Term::Float(ret, span))
 }
 
 fn build_int_lit(pair: Pair<Rule>) -> Result<Term, TSSParseError> {
     let ret = pair.as_str().parse().unwrap();
-    Ok(Term::Integer(ret))
+    let span = CSpan::from_pest(pair.into_span());
+    Ok(Term::Integer(ret, span))
 }
 
 fn build_fn_ty_sig(pair: Pair<Rule>) -> Result<FnTySig, TSSParseError> {
@@ -554,6 +598,7 @@ fn build_fn_ty_sig(pair: Pair<Rule>) -> Result<FnTySig, TSSParseError> {
 }
 
 fn build_use_stmt(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
+    let sp = pair.clone().into_span();
     let mut tokens = pair.into_inner();
     let _use_lit = eat!(tokens, use_lit, "Parsing `use` error")?;
     let module_name = eat!(tokens, ident, "module name not defined")?.as_str();
@@ -572,6 +617,7 @@ fn build_use_stmt(pair: Pair<Rule>) -> Result<Decl, TSSParseError> {
     Ok(Decl::UseStmt(UseStmt {
         mod_name: module_name.to_owned(),
         imported_names: imported_tokens,
+        span: CSpan::from_pest(sp),
     }))
 }
 

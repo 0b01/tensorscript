@@ -60,7 +60,7 @@ impl ScopeStack {
                 queue.push_back(Scope::new());
                 queue
             },
-            types: vec![(Identifier::from("()"), ItemType::Unit)],
+            types: vec![(Identifier::from("()"), unit!())],
         }
     }
 

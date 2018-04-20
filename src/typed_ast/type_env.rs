@@ -11,6 +11,7 @@ use std::collections::{HashMap, VecDeque, HashSet};
 use std::fmt::{Debug, Error, Formatter};
 use typed_ast::Type;
 use typed_ast::typed_term::TyFnAppArg;
+use codespan::{Span, ByteIndex};
 
 pub type TypeId = usize;
 
@@ -44,7 +45,7 @@ impl Debug for ModName {
 #[derive(Debug)]
 pub struct Scope {
     /// type information of aliases
-    types: HashMap<AliasType, Type>,
+    types: HashMap<Alias, Type>,
 }
 
 impl Scope {
@@ -66,25 +67,25 @@ pub struct TypeEnv {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub enum AliasType {
+pub enum Alias {
     Variable(String),
     Function(String),
 }
 
-impl Debug for AliasType {
+impl Debug for Alias {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         match self {
-            AliasType::Function(a) => write!(f, "F({})", a),
-            AliasType::Variable(a) => write!(f, "V({})", a),
+            Alias::Function(a) => write!(f, "F({})", a),
+            Alias::Variable(a) => write!(f, "V({})", a),
         }
     }
 }
 
-impl AliasType {
+impl Alias {
     pub fn as_str(&self) -> &str {
         match self {
-            AliasType::Function(s) => s,
-            AliasType::Variable(s) => s,
+            Alias::Function(s) => s,
+            Alias::Variable(s) => s,
         }
     }
 }
@@ -101,16 +102,16 @@ impl TypeEnv {
     }
 
     /// create new dimension type variable
-    pub fn fresh_dim(&mut self) -> Type {
+    pub fn fresh_dim(&mut self, span: &Span<ByteIndex>) -> Type {
         self.counter += 1;
-        Type::DIM(self.counter)
+        Type::DIM(self.counter, span.clone())
     }
 
     /// create new type variable
-    pub fn fresh_var(&mut self) -> Type {
+    pub fn fresh_var(&mut self, span: &Span<ByteIndex>) -> Type {
         self.counter += 1;
         // println!("new_var: {}", self.counter);
-        Type::VAR(self.counter)
+        Type::VAR(self.counter, span.clone())
     }
 
     /// push scope onto stack during tree traversal
@@ -141,20 +142,20 @@ impl TypeEnv {
     /// resolve the type of an identifier
     /// first check current mod name, if it doesn not exist,
     /// then check in the global scope
-    pub fn resolve_type(&self, mod_name: &ModName, alias: &AliasType) -> Option<Type> {
+    pub fn resolve_type(&self, mod_name: &ModName, alias: &Alias) -> Option<Type> {
         self.resolve_type_inner(mod_name, alias)
             .or(self.resolve_type_inner(&ModName::Global, alias))
     }
 
     /// inside the module or global scope, iterate over block scope and find
     /// the last defn of the alias which may be shadowed
-    fn resolve_type_inner(&self, mod_name: &ModName, alias: &AliasType) -> Option<Type> {
+    fn resolve_type_inner(&self, mod_name: &ModName, alias: &Alias) -> Option<Type> {
         let types = self.get_scoped_types(mod_name, alias);
         types.iter().last().cloned()
     }
 
     /// iterate over scopes and find the alias in each
-    fn get_scoped_types(&self, mod_name: &ModName, alias: &AliasType) -> Vec<Type> {
+    fn get_scoped_types(&self, mod_name: &ModName, alias: &Alias) -> Vec<Type> {
         let stack = self.modules.get(mod_name).unwrap();
         stack
             .0
@@ -168,7 +169,7 @@ impl TypeEnv {
     }
 
     /// add type alias in current scope
-    pub fn add_type(&mut self, mod_name: &ModName, alias: &AliasType, ty: Type) {
+    pub fn add_type(&mut self, mod_name: &ModName, alias: &Alias, ty: Type) {
         let stack = self.modules.entry(mod_name.clone()).or_insert({
             // if the module does not yet exist, add with an empty scope
             let mut q = VecDeque::new();
@@ -185,7 +186,7 @@ impl TypeEnv {
     }
 
     /// add type alias in current scope
-    pub unsafe fn add_type_allow_dup(&mut self, mod_name: &ModName, alias: &AliasType, ty: Type) {
+    pub unsafe fn add_type_allow_dup(&mut self, mod_name: &ModName, alias: &Alias, ty: Type) {
         let stack = self.modules.entry(mod_name.clone()).or_insert({
             // if the module does not yet exist, add with an empty scope
             let mut q = VecDeque::new();
@@ -212,54 +213,54 @@ impl TypeEnv {
     }
 
     /// tie an alias with a type variable dimension
-    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &AliasType) {
-        let tyvar = self.fresh_dim();
+    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &Alias, span: &Span<ByteIndex>) {
+        let tyvar = self.fresh_dim(span);
         self.add_type(mod_name, alias, tyvar);
     }
 
     /// tie an alias with a resolved dimension
-    pub fn add_resolved_dim_alias(&mut self, mod_name: &ModName, alias: &AliasType, num: i64) {
-        let tyvar = Type::ResolvedDim(num);
+    pub fn add_resolved_dim_alias(&mut self, mod_name: &ModName, alias: &Alias, num: i64, span: &Span<ByteIndex>) {
+        let tyvar = Type::ResolvedDim(num, span.clone());
         self.add_type(mod_name, alias, tyvar);
     }
 
     /// tie an alias with a tensor
-    pub fn add_tsr_alias(&mut self, mod_name: &ModName, alias: &AliasType, tsr: &[String]) {
+    pub fn add_tsr_alias(&mut self, mod_name: &ModName, alias: &Alias, tsr: &[String], span: &Span<ByteIndex>) {
         // first insert all the dims
         tsr.iter()
-            .map(|t| AliasType::Variable(t.to_string()))
+            .map(|t| Alias::Variable(t.to_string()))
             .map(|t| {
                 if !self.exists(mod_name, &t) {
-                    self.add_dim_alias(mod_name, &t);
+                    self.add_dim_alias(mod_name, &t, span);
                 }
             })
             .collect::<Vec<()>>();
 
         // then insert the tensor itself
-        let tsr = self.create_tensor(mod_name, tsr);
+        let tsr = self.create_tensor(mod_name, tsr, span);
         self.add_type(mod_name, alias, tsr)
     }
 
     // make a new tensor based on type signature
-    pub fn create_tensor(&mut self, mod_name: &ModName, dims: &[String]) -> Type {
+    pub fn create_tensor(&mut self, mod_name: &ModName, dims: &[String], span: &Span<ByteIndex>) -> Type {
         // each dimension alias in the tensor type signature must exist
         let dims_ty = dims.iter()
-            .map(|t| self.resolve_type(mod_name, &AliasType::Variable(t.to_string())).unwrap().clone())
+            .map(|t| self.resolve_type(mod_name, &Alias::Variable(t.to_string())).unwrap().clone())
             .collect();
         // create the tensor type
-        Type::TSR(dims_ty)
+        Type::TSR(dims_ty, span.clone())
     }
 
     /// generate a tensor from untyped ast tensor signature
-    pub fn resolve_tensor(&mut self, mod_name: &ModName, t: &TensorTy) -> Type {
+    pub fn resolve_tensor(&mut self, mod_name: &ModName, t: &TensorTy, span: &Span<ByteIndex>) -> Type {
         match t {
-            &TensorTy::Generic(ref dims) => self.create_tensor(mod_name, &dims),
-            &TensorTy::TyAlias(ref alias) => self.resolve_type(mod_name, &AliasType::Variable(alias.to_string())).unwrap(),
+            &TensorTy::Generic(ref dims) => self.create_tensor(mod_name, &dims, span),
+            &TensorTy::TyAlias(ref alias) => self.resolve_type(mod_name, &Alias::Variable(alias.to_string())).unwrap(),
         }
     }
 
     /// check if an alias exists
-    pub fn exists(&self, mod_name: &ModName, alias: &AliasType) -> bool {
+    pub fn exists(&self, mod_name: &ModName, alias: &Alias) -> bool {
         let types = self.get_scoped_types(mod_name, alias);
         types.len() > 0
     }
@@ -270,14 +271,16 @@ impl TypeEnv {
             &NodeAssign::TyAlias {
                 ident: ref id,
                 rhs: TensorTy::Generic(ref tys),
+                ref span,
             } => {
-                self.add_tsr_alias(mod_name, &AliasType::Variable(id.to_string()), tys);
+                self.add_tsr_alias(mod_name, &Alias::Variable(id.to_string()), tys, span);
             }
             &NodeAssign::ValueAlias {
                 ident: ref id,
-                rhs: Term::Integer(num),
+                rhs: Term::Integer(num, _),
+                ref span,
             } => {
-                self.add_resolved_dim_alias(mod_name, &AliasType::Variable(id.to_string()), num);
+                self.add_resolved_dim_alias(mod_name, &Alias::Variable(id.to_string()), num, span);
             }
             _ => unimplemented!(),
         }
@@ -299,7 +302,7 @@ impl TypeEnv {
         for &(ref name, ref ty) in methods.iter() {
             self.add_type(
                 &ModName::Named(mod_name.to_owned()),
-                &AliasType::Function(name.to_string()),
+                &Alias::Function(name.to_string()),
                 ty.clone(),
             );
         }
@@ -307,14 +310,14 @@ impl TypeEnv {
 
     pub fn resolve_unresolved(&mut self, ty: Type, symbol_name: &str, module: &Type, fn_name: &str, inits: Option<Vec<TyFnAppArg>>) -> Option<Type> {
         let (mod_name, mod_ty) = {
-            if let Type::Module(name, opty) = module {
+            if let Type::Module(name, opty, span) = module {
                 (name, opty.clone().map(|i|*i))
             } else {
                 panic!();
             }
         };
 
-        if let Type::UnresolvedModuleFun(p0, p1, p2) = ty {
+        if let Type::UnresolvedModuleFun(p0, p1, p2, span) = ty {
             assert_eq!(fn_name, &format!("self.{}", p2));
             let op = Core::find(p0, p1);
             let ty = op.resolve(self, mod_ty, fn_name, inits);

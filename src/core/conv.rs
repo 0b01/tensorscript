@@ -1,6 +1,7 @@
 use core::{MethodName, Op};
 use typed_ast::{Type, TypeEnv};
 use typed_ast::typed_term::{TyFnAppArg, ArgsVecInto, Ty, TyTerm};
+use span::CSpan;
 use self::Type::*;
 
 pub struct Conv2d;
@@ -14,11 +15,11 @@ impl Op for Conv2d {
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             ("new", fun!(args!(
-                arg!("in_ch", INT),
-                arg!("out_ch", INT),
-                arg!("kernel_size", INT)
+                arg!("in_ch", int!()),
+                arg!("out_ch", int!()),
+                arg!("kernel_size", int!())
                 ), module!(self.get_name()))),
-            ("forward", Type::UnresolvedModuleFun("conv", self.get_name(), "forward"))
+            ("forward", Type::UnresolvedModuleFun("conv", self.get_name(), "forward", CSpan::fresh_span()))
         ]
     }
 
@@ -34,9 +35,10 @@ impl Op for Dropout2d {
     }
 
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        let ty = tenv.fresh_var();
+        let span = CSpan::fresh_span();
+        let ty = tenv.fresh_var(&span);
         vec![
-            ("new", fun!(args!(arg!("p", FLOAT)), module!(self.get_name()))),
+            ("new", fun!(args!(arg!("p", float!())), module!(self.get_name()))),
             ("forward", fun!(ty.clone(), ty))
         ]
     }
@@ -52,7 +54,7 @@ impl Op for maxpool2d {
 
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
-            ("forward", Type::UnresolvedModuleFun("conv", self.get_name(), "forward")),
+            ("forward", Type::UnresolvedModuleFun("conv", self.get_name(), "forward", CSpan::fresh_span())),
         ]
     }
 
