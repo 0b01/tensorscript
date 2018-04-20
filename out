@@ -1,0 +1,854 @@
+TyProgram(
+    [
+        TyUseStmt(
+            TyUseStmt {
+                mod_name: "conv",
+                imported_names: [
+                    "Conv2d",
+                    "Dropout2d",
+                    "maxpool2d"
+                ]
+            }
+        ),
+        TyUseStmt(
+            TyUseStmt {
+                mod_name: "nonlin",
+                imported_names: [
+                    "relu",
+                    "log_softmax"
+                ]
+            }
+        ),
+        TyUseStmt(
+            TyUseStmt {
+                mod_name: "lin",
+                imported_names: [
+                    "Linear"
+                ]
+            }
+        ),
+        TyNodeDecl(
+            TyNodeDecl {
+                name: "Mnist",
+                ty_sig: ([!4, <3>, <28>, <28>] -> [!4, <10>])
+            }
+        ),
+        TyWeightsDecl(
+            TyWeightsDecl {
+                name: "Mnist",
+                ty_sig: ([!4, <3>, <28>, <28>] -> [!4, <10>]),
+                inits: [
+                    TyWeightsAssign {
+                        name: "conv1",
+                        ty: '5,
+                        mod_name: "Conv2d",
+                        fn_name: "new",
+                        arg_ty: FnArgs([ARG(Some("in_ch")=int), ARG(Some("out_ch")=int), ARG(Some("kernel_size")=int)]),
+                        fn_args: [
+                            TyFnAppArg {
+                                name: Some(
+                                    "in_ch"
+                                ),
+                                arg: TyExpr {
+                                    items: TyInteger(
+                                        int,
+                                        1
+                                    ),
+                                    ty: int
+                                }
+                            },
+                            TyFnAppArg {
+                                name: Some(
+                                    "out_ch"
+                                ),
+                                arg: TyExpr {
+                                    items: TyInteger(
+                                        int,
+                                        10
+                                    ),
+                                    ty: int
+                                }
+                            },
+                            TyFnAppArg {
+                                name: Some(
+                                    "kernel_size"
+                                ),
+                                arg: TyExpr {
+                                    items: TyInteger(
+                                        int,
+                                        5
+                                    ),
+                                    ty: int
+                                }
+                            }
+                        ]
+                    },
+                    TyWeightsAssign {
+                        name: "conv2",
+                        ty: '6,
+                        mod_name: "Conv2d",
+                        fn_name: "new",
+                        arg_ty: FnArgs([ARG(Some("in_ch")=int), ARG(Some("out_ch")=int), ARG(Some("kernel_size")=int)]),
+                        fn_args: [
+                            TyFnAppArg {
+                                name: Some(
+                                    "in_ch"
+                                ),
+                                arg: TyExpr {
+                                    items: TyInteger(
+                                        int,
+                                        10
+                                    ),
+                                    ty: int
+                                }
+                            },
+                            TyFnAppArg {
+                                name: Some(
+                                    "out_ch"
+                                ),
+                                arg: TyExpr {
+                                    items: TyInteger(
+                                        int,
+                                        20
+                                    ),
+                                    ty: int
+                                }
+                            },
+                            TyFnAppArg {
+                                name: Some(
+                                    "kernel_size"
+                                ),
+                                arg: TyExpr {
+                                    items: TyInteger(
+                                        int,
+                                        5
+                                    ),
+                                    ty: int
+                                }
+                            }
+                        ]
+                    },
+                    TyWeightsAssign {
+                        name: "dropout",
+                        ty: '7,
+                        mod_name: "Dropout2d",
+                        fn_name: "new",
+                        arg_ty: FnArgs([ARG(Some("p")=float)]),
+                        fn_args: [
+                            TyFnAppArg {
+                                name: Some(
+                                    "p"
+                                ),
+                                arg: TyExpr {
+                                    items: TyFloat(
+                                        float,
+                                        0.5
+                                    ),
+                                    ty: float
+                                }
+                            }
+                        ]
+                    },
+                    TyWeightsAssign {
+                        name: "fc1",
+                        ty: '8,
+                        mod_name: "Linear",
+                        fn_name: "new",
+                        arg_ty: FnArgs([ARG(Some("in")=<320>), ARG(Some("out")=<50>)]),
+                        fn_args: [
+                            TyFnAppArg {
+                                name: Some(
+                                    "in"
+                                ),
+                                arg: TyExpr {
+                                    items: TyIdent(
+                                        <320>,
+                                        "FC1"
+                                    ),
+                                    ty: <320>
+                                }
+                            },
+                            TyFnAppArg {
+                                name: Some(
+                                    "out"
+                                ),
+                                arg: TyExpr {
+                                    items: TyIdent(
+                                        <50>,
+                                        "FC2"
+                                    ),
+                                    ty: <50>
+                                }
+                            }
+                        ]
+                    },
+                    TyWeightsAssign {
+                        name: "fc2",
+                        ty: '9,
+                        mod_name: "Linear",
+                        fn_name: "new",
+                        arg_ty: FnArgs([ARG(Some("in")=<50>), ARG(Some("out")=<10>)]),
+                        fn_args: [
+                            TyFnAppArg {
+                                name: Some(
+                                    "in"
+                                ),
+                                arg: TyExpr {
+                                    items: TyIdent(
+                                        <50>,
+                                        "FC2"
+                                    ),
+                                    ty: <50>
+                                }
+                            },
+                            TyFnAppArg {
+                                name: Some(
+                                    "out"
+                                ),
+                                arg: TyExpr {
+                                    items: TyIdent(
+                                        <10>,
+                                        "OUT"
+                                    ),
+                                    ty: <10>
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ),
+        TyGraphDecl(
+            TyGraphDecl {
+                name: "Mnist",
+                ty_sig: ([!4, <3>, <28>, <28>] -> [!4, <10>]),
+                fns: [
+                    TyFnDecl {
+                        name: "new",
+                        fn_params: [],
+                        fn_ty: (FnArgs([]) -> MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>])))),
+                        param_ty: FnArgs([]),
+                        return_ty: MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>]))),
+                        func_block: TyBlock {
+                            stmts: TyList(
+                                [
+                                    TyStmt {
+                                        items: TyList(
+                                            [
+                                                TyExpr {
+                                                    items: TyFnApp(
+                                                        TyFnApp {
+                                                            mod_name: Some(
+                                                                "fc1"
+                                                            ),
+                                                            orig_name: "fc1",
+                                                            name: "self.init_normal",
+                                                            arg_ty: FnArgs([ARG(Some("std")=float)]),
+                                                            ret_ty: '12,
+                                                            args: [
+                                                                TyFnAppArg {
+                                                                    name: Some(
+                                                                        "std"
+                                                                    ),
+                                                                    arg: TyExpr {
+                                                                        items: TyFloat(
+                                                                            float,
+                                                                            1.0
+                                                                        ),
+                                                                        ty: float
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ),
+                                                    ty: '12
+                                                }
+                                            ]
+                                        )
+                                    },
+                                    TyStmt {
+                                        items: TyList(
+                                            [
+                                                TyExpr {
+                                                    items: TyFnApp(
+                                                        TyFnApp {
+                                                            mod_name: Some(
+                                                                "fc2"
+                                                            ),
+                                                            orig_name: "fc2",
+                                                            name: "self.init_normal",
+                                                            arg_ty: FnArgs([ARG(Some("std")=float)]),
+                                                            ret_ty: '13,
+                                                            args: [
+                                                                TyFnAppArg {
+                                                                    name: Some(
+                                                                        "std"
+                                                                    ),
+                                                                    arg: TyExpr {
+                                                                        items: TyFloat(
+                                                                            float,
+                                                                            1.0
+                                                                        ),
+                                                                        ty: float
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ),
+                                                    ty: '13
+                                                }
+                                            ]
+                                        )
+                                    }
+                                ]
+                            ),
+                            ret: TyExpr {
+                                items: TyIdent(
+                                    MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>]))),
+                                    "self"
+                                ),
+                                ty: MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>])))
+                            }
+                        }
+                    },
+                    TyFnDecl {
+                        name: "forward",
+                        fn_params: [
+                            TyFnDeclParam {
+                                name: "b",
+                                ty: [!4, <3>, <28>, <28>]
+                            }
+                        ],
+                        fn_ty: ([!4, <3>, <28>, <28>] -> [!4, <10>]),
+                        param_ty: '15,
+                        return_ty: [!4, <10>],
+                        func_block: TyBlock {
+                            stmts: TyList(
+                                []
+                            ),
+                            ret: TyExpr {
+                                items: TyFnApp(
+                                    TyFnApp {
+                                        mod_name: Some(
+                                            "self"
+                                        ),
+                                        orig_name: "self",
+                                        name: "self.example",
+                                        arg_ty: FnArgs([ARG(Some("x")=[!4, <50>])]),
+                                        ret_ty: '16,
+                                        args: [
+                                            TyFnAppArg {
+                                                name: Some(
+                                                    "x"
+                                                ),
+                                                arg: TyViewFn(
+                                                    TyViewFn {
+                                                        ty: [!4, <50>],
+                                                        arg: TyFnAppArg {
+                                                            name: Some(
+                                                                "x"
+                                                            ),
+                                                            arg: TyIdent(
+                                                                [],
+                                                                "b"
+                                                            )
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        ]
+                                    }
+                                ),
+                                ty: '16
+                            }
+                        }
+                    },
+                    TyFnDecl {
+                        name: "example",
+                        fn_params: [
+                            TyFnDeclParam {
+                                name: "x",
+                                ty: [!4, <50>]
+                            }
+                        ],
+                        fn_ty: (FnArgs([ARG(Some("x")=[!4, <50>])]) -> [!4, <10>]),
+                        param_ty: FnArgs([ARG(Some("x")=[!4, <50>])]),
+                        return_ty: [!4, <10>],
+                        func_block: TyBlock {
+                            stmts: TyList(
+                                []
+                            ),
+                            ret: TyExpr {
+                                items: TyFnApp(
+                                    TyFnApp {
+                                        mod_name: Some(
+                                            "relu"
+                                        ),
+                                        orig_name: "relu",
+                                        name: "self.forward",
+                                        arg_ty: '21,
+                                        ret_ty: '22,
+                                        args: [
+                                            TyFnAppArg {
+                                                name: Some(
+                                                    "x"
+                                                ),
+                                                arg: TyFnApp(
+                                                    TyFnApp {
+                                                        mod_name: Some(
+                                                            "Linear"
+                                                        ),
+                                                        orig_name: "fc2",
+                                                        name: "self.forward",
+                                                        arg_ty: '19,
+                                                        ret_ty: '20,
+                                                        args: [
+                                                            TyFnAppArg {
+                                                                name: Some(
+                                                                    "x"
+                                                                ),
+                                                                arg: TyIdent(
+                                                                    [!4, <50>],
+                                                                    "x"
+                                                                )
+                                                            }
+                                                        ]
+                                                    }
+                                                )
+                                            }
+                                        ]
+                                    }
+                                ),
+                                ty: '22
+                            }
+                        }
+                    }
+                ]
+            }
+        )
+    ]
+)
+initial tenv: TypeEnv {
+    counter: 22,
+    current_mod: MOD(Global),
+    modules: {
+        MOD(Conv2d): (
+            [
+                Scope {
+                    types: {
+                        "self.new": (FnArgs([ARG(Some("in_ch")=int), ARG(Some("out_ch")=int), ARG(Some("kernel_size")=int)]) -> MODULE(Conv2d, None)),
+                        "self.forward": UNRESOLVED(conv::Conv2d::forward)
+                    }
+                }
+            ],
+            [],
+            {}
+        ),
+        MOD(Dropout2d): (
+            [
+                Scope {
+                    types: {
+                        "self.new": (FnArgs([ARG(Some("p")=float)]) -> MODULE(Dropout2d, None)),
+                        "self.forward": ('1 -> '1)
+                    }
+                }
+            ],
+            [],
+            {}
+        ),
+        MOD(relu): (
+            [
+                Scope {
+                    types: {
+                        "self.forward": (FnArgs([ARG(Some("x")='2)]) -> '2)
+                    }
+                }
+            ],
+            [],
+            {}
+        ),
+        MOD(maxpool2d): (
+            [
+                Scope {
+                    types: {
+                        "self.forward": UNRESOLVED(conv::maxpool2d::forward)
+                    }
+                }
+            ],
+            [],
+            {}
+        ),
+        MOD(Linear): (
+            [
+                Scope {
+                    types: {
+                        "self.new": (FnArgs([ARG(Some("in")=int), ARG(Some("out")=int)]) -> MODULE(Linear, None)),
+                        "self.forward": UNRESOLVED(lin::Linear::forward),
+                        "self.init_normal": (FnArgs([ARG(Some("std")=float)]) -> ())
+                    }
+                }
+            ],
+            [],
+            {}
+        ),
+        MOD(Global): (
+            [
+                Scope {
+                    types: {
+                        "relu": MODULE(relu, None),
+                        "Mnist": MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>]))),
+                        "Dropout2d": MODULE(Dropout2d, None),
+                        "Linear": MODULE(Linear, None),
+                        "Conv2d": MODULE(Conv2d, None),
+                        "log_softmax": MODULE(log_softmax, None),
+                        "maxpool2d": MODULE(maxpool2d, None)
+                    }
+                }
+            ],
+            [],
+            {}
+        ),
+        MOD(log_softmax): (
+            [
+                Scope {
+                    types: {
+                        "self.forward": (FnArgs([ARG(Some("x")='3), ARG(Some("dim")=int)]) -> '3)
+                    }
+                }
+            ],
+            [],
+            {}
+        ),
+        MOD(Mnist): (
+            [
+                Scope {
+                    types: {
+                        "self": MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>]))),
+                        "conv1": MODULE(Conv2d, None),
+                        "fc2": MODULE(Linear, None),
+                        "W": <28>,
+                        "OUT": <10>,
+                        "self.forward": ([!4, <3>, <28>, <28>] -> [!4, <10>]),
+                        "IMAGE": [!4, <3>, <28>, <28>],
+                        "LABELS": [!4, <10>],
+                        "FC1": <320>,
+                        "conv2": MODULE(Conv2d, None),
+                        "fc1": MODULE(Linear, Some(([!4, <320>] -> [!4, <50>]))),
+                        "?": !4,
+                        "self.example": (FnArgs([ARG(Some("x")=[!4, <50>])]) -> [!4, <10>]),
+                        "dropout": MODULE(Dropout2d, None),
+                        "FC2": <50>,
+                        "C": <3>,
+                        "self.new": (FnArgs([]) -> MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>])))),
+                        "H": <28>
+                    }
+                }
+            ],
+            [
+                Scope {
+                    types: {}
+                },
+                Scope {
+                    types: {}
+                },
+                Scope {
+                    types: {}
+                },
+                Scope {
+                    types: {
+                        "b": []
+                    }
+                },
+                Scope {
+                    types: {}
+                },
+                Scope {
+                    types: {
+                        "x": [!4, <50>]
+                    }
+                }
+            ],
+            {
+                "conv1": [
+                    TyFnAppArg {
+                        name: Some(
+                            "in_ch"
+                        ),
+                        arg: TyExpr {
+                            items: TyInteger(
+                                int,
+                                1
+                            ),
+                            ty: int
+                        }
+                    },
+                    TyFnAppArg {
+                        name: Some(
+                            "out_ch"
+                        ),
+                        arg: TyExpr {
+                            items: TyInteger(
+                                int,
+                                10
+                            ),
+                            ty: int
+                        }
+                    },
+                    TyFnAppArg {
+                        name: Some(
+                            "kernel_size"
+                        ),
+                        arg: TyExpr {
+                            items: TyInteger(
+                                int,
+                                5
+                            ),
+                            ty: int
+                        }
+                    }
+                ],
+                "fc1": [
+                    TyFnAppArg {
+                        name: Some(
+                            "in"
+                        ),
+                        arg: TyExpr {
+                            items: TyIdent(
+                                <320>,
+                                "FC1"
+                            ),
+                            ty: <320>
+                        }
+                    },
+                    TyFnAppArg {
+                        name: Some(
+                            "out"
+                        ),
+                        arg: TyExpr {
+                            items: TyIdent(
+                                <50>,
+                                "FC2"
+                            ),
+                            ty: <50>
+                        }
+                    }
+                ],
+                "fc2": [
+                    TyFnAppArg {
+                        name: Some(
+                            "in"
+                        ),
+                        arg: TyExpr {
+                            items: TyIdent(
+                                <50>,
+                                "FC2"
+                            ),
+                            ty: <50>
+                        }
+                    },
+                    TyFnAppArg {
+                        name: Some(
+                            "out"
+                        ),
+                        arg: TyExpr {
+                            items: TyIdent(
+                                <10>,
+                                "OUT"
+                            ),
+                            ty: <10>
+                        }
+                    }
+                ],
+                "dropout": [
+                    TyFnAppArg {
+                        name: Some(
+                            "p"
+                        ),
+                        arg: TyExpr {
+                            items: TyFloat(
+                                float,
+                                0.5
+                            ),
+                            ty: float
+                        }
+                    }
+                ],
+                "conv2": [
+                    TyFnAppArg {
+                        name: Some(
+                            "in_ch"
+                        ),
+                        arg: TyExpr {
+                            items: TyInteger(
+                                int,
+                                10
+                            ),
+                            ty: int
+                        }
+                    },
+                    TyFnAppArg {
+                        name: Some(
+                            "out_ch"
+                        ),
+                        arg: TyExpr {
+                            items: TyInteger(
+                                int,
+                                20
+                            ),
+                            ty: int
+                        }
+                    },
+                    TyFnAppArg {
+                        name: Some(
+                            "kernel_size"
+                        ),
+                        arg: TyExpr {
+                            items: TyInteger(
+                                int,
+                                5
+                            ),
+                            ty: int
+                        }
+                    }
+                ]
+            }
+        )
+    }
+}
+ | Conv2d | MODULE(Conv2d, None) | MOD(Conv2d) | self.new | (FnArgs([ARG(Some("in_ch")=int), ARG(Some("out_ch")=int), ARG(Some("kernel_size")=int)]) -> MODULE(Conv2d, None))
+ | Conv2d | MODULE(Conv2d, None) | MOD(Conv2d) | self.new | (FnArgs([ARG(Some("in_ch")=int), ARG(Some("out_ch")=int), ARG(Some("kernel_size")=int)]) -> MODULE(Conv2d, None))
+ | Dropout2d | MODULE(Dropout2d, None) | MOD(Dropout2d) | self.new | (FnArgs([ARG(Some("p")=float)]) -> MODULE(Dropout2d, None))
+ | Linear | MODULE(Linear, None) | MOD(Linear) | self.new | (FnArgs([ARG(Some("in")=int), ARG(Some("out")=int)]) -> MODULE(Linear, None))
+ | Linear | MODULE(Linear, None) | MOD(Linear) | self.new | (FnArgs([ARG(Some("in")=int), ARG(Some("out")=int)]) -> MODULE(Linear, None))
+fc1 | fc1 | MODULE(Linear, Some(([!4, <320>] -> [!4, <50>]))) | MOD(Linear) | self.init_normal | (FnArgs([ARG(Some("std")=float)]) -> ())
+fc2 | fc2 | MODULE(Linear, None) | MOD(Linear) | self.init_normal | (FnArgs([ARG(Some("std")=float)]) -> ())
+self | self | MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>]))) | MOD(Mnist) | self.example | (FnArgs([ARG(Some("x")=[!4, <50>])]) -> [!4, <10>])
+relu | relu | MODULE(relu, None) | MOD(relu) | self.forward | (FnArgs([ARG(Some("x")='2)]) -> '2)
+fc2 | Linear | MODULE(Linear, None) | MOD(Linear) | self.forward | UNRESOLVED(lin::Linear::forward)
+Constraints(
+    {
+        Equals(
+            UNRESOLVED(lin::Linear::forward),
+            ('19 -> '20)
+        ),
+        Equals(
+            (FnArgs([]) -> MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>])))),
+            (FnArgs([]) -> MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>]))))
+        ),
+        Equals(
+            <320>,
+            <320>
+        ),
+        Equals(
+            (FnArgs([ARG(Some("std")=float)]) -> ()),
+            (FnArgs([ARG(Some("std")=float)]) -> '12)
+        ),
+        Equals(
+            '21,
+            FnArgs([ARG(Some("x")='20)])
+        ),
+        Equals(
+            '19,
+            FnArgs([ARG(Some("x")=[!4, <50>])])
+        ),
+        Equals(
+            FnArgs([ARG(Some("p")=float)]),
+            FnArgs([ARG(Some("p")=float)])
+        ),
+        Equals(
+            [],
+            []
+        ),
+        Equals(
+            <50>,
+            <50>
+        ),
+        Equals(
+            FnArgs([ARG(Some("x")=[!4, <50>])]),
+            FnArgs([ARG(Some("x")=[!4, <50>])])
+        ),
+        Equals(
+            FnArgs([ARG(Some("in")=<50>), ARG(Some("out")=<10>)]),
+            FnArgs([ARG(Some("in")=<50>), ARG(Some("out")=<10>)])
+        ),
+        Equals(
+            [!4, <10>],
+            '22
+        ),
+        Equals(
+            FnArgs([ARG(Some("in")=<320>), ARG(Some("out")=<50>)]),
+            FnArgs([ARG(Some("in")=<320>), ARG(Some("out")=<50>)])
+        ),
+        Equals(
+            (FnArgs([ARG(Some("x")=[!4, <50>])]) -> [!4, <10>]),
+            (FnArgs([ARG(Some("x")=[!4, <50>])]) -> [!4, <10>])
+        ),
+        Equals(
+            (FnArgs([ARG(Some("x")=[!4, <50>])]) -> [!4, <10>]),
+            (FnArgs([ARG(Some("x")=[!4, <50>])]) -> '16)
+        ),
+        Equals(
+            FnArgs([ARG(Some("std")=float)]),
+            FnArgs([ARG(Some("std")=float)])
+        ),
+        Equals(
+            (FnArgs([ARG(Some("in")=int), ARG(Some("out")=int)]) -> MODULE(Linear, None)),
+            (FnArgs([ARG(Some("in")=<50>), ARG(Some("out")=<10>)]) -> '27)
+        ),
+        Equals(
+            FnArgs([ARG(Some("in_ch")=int), ARG(Some("out_ch")=int), ARG(Some("kernel_size")=int)]),
+            FnArgs([ARG(Some("in_ch")=int), ARG(Some("out_ch")=int), ARG(Some("kernel_size")=int)])
+        ),
+        Equals(
+            (FnArgs([ARG(Some("p")=float)]) -> MODULE(Dropout2d, None)),
+            (FnArgs([ARG(Some("p")=float)]) -> '25)
+        ),
+        Equals(
+            [!4, <50>],
+            [!4, <50>]
+        ),
+        Equals(
+            <10>,
+            <10>
+        ),
+        Equals(
+            (FnArgs([ARG(Some("in")=int), ARG(Some("out")=int)]) -> MODULE(Linear, None)),
+            (FnArgs([ARG(Some("in")=<320>), ARG(Some("out")=<50>)]) -> '26)
+        ),
+        Equals(
+            (FnArgs([ARG(Some("std")=float)]) -> ()),
+            (FnArgs([ARG(Some("std")=float)]) -> '13)
+        ),
+        Equals(
+            (FnArgs([ARG(Some("x")='2)]) -> '2),
+            ('21 -> '22)
+        ),
+        Equals(
+            (FnArgs([ARG(Some("in_ch")=int), ARG(Some("out_ch")=int), ARG(Some("kernel_size")=int)]) -> MODULE(Conv2d, None)),
+            (FnArgs([ARG(Some("in_ch")=int), ARG(Some("out_ch")=int), ARG(Some("kernel_size")=int)]) -> '24)
+        ),
+        Equals(
+            MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>]))),
+            MODULE(Mnist, Some(([!4, <3>, <28>, <28>] -> [!4, <10>])))
+        ),
+        Equals(
+            (FnArgs([ARG(Some("in_ch")=int), ARG(Some("out_ch")=int), ARG(Some("kernel_size")=int)]) -> MODULE(Conv2d, None)),
+            (FnArgs([ARG(Some("in_ch")=int), ARG(Some("out_ch")=int), ARG(Some("kernel_size")=int)]) -> '23)
+        ),
+        Equals(
+            [!4, <10>],
+            '16
+        ),
+        Equals(
+            ([!4, <3>, <28>, <28>] -> [!4, <10>]),
+            ('15 -> [!4, <10>])
+        )
+    }
+)
+Equals(UNRESOLVED(lin::Linear::forward), ('19 -> '20))
+
+TY:::
+with: <10> 
+to_replace: ('19 -> '20) 
+replacement:ToVerify(lin::Linear::forward, ('19 -> '20))
+

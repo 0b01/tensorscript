@@ -4,6 +4,7 @@
 use std::fmt::{Display, Error, Formatter};
 use typed_ast::Type;
 use std::collections::HashMap;
+use typed_ast::type_env::AliasType;
 
 pub trait Ty {
     fn ty(&self) -> Type;
@@ -63,7 +64,7 @@ pub enum TyTerm {
     TyInteger(Type, i64),
     TyFloat(Type, f64),
     TyList(Vec<TyTerm>),
-    TyIdent(Type, String),
+    TyIdent(Type, AliasType),
     TyFieldAccess(TyFieldAccess),
     TyFnApp(TyFnApp),
     TyBlock {
@@ -134,7 +135,7 @@ pub struct TyWeightsAssign {
 pub struct TyFnApp {
     pub mod_name: Option<String>,
     pub orig_name: String,
-    pub name: String,
+    pub name: AliasType,
     pub arg_ty: Type,
     pub ret_ty: Type,
     pub args: Vec<TyFnAppArg>,
@@ -205,9 +206,8 @@ pub struct TyViewFn {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TyFnDecl {
-    pub name: String,
+    pub name: AliasType,
     pub fn_params: Vec<TyFnDeclParam>,
-    pub fn_ty: Type,
     pub param_ty: Type,
     pub return_ty: Type,
     pub func_block: Box<TyTerm>,

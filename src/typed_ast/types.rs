@@ -45,13 +45,14 @@ impl Type {
             VAR(_) => false,
             DIM(_) => false,
 
-            Module(_, Some(i)) => Type::is_resolved(i),
+            Module(_, Some(i)) => i.is_resolved(),
             Module(_, None) => false,
-            FnArgs(ts) => ts.iter().map(|t| Type::is_resolved(t)).all(|t| t),
-            FnArg(_, t) => Type::is_resolved(t),
-            ResolvedDim(i64) => true,
-            FUN(p, r) => Type::is_resolved(p) && Type::is_resolved(r),
-            TSR(ts) => ts.iter().map(|t| Type::is_resolved(t)).all(|t|t),
+            FnArgs(ts) => ts.iter().map(|t| t.is_resolved()).all(|t| t),
+            FnArg(_, t) => t.is_resolved(),
+            ResolvedDim(_) => true,
+            FUN(p, r) => Type::is_resolved(p) && r.is_resolved(),
+            TSR(ts) => ts.iter().map(|t| t.is_resolved()).all(|t|t),
+            ToVerify(_,_,_,box ty) => ty.is_resolved(),
             _ => unimplemented!(),
         }
     }

@@ -53,7 +53,6 @@ fn subs_graph_decl(decl: &TyGraphDecl, s: &mut Substitution) -> TyGraphDecl {
 
 fn subs_fn_decl(decl: &TyFnDecl, s: &mut Substitution) -> TyFnDecl {
     let mut c = decl.clone();
-    c.fn_ty = s.apply_ty(&c.fn_ty);
     c.param_ty = s.apply_ty(&c.param_ty);
     c.return_ty = s.apply_ty(&c.return_ty);
     c.func_block = box subs(&c.func_block, s);

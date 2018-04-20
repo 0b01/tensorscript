@@ -7,7 +7,7 @@ use core::Core;
 /// 2. pushing and popping scopes (during `annotate` and `collect`)
 /// 3. module type and method type reconstruction
 use parser::term::{NodeAssign, TensorTy, Term};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque, HashSet};
 use std::fmt::{Debug, Error, Formatter};
 use typed_ast::Type;
 use typed_ast::typed_term::TyFnAppArg;
@@ -44,7 +44,7 @@ impl Debug for ModName {
 #[derive(Debug)]
 pub struct Scope {
     /// type information of aliases
-    types: HashMap<String, Type>,
+    types: HashMap<AliasType, Type>,
 }
 
 impl Scope {
@@ -55,12 +55,40 @@ impl Scope {
     }
 }
 
+type InitMap = HashMap<String, Vec<TyFnAppArg>>;
+
 #[derive(Debug)]
 pub struct TypeEnv {
     counter: TypeId,
     current_mod: ModName,
-    modules: HashMap<ModName, (VecDeque<Scope>, VecDeque<Scope>, HashMap<String, Vec<TyFnAppArg>>)>,
+    modules: HashMap<ModName, (VecDeque<Scope>, VecDeque<Scope>, InitMap)>,
+    to_verify: HashSet<Type>,
 }
+
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub enum AliasType {
+    Variable(String),
+    Function(String),
+}
+
+impl Debug for AliasType {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        match self {
+            AliasType::Function(a) => write!(f, "F({})", a),
+            AliasType::Variable(a) => write!(f, "V({})", a),
+        }
+    }
+}
+
+impl AliasType {
+    pub fn as_str(&self) -> &str {
+        match self {
+            AliasType::Function(s) => s,
+            AliasType::Variable(s) => s,
+        }
+    }
+}
+
 
 impl TypeEnv {
     pub fn new() -> Self {
@@ -68,6 +96,7 @@ impl TypeEnv {
             counter: 0,
             current_mod: ModName::Global,
             modules: HashMap::new(),
+            to_verify: HashSet::new(),
         }
     }
 
@@ -112,20 +141,21 @@ impl TypeEnv {
     /// resolve the type of an identifier
     /// first check current mod name, if it doesn not exist,
     /// then check in the global scope
-    pub fn resolve_type(&self, mod_name: &ModName, alias: &str) -> Option<Type> {
+    pub fn resolve_type(&self, mod_name: &ModName, alias: &AliasType) -> Option<Type> {
+        println!("{:?}", alias);
         self.resolve_type_inner(mod_name, alias)
             .or(self.resolve_type_inner(&ModName::Global, alias))
     }
 
     /// inside the module or global scope, iterate over block scope and find
     /// the last defn of the alias which may be shadowed
-    fn resolve_type_inner(&self, mod_name: &ModName, alias: &str) -> Option<Type> {
+    fn resolve_type_inner(&self, mod_name: &ModName, alias: &AliasType) -> Option<Type> {
         let types = self.get_scoped_types(mod_name, alias);
         types.iter().last().cloned()
     }
 
     /// iterate over scopes and find the alias in each
-    fn get_scoped_types(&self, mod_name: &ModName, alias: &str) -> Vec<Type> {
+    fn get_scoped_types(&self, mod_name: &ModName, alias: &AliasType) -> Vec<Type> {
         let stack = self.modules.get(mod_name).unwrap();
         stack
             .0
@@ -139,7 +169,7 @@ impl TypeEnv {
     }
 
     /// add type alias in current scope
-    pub fn add_type(&mut self, mod_name: &ModName, alias: &str, ty: Type) {
+    pub fn add_type(&mut self, mod_name: &ModName, alias: &AliasType, ty: Type) {
         let stack = self.modules.entry(mod_name.clone()).or_insert({
             // if the module does not yet exist, add with an empty scope
             let mut q = VecDeque::new();
@@ -152,7 +182,24 @@ impl TypeEnv {
         if scope.types.contains_key(alias) {
             panic!("duplicate item");
         }
-        let _ = scope.types.insert(alias.to_owned(), ty);
+        let _ = scope.types.insert(alias.clone(), ty);
+    }
+
+    /// add type alias in current scope
+    pub unsafe fn add_type_allow_dup(&mut self, mod_name: &ModName, alias: &AliasType, ty: Type) {
+        let stack = self.modules.entry(mod_name.clone()).or_insert({
+            // if the module does not yet exist, add with an empty scope
+            let mut q = VecDeque::new();
+            q.push_back(Scope::new());
+            (q, VecDeque::new(), HashMap::new())
+        });
+
+        let top = stack.0.len() - 1;
+        let scope = stack.0.get_mut(top).unwrap();
+        // if scope.types.contains_key(alias) {
+        //     panic!("duplicate item");
+        // }
+        let _ = scope.types.insert(alias.clone(), ty);
     }
 
     /// add stateful initialization in current scope
@@ -166,24 +213,25 @@ impl TypeEnv {
     }
 
     /// tie an alias with a type variable dimension
-    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &str) {
+    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &AliasType) {
         let tyvar = self.fresh_dim();
         self.add_type(mod_name, alias, tyvar);
     }
 
     /// tie an alias with a resolved dimension
-    pub fn add_resolved_dim_alias(&mut self, mod_name: &ModName, alias: &str, num: i64) {
+    pub fn add_resolved_dim_alias(&mut self, mod_name: &ModName, alias: &AliasType, num: i64) {
         let tyvar = Type::ResolvedDim(num);
         self.add_type(mod_name, alias, tyvar);
     }
 
     /// tie an alias with a tensor
-    pub fn add_tsr_alias(&mut self, mod_name: &ModName, alias: &str, tsr: &[String]) {
+    pub fn add_tsr_alias(&mut self, mod_name: &ModName, alias: &AliasType, tsr: &[String]) {
         // first insert all the dims
         tsr.iter()
+            .map(|t| AliasType::Variable(t.to_string()))
             .map(|t| {
-                if !self.exists(mod_name, t) {
-                    self.add_dim_alias(mod_name, t);
+                if !self.exists(mod_name, &t) {
+                    self.add_dim_alias(mod_name, &t);
                 }
             })
             .collect::<Vec<()>>();
@@ -197,7 +245,7 @@ impl TypeEnv {
     pub fn create_tensor(&mut self, mod_name: &ModName, dims: &[String]) -> Type {
         // each dimension alias in the tensor type signature must exist
         let dims_ty = dims.iter()
-            .map(|t| self.resolve_type(mod_name, t).unwrap().clone())
+            .map(|t| self.resolve_type(mod_name, &AliasType::Variable(t.to_string())).unwrap().clone())
             .collect();
         // create the tensor type
         Type::TSR(dims_ty)
@@ -207,12 +255,12 @@ impl TypeEnv {
     pub fn resolve_tensor(&mut self, mod_name: &ModName, t: &TensorTy) -> Type {
         match t {
             &TensorTy::Generic(ref dims) => self.create_tensor(mod_name, &dims),
-            &TensorTy::TyAlias(ref alias) => self.resolve_type(mod_name, &alias).unwrap(),
+            &TensorTy::TyAlias(ref alias) => self.resolve_type(mod_name, &AliasType::Variable(alias.to_string())).unwrap(),
         }
     }
 
     /// check if an alias exists
-    pub fn exists(&self, mod_name: &ModName, alias: &str) -> bool {
+    pub fn exists(&self, mod_name: &ModName, alias: &AliasType) -> bool {
         let types = self.get_scoped_types(mod_name, alias);
         types.len() > 0
     }
@@ -224,13 +272,13 @@ impl TypeEnv {
                 ident: ref id,
                 rhs: TensorTy::Generic(ref tys),
             } => {
-                self.add_tsr_alias(mod_name, id, tys);
+                self.add_tsr_alias(mod_name, &AliasType::Variable(id.to_string()), tys);
             }
             &NodeAssign::ValueAlias {
                 ident: ref id,
                 rhs: Term::Integer(num),
             } => {
-                self.add_resolved_dim_alias(mod_name, id, num);
+                self.add_resolved_dim_alias(mod_name, &AliasType::Variable(id.to_string()), num);
             }
             _ => unimplemented!(),
         }
@@ -252,7 +300,7 @@ impl TypeEnv {
         for &(ref name, ref ty) in methods.iter() {
             self.add_type(
                 &ModName::Named(mod_name.to_owned()),
-                &format!("self.{}", name),
+                &AliasType::Function(name.to_string()),
                 ty.clone(),
             );
         }
@@ -275,6 +323,9 @@ impl TypeEnv {
         } else {
             unimplemented!();
         }
+    }
 
+    pub fn add_unverified(&mut self, v: Type) {
+        self.to_verify.insert(v);
     }
 }

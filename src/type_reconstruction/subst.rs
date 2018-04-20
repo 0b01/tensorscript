@@ -26,7 +26,7 @@ use typed_ast::type_env::TypeEnv;
 use typed_ast::type_env::TypeId;
 
 #[derive(Debug)]
-pub struct Substitution(pub HashMap<TypeId, Type>);
+pub struct Substitution(pub HashMap<Type, Type>);
 
 impl Substitution {
     /// returns an empty substitution
@@ -46,13 +46,18 @@ impl Substitution {
 
     pub fn apply_ty(&mut self, ty: &Type) -> Type {
         self.0.iter().fold(ty.clone(), |result, solution| {
-            let (tvar, solution_type) = solution;
-            substitute(result, tvar, solution_type)
+            let (ty, solution_type) = solution;
+            if let Type::VAR(ref tvar) = ty {
+                substitute_tvar(result, tvar, solution_type)
+            } else {
+                panic!();
+                // substitute_ty(result, ty, solution_type)
+            }
         })
     }
 
     pub fn compose(&mut self, mut other: Substitution) -> Substitution {
-        let mut self_substituded: HashMap<TypeId, Type> = self.0
+        let mut self_substituded: HashMap<Type, Type> = self.0
             .clone()
             .into_iter()
             .map(|(k, s)| (k, other.apply_ty(&s)))
@@ -75,8 +80,10 @@ fn occurs(tvar: TypeId, ty: &Type) -> bool {
     }
 }
 
-fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
+/// replace tvar with replacement in ty
+fn substitute_tvar(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
     use self::Type::*;
+    // println!("\nTVAR:::\n{:?}, \n'{:?}, \n{:?}\n", ty, tvar, replacement);
     match ty {
         UnresolvedModuleFun(_,_,_) => ty,
         Unit => ty,
@@ -101,21 +108,21 @@ fn substitute(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
         FnArgs(args) => FnArgs(
             args.into_iter()
                 .map(|ty| match ty {
-                    FnArg(name, a) => FnArg(name, box substitute(*a, tvar, replacement)),
+                    FnArg(name, a) => FnArg(name, box substitute_tvar(*a, tvar, replacement)),
                     _ => panic!(ty),
                 })
                 .collect(),
         ),
         FUN(p, r) => FUN(
-            Box::new(substitute(*p, tvar, &replacement)),
-            Box::new(substitute(*r, tvar, &replacement)),
+            box substitute_tvar(*p, tvar, &replacement),
+            box substitute_tvar(*r, tvar, &replacement),
         ),
         TSR(_) => ty,
 
-        Module(n,Some(box ty)) => Module(n, Some(box substitute(ty, tvar, replacement))),
+        Module(n,Some(box ty)) => Module(n, Some(box substitute_tvar(ty, tvar, replacement))),
 
         Module(_, None) => ty,
-        FnArg(name, box ty) => FnArg(name, box substitute(ty, tvar, replacement)),
+        FnArg(name, box ty) => FnArg(name, box substitute_tvar(ty, tvar, replacement)),
         _ => {
             panic!("{:?}", ty);
         }
@@ -136,9 +143,8 @@ pub fn unify(constraints: Constraints, tenv: &mut TypeEnv) -> Substitution {
 
 fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
     use self::Type::*;
-    println!("{:?}", cs);
+    // println!("{:?}", cs);
     match cs {
-        Equals(ToVerify(_,_,_,_), ty) => Substitution::empty(),
 
         Equals(INT, INT) => Substitution::empty(),
         Equals(FLOAT, FLOAT) => Substitution::empty(),
@@ -151,7 +157,6 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
         Equals(ResolvedDim(i), ResolvedDim(j)) => if i == j {
             Substitution::empty()
         } else {
-            println!("{} {}", i, j );
             panic!("{:#?}", tenv);
             panic!("dimension mismatch")
         },
@@ -180,24 +185,6 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
                 panic!("supplied parameter is incorrect! {} != {}", a, b);
             }
         }
-        // Equals(FnArg(None, ty1), FnArg(Some(_), ty2)) => unify(
-        //     Constraints(hashset!{
-        //         Equals(*ty1, *ty2),
-        //     }),
-        //     tenv,
-        // ),
-        // Equals(FnArg(Some(_), ty1), FnArg(None, ty2)) => unify(
-        //     Constraints(hashset!{
-        //         Equals(*ty1, *ty2),
-        //     }),
-        //     tenv,
-        // ),
-        // Equals(FnArg(None, ty1), FnArg(None, ty2)) => unify(
-        //     Constraints(hashset!{
-        //         Equals(*ty1, *ty2),
-        //     }),
-        //     tenv,
-        // ),
 
         Equals(FUN(p1, r1), FUN(p2, r2)) => unify(
             Constraints(hashset!{
@@ -225,10 +212,7 @@ fn unify_one(cs: Equals, tenv: &mut TypeEnv) -> Substitution {
             }
         }), tenv),
 
-        //FUN(box VAR(_), box VAR(_))
-        Equals(UnresolvedModuleFun(a,b,c), ty) => unify(Constraints(hashset!{
-            Equals(ToVerify(a,b,c,box ty.clone()), ty.clone()),
-        }), tenv),
+        Equals(UnresolvedModuleFun(_,_,_),_) => Substitution::empty(),
 
         _ => {
             panic!("{:#?}", cs);
@@ -243,20 +227,20 @@ fn unify_var(tvar: TypeId, ty: Type) -> Substitution {
             if tvar == tvar2 {
                 Substitution::empty()
             } else {
-                Substitution(hashmap!{ tvar => ty })
+                Substitution(hashmap!{ VAR(tvar) => ty })
             }
         }
         DIM(tvar2) => {
             if tvar == tvar2 {
                 Substitution::empty()
             } else {
-                Substitution(hashmap!{ tvar => ty })
+                Substitution(hashmap!{ VAR(tvar) => ty })
             }
         }
         _ => if occurs(tvar, &ty) {
             panic!("circular type")
         } else {
-            Substitution(hashmap!{ tvar => ty })
+            Substitution(hashmap!{ VAR(tvar) => ty })
         },
     }
 }
