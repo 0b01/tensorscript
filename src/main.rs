@@ -21,7 +21,7 @@
 /// TODO:
 /// 1. [*] implement module pattern matching
 /// 2. [ ] type level computation (resolved tensor dimension)
-/// 3. [ ] BUG: dimension mismatch for mnist example
+/// 3. [*] BUG: dimension mismatch for mnist example
 /// 4. [*] BUG: non-determinism
 /// 5. [*] BUG: impl Hash, Eq for Type
 /// 6. [*] set up examples and tests
@@ -94,9 +94,8 @@ fn main() {
     let program = match parsed_terms {
         Ok(program) => program,
         Err(e) => {
-            println!("{:#?}", e);
             e.print_err(&code_map);
-            panic!()
+            return;
         },
     };
 
@@ -115,6 +114,6 @@ fn main() {
     // println!("{:#?}", subs);
     // println!("{:#?}", subs.apply(&cs));
     let test = type_reconstruction::inferred_ast::subs(&ast, &mut subs);
-    // println!("{:#?}", test);
+    println!("{:#?}", test);
     // println!("{:#?}", tenv);
 }

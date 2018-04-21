@@ -17,6 +17,8 @@ impl Op for Conv2d {
             (
                 "new",
                 fun!(
+                    "Conv2d",
+                    "new",
                     args!(
                         arg!("in_ch", int!()),
                         arg!("out_ch", int!()),
@@ -55,9 +57,9 @@ impl Op for Dropout2d {
         vec![
             (
                 "new",
-                fun!(args!(arg!("p", float!())), module!(self.get_name())),
+                fun!("Dropout2d", "new", args!(arg!("p", float!())), module!(self.get_name())),
             ),
-            ("forward", fun!(ty.clone(), ty)),
+            ("forward", fun!("Dropout2d", "forward", ty.clone(), ty)),
         ]
     }
 }

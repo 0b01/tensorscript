@@ -18,7 +18,12 @@ impl Op for sigmoid {
 
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         let ty = tenv.fresh_var(&CSpan::fresh_span());
-        vec![("forward", fun!(args!(arg!("x", ty.clone())), ty))]
+        vec![
+            (
+                "forward",
+                fun!("sigmoid", "forward", args!(arg!("x", ty.clone())), ty)
+            )
+        ]
     }
 
     fn resolve(
@@ -40,7 +45,7 @@ impl Op for relu {
 
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         let ty = tenv.fresh_var(&CSpan::fresh_span());
-        vec![("forward", fun!(args!(arg!("x", ty.clone())), ty))]
+        vec![("forward", fun!("relu", "forward", args!(arg!("x", ty.clone())), ty))]
     }
 
     fn resolve(
@@ -65,7 +70,7 @@ impl Op for log_softmax {
         let ty = tenv.fresh_var(&CSpan::fresh_span());
         vec![(
             "forward",
-            fun!(args!(arg!("x", ty.clone()), arg!("dim", int!())), ty),
+            fun!("log_softmax", "forward", args!(arg!("x", ty.clone()), arg!("dim", int!())), ty),
         )]
     }
 

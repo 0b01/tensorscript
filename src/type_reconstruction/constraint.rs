@@ -119,24 +119,21 @@ fn collect_fn_decl(cs: &mut Constraints, decl: &TyFnDecl, tenv: &mut TypeEnv) {
     tenv.push_scope_collection(&module);
 
     cs.collect(&decl.func_block, tenv);
-    cs.add(decl.fn_ty.clone(),
+    let func =
         Type::FUN(
+            module.as_str().to_owned(),
+            decl.name.as_str().to_owned(),
             box decl.fn_params.to_ty(&decl.span),
             box decl.func_block.ty(),
             decl.span.clone()
-            )
-        );
-    // cs.add(
-    //     decl.fn_ty.clone(),
-    //     Type::FUN(
-    //         Box::new(decl.param_ty.clone()),
-    //         Box::new(decl.return_ty.clone()),
-    //     ),
-    // );
+            );
 
-    // if decl.name == "example" {
-    //     panic!("{:#?}", decl.return_ty);
+    cs.add(decl.fn_ty.clone(), func.clone());
+
+    // if decl.name == Alias::Function("forward".to_owned()) {
+    //     panic!("{:?}, {:?}", decl.fn_ty, func);
     // }
+
     tenv.pop_scope(&module);
     // ...
 }
@@ -230,10 +227,9 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
         tenv.add_unverified(ty.clone());
     }
 
-    // BUG: creates a mismatch in dimension
     cs.add(
         ty.clone(),
-        fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()),
+        fun!(symbol_name, fn_app.name.as_str(), fn_app.arg_ty.clone(), fn_app.ret_ty.clone()),
     );
 
     cs.add(fn_app.arg_ty.clone(), fn_app.args.to_ty(&fn_app.span));

@@ -18,7 +18,6 @@ impl TensorScriptDiagnostic {
         let diagnostic = self.into_diagnostic(code_map);
         let writer = StandardStream::stderr(ColorArg::from_str("auto").unwrap().into());
         emit(&mut writer.lock(), &code_map, &diagnostic).unwrap();
-        println!();
     }
 
     pub fn into_diagnostic(&self, code_map: &CodeMap) -> Diagnostic {
@@ -52,7 +51,7 @@ impl TensorScriptDiagnostic {
                 let prev_line_span = file.line_span(LineIndex(prev_line as u32)).unwrap();
                 Diagnostic::new(
                     Severity::Error,
-                    format!("{} from line {}", msg, prev_line),
+                    format!("{} on line {}:", msg, prev_line + 1),
                 )
                 .with_label(Label::new_primary(prev_line_span))
                 .with_label(Label::new_primary(sp.clone()))
@@ -82,7 +81,6 @@ impl Errors {
         let writer = StandardStream::stderr(ColorArg::from_str("auto").unwrap().into());
         for diagnostic in &diagnostics {
             emit(&mut writer.lock(), &code_map, &diagnostic).unwrap();
-            println!();
         }
     }
 }

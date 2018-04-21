@@ -159,7 +159,7 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
             tenv.import_top_level_ty_sig(&module, &decl.ty_sig.from);
             tenv.import_top_level_ty_sig(&module, &decl.ty_sig.to);
 
-            let ty_sig = annotate_fn_ty_sig(&decl.ty_sig, tenv, &decl.span);
+            let ty_sig = annotate_fn_ty_sig(decl.name.to_owned(), "forward".to_owned(), &decl.ty_sig, tenv, &decl.span);
             let mod_ty_sig = Type::Module(
                 decl.name.clone(),
                 Some(box ty_sig.clone()),
@@ -191,10 +191,9 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
         }
         &WeightsDecl(ref decl) => {
             tenv.set_module(ModName::Named(decl.name.to_owned()));
-            // TODO? also import global symbols into scope...
             TyDecl::TyWeightsDecl(TyWeightsDecl {
                 name: decl.name.clone(),
-                ty_sig: annotate_fn_ty_sig(&decl.ty_sig, tenv, &decl.span),
+                ty_sig: annotate_fn_ty_sig(decl.name.to_owned(), "forward".to_owned(),&decl.ty_sig, tenv, &decl.span),
                 inits: decl.inits
                     .iter()
                     .map(|t| annotate_weights_assign(t, tenv))
@@ -206,7 +205,7 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
             tenv.set_module(ModName::Named(decl.name.to_owned()));
             TyDecl::TyGraphDecl(TyGraphDecl {
                 name: decl.name.clone(),
-                ty_sig: annotate_fn_ty_sig(&decl.ty_sig, tenv, &decl.span),
+                ty_sig: annotate_fn_ty_sig(decl.name.to_owned(), "forward".to_owned(),&decl.ty_sig, tenv, &decl.span),
                 fns: decl.fns.iter().map(|f| annotate_fn_decl(f, tenv)).collect(),
                 span: decl.span.clone(),
             })
@@ -232,8 +231,10 @@ fn annotate_decl(decl: &Decl, tenv: &mut TypeEnv) -> TyDecl {
     ret
 }
 
-fn annotate_fn_ty_sig(sig: &FnTySig, tenv: &mut TypeEnv, span: &ByteSpan) -> Type {
+fn annotate_fn_ty_sig(modname: String, name: String, sig: &FnTySig, tenv: &mut TypeEnv, span: &ByteSpan) -> Type {
     Type::FUN(
+        modname,
+        name,
         Box::new(annotate_tensor_ty_sig(&sig.from, tenv, span)),
         Box::new(annotate_tensor_ty_sig(&sig.to, tenv, span)),
         span.clone(),
@@ -257,7 +258,7 @@ fn annotate_weights_assign(w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> TyWe
     let fn_ty = w_assign
         .clone()
         .mod_sig
-        .map(|sig| Box::new(annotate_fn_ty_sig(&sig, tenv, &w_assign.span)));
+        .map(|sig| Box::new(annotate_fn_ty_sig(w_assign.mod_name.to_owned(),"forward".to_owned(), &sig, tenv, &w_assign.span)));
 
     let module = tenv.module();
     tenv.add_type(
@@ -341,14 +342,20 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
     match f.name.as_str() {
         // special function signatures
         "new" => {
-            decl.fn_ty = Type::FUN(box decl.fn_params.to_ty(&f.span), box mod_ty.clone(), f.span.clone());
+            decl.fn_ty = Type::FUN(
+                module.as_str().to_owned(),
+                "new".to_owned(),
+                box decl.fn_params.to_ty(&f.span),
+                box mod_ty.clone(),
+                f.span.clone()
+            );
         }
         "forward" => {
             if decl.fn_params.len() == 0 {
                 panic!("forward(x) must have at least 1 param");
             }
             let name0 = decl.fn_params[0].name.clone();
-            if let Type::Module(_, Some(box Type::FUN(ref p,_, _)), _) = mod_ty.clone() {
+            if let Type::Module(ref modn, Some(box Type::FUN(_,_,ref p, ref r, _)), _) = mod_ty.clone() {
                 let ty_sig = *p.clone();
 
                 // type the first parameter
@@ -364,7 +371,13 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
                 }
 
                 // // type the function return parameter
-                // decl.fn_ty = *r.clone();
+                decl.fn_ty = Type::FUN(
+                    modn.to_owned(),
+                    "forward".to_owned(),
+                    box decl.fn_params.to_ty(&f.span),
+                    r.clone(),
+                    f.span.clone()
+                );
 
             // type the function itself...
             // decl.fn_ty = Type::FUN(p.clone(), r.clone());

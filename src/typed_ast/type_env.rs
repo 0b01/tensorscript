@@ -273,9 +273,12 @@ impl TypeEnv {
         // each dimension alias in the tensor type signature must exist
         let dims_ty = dims.iter()
             .map(|t| {
-                self.resolve_type(mod_name, &Alias::Variable(t.to_string()))
-                    .unwrap()
-                    .clone()
+                match t.parse::<i64>() {
+                    Ok(i) => Type::ResolvedDim(i, span.clone()),
+                    Err(e) => self.resolve_type(mod_name, &Alias::Variable(t.to_string()))
+                        .unwrap()
+                        .clone()
+                }
             })
             .collect();
         // create the tensor type
@@ -329,6 +332,7 @@ impl TypeEnv {
         if let TensorTy::Generic(dims, span) = ty_sig {
             // first insert all the dims
             dims.iter()
+                .filter(|t| t.parse::<i64>().is_err())
                 .map(|t| Alias::Variable(t.to_string()))
                 .map(|t| {
                     if !self.exists(mod_name, &t) {

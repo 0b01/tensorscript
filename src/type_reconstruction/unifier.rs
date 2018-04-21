@@ -76,13 +76,19 @@ impl Unifier {
                 }
             }
 
-            Equals(FUN(p1, r1, _), FUN(p2, r2, _)) => self.unify(
-                Constraints(btreeset!{
-                    Equals(*p1, *p2),
-                    Equals(*r1, *r2),
-                }),
-                tenv,
-            ),
+            Equals(FUN(m1,n1,p1, r1, _), FUN(m2,n2,p2, r2, _)) => {
+                if n1 == n2 {
+                    self.unify(
+                        Constraints(btreeset!{
+                            Equals(*p1, *p2),
+                            Equals(*r1, *r2),
+                        }),
+                        tenv,
+                    )
+                } else {
+                    panic!()
+                }
+            },
             Equals(ts1 @ TSR(_, _), ts2 @ TSR(_, _)) => {
                 if ts1.as_rank() == ts2.as_rank() {
                     match (ts1, ts2) {
@@ -115,9 +121,10 @@ impl Unifier {
                 tenv,
             ),
 
-            Equals(UnresolvedModuleFun(_, _, _, _), _) => {
-                println!("{:?}", cs);
-                Substitution::empty()
+            Equals(u @ UnresolvedModuleFun(_, _, _, _), ty) => {
+                Substitution(btreemap!(
+                    u => ty,
+                ))
             }
 
             _ => {
@@ -162,7 +169,7 @@ impl Unifier {
 fn occurs(tvar: TypeId, ty: &Type) -> bool {
     use self::Type::*;
     match ty {
-        &FUN(ref p, ref r, _) => occurs(tvar, &p) | occurs(tvar, &r),
+        &FUN(_,_, ref p, ref r, _) => occurs(tvar, &p) | occurs(tvar, &r),
         &VAR(ref tvar2, _) => tvar == *tvar2,
         _ => false,
     }

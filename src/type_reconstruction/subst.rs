@@ -45,8 +45,7 @@ impl Substitution {
             if let Type::VAR(ref tvar, ref span) = ty {
                 substitute_tvar(result, tvar, &solution_type.with_span(span))
             } else {
-                panic!();
-                // substitute_ty(result, ty, solution_type)
+                substitute_ty(result, ty, solution_type)
             }
         })
     }
@@ -66,6 +65,17 @@ impl Substitution {
     }
 }
 
+fn substitute_ty(ty: Type, replaced: &Type, replacement: &Type) -> Type {
+    if let Type::FUN(m1,n1,_,_,_) = ty.clone() {
+    if let Type::FUN(m2,n2,_,_,_) = replacement.clone() {
+        if (m1 == m2) && (n1 == n2) {
+            // println!("----\n{:?}\n{:?}\n{:?}\n-----\n\n", ty, replaced, replacement);
+            replacement.clone()
+        } else {ty}
+    } else {ty}} else {
+        ty
+    }
+}
 
 /// replace tvar with replacement in ty
 fn substitute_tvar(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
@@ -73,7 +83,7 @@ fn substitute_tvar(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
     // println!("\nTVAR:::\n{:?}, \n'{:?}, \n{:?}\n", ty, tvar, replacement);
     match ty {
         UnresolvedModuleFun(_, _, _, _) => {
-            // println!("{:?}, replacement: {:?}", ty, replacement);
+            println!("{:?}, replacement: {:?}", ty, replacement);
             ty
         },
         Unit(_) => ty,
@@ -104,7 +114,9 @@ fn substitute_tvar(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
                 .collect(),
             span,
         ),
-        FUN(p, r, s) => FUN(
+        FUN(a,b,p, r, s) => FUN(
+            a,
+            b,
             box substitute_tvar(*p, tvar, &replacement),
             box substitute_tvar(*r, tvar, &replacement),
             s,

@@ -21,7 +21,7 @@ pub enum Type {
     FnArgs(Vec<Type>, ByteSpan),
     FnArg(Option<String>, Box<Type>, ByteSpan),
     ResolvedDim(i64, ByteSpan),
-    FUN(Box<Type>, Box<Type>, ByteSpan),
+    FUN(String, String, Box<Type>, Box<Type>, ByteSpan),
     TSR(Vec<Type>, ByteSpan),
 }
 
@@ -40,7 +40,7 @@ impl PartialEq for Type {
             (FnArgs(ta, _), FnArgs(tb, _)) => ta == tb,
             (FnArg(n1, t1, _), FnArg(n2, t2, _)) => (n1 == n2) && (t1 == t2),
             (ResolvedDim(a, _), ResolvedDim(b, _)) => a == b,
-            (FUN(p1, r1, _), FUN(p2, r2, _)) => (p1 == p2) && (r1 == r2),
+            (FUN(m1, n1, p1, r1, _), FUN(m2, n2, p2, r2, _)) => (p1 == p2) && (r1 == r2) && (m1 == m2) && (n1 == n2),
             (TSR(ts1, _), TSR(ts2, _)) => ts1 == ts2,
             (UnresolvedModuleFun(a1, b1, c1, _), UnresolvedModuleFun(a2, b2, c2, _)) =>
                 (a1 == a2) && (b1 == b2) && (c1 == c2),
@@ -88,8 +88,10 @@ impl Hash for Type {
                 8.hash(state);
                 a.hash(state)
             }
-            FUN(p, r, _) => {
+            FUN(m,n,p, r, _) => {
                 9.hash(state);
+                m.hash(state);
+                n.hash(state);
                 p.hash(state);
                 r.hash(state);
             }
@@ -127,7 +129,7 @@ impl Type {
             FnArg(ref name, ref ty, _) => FnArg(name.clone(), ty.clone(), sp.clone()),
             ResolvedDim(ref d, _) => ResolvedDim(d.clone(), sp.clone()),
             Module(ref s, ref ty, _) => Module(s.clone(), ty.clone(), sp.clone()),
-            FUN(ref p, ref r, _) => FUN(p.clone(), r.clone(), sp.clone()),
+            FUN(ref m,ref n,ref p, ref r, _) => FUN(m.clone(),n.clone(),p.clone(), r.clone(), sp.clone()),
             TSR(ref dims, _) => TSR(dims.clone(), sp.clone()),
             _ => panic!("{:?}", self),
         }
@@ -199,7 +201,7 @@ impl Debug for Type {
             FnArg(ref name, ref ty, _) => write!(f, "ARG({:?}={:?})", name, ty),
             ResolvedDim(ref d, ref s) => write!(f, "<{}>", d),
             Module(ref s, ref ty, _) => write!(f, "MODULE({}, {:?})", s, ty),
-            FUN(ref p, ref r, _) => write!(f, "({:?} -> {:?})", p, r),
+            FUN(ref m, ref n,ref p, ref r, _) => write!(f, "{}::{}({:?} -> {:?})", m,n,p, r),
             TSR(ref dims, _) => {
                 if dims.len() > 0 {
                     write!(f, "[")?;
@@ -230,8 +232,8 @@ macro_rules! arg {
 }
 
 macro_rules! fun {
-    ($e1:expr, $e2:expr) => {
-        Type::FUN(box $e1, box $e2, CSpan::fresh_span())
+    ($m:expr, $n: expr, $e1:expr, $e2:expr) => {
+        Type::FUN($m.to_owned(),$n.to_owned(), box $e1, box $e2, CSpan::fresh_span())
     };
 }
 

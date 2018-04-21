@@ -14,10 +14,11 @@ impl Op for Linear {
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         use self::Type::*;
         vec![
-            ("init_normal", fun!(args!(arg!("std", float!())), unit!())),
+            ("init_normal", fun!("Linear", "init_normal", args!(arg!("std", float!())), unit!())),
             (
                 "new",
                 fun!(
+                    "Linear", "new",
                     args!(arg!("in", int!()), arg!("out", int!())),
                     module!(self.get_name())
                 ),
