@@ -19,15 +19,15 @@ node Mnist<IMAGE -> LABELS> {
     tsr LABELS = [?,OUT];
 }
 
-weights Mnist<IMAGE -> [?,OUT]> {
+weights Mnist<IMAGE -> LABELS> {
     conv1 = Conv2d::new(in_ch=1, out_ch=10, kernel_size=5);
     conv2 = Conv2d::new(in_ch=10, out_ch=20, kernel_size=5);
     dropout = Dropout2d::new(p=0.5);
     fc1 = Linear::<[?,FC1] -> [?,FC2]>::new(in=FC1, out=FC2);
-    fc2 = Linear::new(in=FC2, out=OUT);
+    fc2 = Linear::<[?,FC2] -> [?,OUT]>::new(in=FC2, out=OUT);
 }
 
-graph Mnist<[?,C,H,W] -> [?,OUT]> {
+graph Mnist<IMAGE -> LABELS> {
 
     def new() -> Self {
         fc1.init_normal(std=1.);
@@ -39,8 +39,8 @@ graph Mnist<[?,C,H,W] -> [?,OUT]> {
         // b |> view(?, FC2) |> self.example()
 
         b
-        |> conv1            |> maxpool2d(kernel_size=2)
-        |> conv2 |> dropout |> maxpool2d(kernel_size=2)
+        // |> conv1            |> maxpool2d(kernel_size=2)
+        // |> conv2 |> dropout |> maxpool2d(kernel_size=2)
         |> view(?, FC1)
         |> fc1 |> relu
         |> self.example()

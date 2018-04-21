@@ -90,7 +90,7 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TyTerm {
                         .as_str()
                         .to_owned(),
                 ),
-                orig_name: id.to_owned(),
+                orig_name: Some(id.to_owned()),
                 name: Alias::Function("forward".to_owned()),
                 arg_ty: tenv.fresh_var(span),
                 args: vec![prev_arg],
@@ -310,7 +310,7 @@ fn annotate_fn_app(fn_app: &FnApp, tenv: &mut TypeEnv) -> TyFnApp {
     let arg_ty = t_args.to_ty(&fn_app.span);
     TyFnApp {
         mod_name: None,
-        orig_name: name.to_owned(),
+        orig_name: Some(name.to_owned()),
         name: Alias::Variable(name.to_owned()),
         arg_ty: arg_ty,
         args: t_args,
@@ -441,7 +441,7 @@ fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TyTerm {
                 let args_ty = args.to_ty(&f_a.span);
                 TyTerm::TyFnApp(TyFnApp {
                     mod_name: Some(f_a.mod_name.clone()),
-                    orig_name: f_a.mod_name.clone(),
+                    orig_name: Some(f_a.mod_name.clone()),
                     name: Alias::Function(f_a.field_name.clone()),
                     arg_ty: args_ty,
                     args,

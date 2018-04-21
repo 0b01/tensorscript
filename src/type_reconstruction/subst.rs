@@ -70,7 +70,7 @@ fn substitute_ty(ty: Type, replaced: &Type, replacement: &Type) -> Type {
     if let Type::FUN(m2,n2,_,_,_) = replacement.clone() {
         if (m1 == m2) && (n1 == n2) {
             // println!("----\n{:?}\n{:?}\n{:?}\n-----\n\n", ty, replaced, replacement);
-            replacement.clone()
+            ty.clone()
         } else {ty}
     } else {ty}} else {
         ty

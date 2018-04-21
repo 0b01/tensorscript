@@ -114,6 +114,17 @@ impl Hash for Type {
 }
 
 impl Type {
+    pub fn first_arg_ty(&self) -> Option<Type> {
+        match self {
+            Type::FnArgs(vs, _) => {
+                if let &Type::FnArg(_,box ref ty, _) = &vs[0] {
+                    Some(ty.clone())
+                } else { None }
+            }
+            _ => None
+        }
+    }
+
     /// modifies the span parameter in type to the most relevant
     pub fn with_span(&self, sp: &ByteSpan) -> Type {
         use self::Type::*;

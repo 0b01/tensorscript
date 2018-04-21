@@ -187,7 +187,7 @@ fn collect_weights_assign(cs: &mut Constraints, w_a: &TyWeightsAssign, tenv: &mu
         cs,
         &TyFnApp {
             mod_name: Some(mod_name.to_string()),
-            orig_name: "".to_owned(), // don't need to supply one because it won't be used below
+            orig_name: None,
             name: Alias::Function("new".to_owned()),
             arg_ty: w_a.arg_ty.clone(),
             ret_ty: tenv.fresh_var(&w_a.span),
@@ -206,13 +206,15 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
     // println!("{:#?}", cs);
 
     let symbol_name = fn_app.mod_name.clone().unwrap();
-    let symbol_mod_ty = tenv.resolve_type(&current_mod, &Alias::Variable(symbol_name.clone()))
-        .unwrap()
-        .clone();
+    let symbol_mod_ty = match &fn_app.orig_name {
+        &Some(ref orig_name) => tenv.resolve_type(&current_mod, &Alias::Variable(orig_name.clone())).unwrap().clone(),
+        &None => tenv.resolve_type(&current_mod, &Alias::Variable(symbol_name.clone())).unwrap().clone(),
+    };
+
     let symbol_modname = ModName::Named(symbol_mod_ty.as_str().to_owned());
     let fn_name = &fn_app.name;
     // println!(
-    //     "{} | {} | {:?} | {:?} | {:?} ",
+    //     "{:?} | {} | {:?} | {:?} | {:?} ",
     //     fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name
     // );
     let ty = tenv.resolve_type(&symbol_modname, &fn_name).unwrap();
@@ -236,7 +238,11 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
 
     if let "forward" = fn_name.as_str() {
         if let Type::Module(_, Some(box supplied_ty), _) = symbol_mod_ty {
-            cs.add(ty.clone(), supplied_ty.clone());
+            if let Type::FUN(_,_,box p,box r, _) = supplied_ty {
+                cs.add(fn_app.arg_ty.clone().clone(),
+                    args!(arg!("x",p.clone())));
+                cs.add(fn_app.ret_ty.clone(), r.clone());
+            }
         }
     }
 

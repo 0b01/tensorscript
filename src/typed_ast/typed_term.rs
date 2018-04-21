@@ -191,7 +191,7 @@ pub struct TyWeightsAssign {
 #[derive(Debug, PartialEq, Clone)]
 pub struct TyFnApp {
     pub mod_name: Option<String>,
-    pub orig_name: String,
+    pub orig_name: Option<String>,
     pub name: Alias,
     pub arg_ty: Type,
     pub ret_ty: Type,
