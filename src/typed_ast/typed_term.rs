@@ -1,6 +1,6 @@
 use codespan::ByteSpan;
 use span::CSpan;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 /// Data structures for Typed AST
 ///
 ///
@@ -222,7 +222,7 @@ pub struct TyFnAppArg {
 
 pub trait ArgsVecInto {
     fn to_ty(&self, span: &ByteSpan) -> Type;
-    fn to_hashmap(&self) -> Option<HashMap<String, Box<TyTerm>>>;
+    fn to_btreemap(&self) -> Option<BTreeMap<String, Box<TyTerm>>>;
 }
 
 impl ArgsVecInto for [TyFnAppArg] {
@@ -240,7 +240,7 @@ impl ArgsVecInto for [TyFnAppArg] {
             span.clone(),
         )
     }
-    fn to_hashmap(&self) -> Option<HashMap<String, Box<TyTerm>>> {
+    fn to_btreemap(&self) -> Option<BTreeMap<String, Box<TyTerm>>> {
         Some(
             self.iter()
                 .filter_map(|a| {
@@ -270,7 +270,7 @@ impl ArgsVecInto for [TyFnDeclParam] {
             span.clone(),
         )
     }
-    fn to_hashmap(&self) -> Option<HashMap<String, Box<TyTerm>>> {
+    fn to_btreemap(&self) -> Option<BTreeMap<String, Box<TyTerm>>> {
         None
         // self.iter().filter_map(|a|
         //     Some((a.name.clone(), box a.clone()))

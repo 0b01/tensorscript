@@ -1,5 +1,5 @@
 use typing::{FuncArgType, ItemType, TypeId};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 
 type Identifier = String;
 
@@ -28,15 +28,15 @@ pub enum ScopeType {
 
 /// Represents a single level of scope
 pub struct Scope {
-    types: HashMap<Identifier, ScopeType>,
-    items: HashMap<Identifier, ScopeItem>,
+    types: BTreeMap<Identifier, ScopeType>,
+    items: BTreeMap<Identifier, ScopeItem>,
 }
 
 impl Scope {
     pub fn new() -> Scope {
         Scope {
-            types: HashMap::new(),
-            items: HashMap::new(),
+            types: BTreeMap::new(),
+            items: BTreeMap::new(),
         }
     }
 }
@@ -113,7 +113,7 @@ impl ScopeStack {
 
     fn search_stack<T, F>(&self, name: &Identifier, scope_table: F) -> Vec<&T>
     where
-        F: Fn(&Scope) -> &HashMap<Identifier, T>,
+        F: Fn(&Scope) -> &BTreeMap<Identifier, T>,
     {
         self.stack
             .iter()

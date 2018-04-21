@@ -66,7 +66,7 @@ impl Unifier {
             Equals(FnArg(Some(a), ty1, _), FnArg(Some(b), ty2, _)) => {
                 if a == b {
                     self.unify(
-                        Constraints(hashset!{
+                        Constraints(btreeset!{
                             Equals(*ty1, *ty2),
                         }),
                         tenv,
@@ -77,7 +77,7 @@ impl Unifier {
             }
 
             Equals(FUN(p1, r1, _), FUN(p2, r2, _)) => self.unify(
-                Constraints(hashset!{
+                Constraints(btreeset!{
                     Equals(*p1, *p2),
                     Equals(*r1, *r2),
                 }),
@@ -105,7 +105,7 @@ impl Unifier {
             }
 
             Equals(Module(n1, Some(box ty1), _), Module(n2, Some(box ty2), _)) => self.unify(
-                Constraints(hashset!{
+                Constraints(btreeset!{
                     if n1 == n2 {
                         Equals(ty1, ty2)
                     } else {
@@ -132,20 +132,20 @@ impl Unifier {
                 if tvar == tvar2 {
                     Substitution::empty()
                 } else {
-                    Substitution(hashmap!{ VAR(tvar, span) => ty })
+                    Substitution(btreemap!{ VAR(tvar, span) => ty })
                 }
             }
             DIM(tvar2, _) => {
                 if tvar == tvar2 {
                     Substitution::empty()
                 } else {
-                    Substitution(hashmap!{ VAR(tvar, span) => ty })
+                    Substitution(btreemap!{ VAR(tvar, span) => ty })
                 }
             }
             _ => if occurs(tvar, &ty) {
                 panic!("circular type")
             } else {
-                Substitution(hashmap!{ VAR(tvar, span) => ty })
+                Substitution(btreemap!{ VAR(tvar, span) => ty })
             },
         }
     }

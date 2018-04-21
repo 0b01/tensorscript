@@ -4,7 +4,7 @@ use std::fmt::{Debug, Error, Formatter};
 use std::hash::{Hash, Hasher};
 use typed_ast::type_env::TypeId;
 
-#[derive(Clone, Eq)]
+#[derive(Clone, Eq, PartialOrd, Ord)]
 pub enum Type {
     // literals
     Unit(ByteSpan),
@@ -42,7 +42,7 @@ impl PartialEq for Type {
             (ResolvedDim(a, _), ResolvedDim(b, _)) => a == b,
             (FUN(p1, r1, _), FUN(p2, r2, _)) => (p1 == p2) && (r1 == r2),
             (TSR(ts1, _), TSR(ts2, _)) => ts1 == ts2,
-            (UnresolvedModuleFun(a1, b1, c1, _), UnresolvedModuleFun(a2, b2, c2, _)) => 
+            (UnresolvedModuleFun(a1, b1, c1, _), UnresolvedModuleFun(a2, b2, c2, _)) =>
                 (a1 == a2) && (b1 == b2) && (c1 == c2),
             // MismatchedDim(_,_) => true,
             _ => {
@@ -266,7 +266,7 @@ mod tests {
     use codespan::{Span, ByteIndex};
     #[test]
     fn should_not_take_span_into_hash() {
-        let h = hashset!(
+        let h = btreeset!(
             Type::VAR(1, Span::new(ByteIndex(1), ByteIndex(1))),
             Type::VAR(1, Span::new(ByteIndex(2), ByteIndex(2))),
 

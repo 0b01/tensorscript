@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 use typed_ast::type_env::{Alias, ModName, TypeEnv};
 use typed_ast::typed_term::Ty;
@@ -7,16 +7,16 @@ use typed_ast::Type;
 
 use span::CSpan;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, PartialOrd, Ord)]
 pub struct Equals(pub Type, pub Type);
 
 #[derive(Debug, Clone)]
-pub struct Constraints(pub HashSet<Equals>);
+pub struct Constraints(pub BTreeSet<Equals>);
 
 impl Constraints {
 
     pub fn new() -> Self {
-        Constraints(HashSet::new())
+        Constraints(BTreeSet::new())
     }
 
     pub fn is_empty(&self) -> bool {

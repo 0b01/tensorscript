@@ -5,7 +5,7 @@
 /// 1. Collect constraints. (handled in constraint.rs)
 ///     In this step, traverse typed ast and collect types of adjacent nodes that should
 ///     be equivalent. This generates a Constraint struct which is just a thin wrapper
-///     around a hashset of (Type, Type) tuple.
+///     around a btreeset of (Type, Type) tuple.
 ///
 /// 2. Unify constraints by generating substitutions.
 ///     This is a variant to Algorithm W in H-M type inference. Bascially, unify_one
@@ -19,13 +19,13 @@
 ///     Now after the unification is complete, the function returns a list of substitutions that
 ///     should remove all type variables from the typed AST.
 ///
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use type_reconstruction::constraint::{Constraints, Equals};
 use typed_ast::type_env::TypeId;
 use typed_ast::Type;
 
 #[derive(Debug)]
-pub struct Substitution(pub HashMap<Type, Type>);
+pub struct Substitution(pub BTreeMap<Type, Type>);
 
 impl Substitution {
 
@@ -52,7 +52,7 @@ impl Substitution {
     }
 
     pub fn compose(&mut self, mut other: Substitution) -> Substitution {
-        let mut self_substituded: HashMap<Type, Type> = self.0
+        let mut self_substituded: BTreeMap<Type, Type> = self.0
             .clone()
             .into_iter()
             .map(|(k, s)| (k, other.apply_ty(&s)))
@@ -62,7 +62,7 @@ impl Substitution {
     }
 
     pub fn empty() -> Substitution {
-        Substitution(HashMap::new())
+        Substitution(BTreeMap::new())
     }
 }
 

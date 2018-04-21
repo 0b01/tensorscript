@@ -8,14 +8,14 @@ use core::Core;
 /// 2. pushing and popping scopes (during `annotate` and `collect`)
 /// 3. module type and method type reconstruction
 use parser::term::{NodeAssign, TensorTy, Term};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt::{Debug, Error, Formatter};
 use typed_ast::typed_term::TyFnAppArg;
 use typed_ast::Type;
 
 pub type TypeId = usize;
 
-#[derive(Clone, Hash, Eq, PartialEq)]
+#[derive(Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub enum ModName {
     Global,
     Named(String),
@@ -45,28 +45,28 @@ impl Debug for ModName {
 #[derive(Debug)]
 pub struct Scope {
     /// type information of aliases
-    types: HashMap<Alias, Type>,
+    types: BTreeMap<Alias, Type>,
 }
 
 impl Scope {
     pub fn new() -> Scope {
         Scope {
-            types: HashMap::new(),
+            types: BTreeMap::new(),
         }
     }
 }
 
-type InitMap = HashMap<String, Vec<TyFnAppArg>>;
+type InitMap = BTreeMap<String, Vec<TyFnAppArg>>;
 
 #[derive(Debug)]
 pub struct TypeEnv {
     counter: TypeId,
     current_mod: ModName,
-    modules: HashMap<ModName, (VecDeque<Scope>, VecDeque<Scope>, InitMap)>,
-    to_verify: HashSet<Type>,
+    modules: BTreeMap<ModName, (VecDeque<Scope>, VecDeque<Scope>, InitMap)>,
+    to_verify: BTreeSet<Type>,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
 pub enum Alias {
     Variable(String),
     Function(String),
@@ -95,8 +95,8 @@ impl TypeEnv {
         Self {
             counter: 0,
             current_mod: ModName::Global,
-            modules: HashMap::new(),
-            to_verify: HashSet::new(),
+            modules: BTreeMap::new(),
+            to_verify: BTreeSet::new(),
         }
     }
 
@@ -173,7 +173,7 @@ impl TypeEnv {
                 // if the module does not yet exist, add with an empty scope
                 let mut q = VecDeque::new();
                 q.push_back(Scope::new());
-                (q, VecDeque::new(), HashMap::new())
+                (q, VecDeque::new(), BTreeMap::new())
             });
         }
     }
@@ -184,7 +184,7 @@ impl TypeEnv {
             // if the module does not yet exist, add with an empty scope
             let mut q = VecDeque::new();
             q.push_back(Scope::new());
-            (q, VecDeque::new(), HashMap::new())
+            (q, VecDeque::new(), BTreeMap::new())
         });
 
         let top = stack.0.len() - 1;
@@ -201,7 +201,7 @@ impl TypeEnv {
             // if the module does not yet exist, add with an empty scope
             let mut q = VecDeque::new();
             q.push_back(Scope::new());
-            (q, VecDeque::new(), HashMap::new())
+            (q, VecDeque::new(), BTreeMap::new())
         });
 
         let top = stack.0.len() - 1;

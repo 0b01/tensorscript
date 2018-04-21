@@ -38,7 +38,7 @@ impl Op for Linear {
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         if inits.is_some() {
-            let hm = inits.unwrap().to_hashmap().unwrap();
+            let hm = inits.unwrap().to_btreemap().unwrap();
             if !hm.contains_key("in") {
                 panic!("Initatialize Linear with parameter in=");
             } else if !hm.contains_key("out") {

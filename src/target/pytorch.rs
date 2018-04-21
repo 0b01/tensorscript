@@ -1,10 +1,10 @@
 use ast::{Program, AST};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 macro_rules! map(
     { $($key:expr => $value:expr),+ } => {
         {
-            let mut m = ::std::collections::HashMap::new();
+            let mut m = ::std::collections::BTreeMap::new();
             $(
                 m.insert($key, $value);
             )+
@@ -13,7 +13,7 @@ macro_rules! map(
      };
 );
 
-// const IMPORT_MAP: HashMap<&str, HashMap<&str, (&str,&str)>> = map!{
+// const IMPORT_MAP: BTreeMap<&str, BTreeMap<&str, (&str,&str)>> = map!{
 //     "conv" => map! {
 //         "Conv2d"=> ("nn", "Conv2d"),
 //         "Dropout2d"=> ("nn", "Dropout2d"),

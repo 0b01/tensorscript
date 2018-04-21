@@ -22,11 +22,11 @@
 /// 1. [*] implement module pattern matching
 /// 2. [ ] type level computation (resolved tensor dimension)
 /// 3. [ ] BUG: dimension mismatch for mnist example
-/// 4. [ ] BUG: non-determinism
+/// 4. [*] BUG: non-determinism
 /// 5. [*] BUG: impl Hash, Eq for Type
-/// 6. [ ] set up examples and tests
+/// 6. [*] set up examples and tests
 /// 7. [*] set up commandline
-/// 8. [ ] more examples
+/// 8. [*] more examples
 /// 9. [*] better errors in parser
 
 extern crate pest;
