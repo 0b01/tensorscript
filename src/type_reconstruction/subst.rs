@@ -72,7 +72,10 @@ fn substitute_tvar(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
     use self::Type::*;
     // println!("\nTVAR:::\n{:?}, \n'{:?}, \n{:?}\n", ty, tvar, replacement);
     match ty {
-        UnresolvedModuleFun(_, _, _, _) => ty,
+        UnresolvedModuleFun(_, _, _, _) => {
+            // println!("{:?}, replacement: {:?}", ty, replacement);
+            ty
+        },
         Unit(_) => ty,
         INT(_) => ty,
         BOOL(_) => ty,

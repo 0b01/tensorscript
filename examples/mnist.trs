@@ -11,7 +11,7 @@ node Mnist<IMAGE -> LABELS> {
     dim OUT = 10;
     // Channel
     dim C = 3;
-    
+
     dim W = 28;                 // Image Width
     dim H = 28;                 // Image Height
     tsr IMAGE = [?,C,H,W];      // Tensor alias
@@ -36,15 +36,15 @@ graph Mnist<[?,C,H,W] -> [?,OUT]> {
     }
 
     def forward(b) -> LABELS {
-        b |> view(?, FC2) |> self.example()
+        // b |> view(?, FC2) |> self.example()
 
-        // b
-        // |> conv1            |> maxpool2d(kernel_size=2)
-        // |> conv2 |> dropout |> maxpool2d(kernel_size=2)
-        // |> view(?, FC1)
-        // |> fc1 |> relu
-        // |> self.example()
-        // |> log_softmax(dim=1)
+        b
+        |> conv1            |> maxpool2d(kernel_size=2)
+        |> conv2 |> dropout |> maxpool2d(kernel_size=2)
+        |> view(?, FC1)
+        |> fc1 |> relu
+        |> self.example()
+        |> log_softmax(dim=1)
     }
 
     def example(x: [?,FC2]) -> LABELS {

@@ -324,8 +324,7 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
     let mod_ty = tenv.resolve_type(
         &ModName::Global,
         &Alias::Variable(module.as_str().to_owned()),
-    ).unwrap()
-        .clone().with_span(&f.span);
+    ).unwrap().clone().with_span(&f.span);
 
     let mut decl = TyFnDecl {
         name: Alias::Function(f.name.clone()),
@@ -334,8 +333,7 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
             .map(|p| annotate_fn_decl_param(p, tenv))
             .collect(),
         // fn_ty: tenv.fresh_var(),
-        param_ty: tenv.fresh_var(&f.span),
-        return_ty: Type::Unit(f.span.clone()), // put a placeholder here
+        fn_ty: tenv.fresh_var(&f.span),
         func_block: Box::new(TyTerm::TyNone),  // same here
         span: f.span.clone(),
     };
@@ -343,16 +341,14 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
     match f.name.as_str() {
         // special function signatures
         "new" => {
-            decl.return_ty = mod_ty.clone();
-            decl.param_ty = decl.fn_params.to_ty(&f.span);
-            // decl.fn_ty = Type::FUN(box decl.param_ty.clone(), box mod_ty);
+            decl.fn_ty = Type::FUN(box decl.fn_params.to_ty(&f.span), box mod_ty.clone(), f.span.clone());
         }
         "forward" => {
             if decl.fn_params.len() == 0 {
-                panic!("self.forward(x) must have at least 1 param");
+                panic!("forward(x) must have at least 1 param");
             }
             let name0 = decl.fn_params[0].name.clone();
-            if let Type::Module(_, Some(box Type::FUN(ref p, ref r, _)), _) = mod_ty.clone() {
+            if let Type::Module(_, Some(box Type::FUN(ref p,_, _)), _) = mod_ty.clone() {
                 let ty_sig = *p.clone();
 
                 // type the first parameter
@@ -362,15 +358,14 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
                     span: f.span.clone(),
                 }];
 
-                // todo: support multiple arguments
-
                 // override the old first argument which is []
                 unsafe {
                     tenv.add_type_allow_dup(&module, &Alias::Variable(name0.clone()), ty_sig);
                 }
 
-                // type the function return parameter
-                decl.return_ty = *r.clone();
+                // // type the function return parameter
+                // decl.fn_ty = *r.clone();
+
             // type the function itself...
             // decl.fn_ty = Type::FUN(p.clone(), r.clone());
             } else {
@@ -378,12 +373,12 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
             };
         }
         _ => {
-            decl.return_ty = tenv.resolve_tensor(&module, &f.return_ty, &f.span);
+            // decl.return_ty = tenv.resolve_tensor(&module, &f.return_ty, &f.span);
             // decl.fn_ty = Type::FUN(box decl.param_ty.clone(), box decl.return_ty.clone());
         }
     };
 
-    decl.param_ty = decl.fn_params.to_ty(&f.span).clone();
+    // decl.param_ty = decl.fn_params.to_ty(&f.span).clone();
 
     // if decl.name == "test" {
     //     panic!("{:#?}", decl);
@@ -397,11 +392,7 @@ fn annotate_fn_decl(f: &FnDecl, tenv: &mut TypeEnv) -> TyFnDecl {
     tenv.add_type(
         &module,
         &Alias::Function(f.name.clone()),
-        Type::FUN(
-            box decl.param_ty.clone(),
-            box decl.return_ty.clone(),
-            decl.span.clone(),
-        ),
+        decl.fn_ty.clone(),
     );
 
     decl
@@ -434,20 +425,12 @@ fn annotate_field_access(f_a: &FieldAccess, tenv: &mut TypeEnv) -> TyTerm {
             Some(ref v) => {
                 let args: Vec<TyFnAppArg> =
                     v.iter().map(|arg| annotate_fn_app_arg(arg, tenv)).collect();
-                let arg_ty = args.iter()
-                    .map(|t_arg| {
-                        Type::FnArg(
-                            t_arg.name.clone(),
-                            box t_arg.arg.ty().clone(),
-                            t_arg.span.clone(),
-                        )
-                    })
-                    .collect();
+                let args_ty = args.to_ty(&f_a.span);
                 TyTerm::TyFnApp(TyFnApp {
                     mod_name: Some(f_a.mod_name.clone()),
                     orig_name: f_a.mod_name.clone(),
                     name: Alias::Function(f_a.field_name.clone()),
-                    arg_ty: Type::FnArgs(arg_ty, f_a.span.clone()),
+                    arg_ty: args_ty,
                     args,
                     ret_ty: tenv.fresh_var(&f_a.span),
                     span: f_a.span.clone(),

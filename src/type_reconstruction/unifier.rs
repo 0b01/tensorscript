@@ -115,7 +115,10 @@ impl Unifier {
                 tenv,
             ),
 
-            Equals(UnresolvedModuleFun(_, _, _, _), _) => Substitution::empty(),
+            Equals(UnresolvedModuleFun(_, _, _, _), _) => {
+                println!("{:?}", cs);
+                Substitution::empty()
+            }
 
             _ => {
                 panic!("{:#?}", cs);

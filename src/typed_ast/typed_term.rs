@@ -202,14 +202,12 @@ pub struct TyFnApp {
 impl TyFnApp {
     pub fn extend_arg(&mut self, arg: TyFnAppArg) {
         self.args.insert(0, arg.clone());
-        match &mut self.arg_ty {
-            &mut Type::FnArgs(ref mut args, ref span) => args.insert(
-                0,
-                Type::FnArg(arg.name.clone(), box arg.arg.ty().clone(), span.clone()),
-            ),
-            &mut Type::VAR(_, _) => (),
-            _ => unimplemented!(),
-        };
+        let new_args_ty = self.args.to_ty(&self.span);
+        // self.fn_ty = match &self.fn_ty {
+        // Type::FUN(_, box r, span) => Type::FUN(box new_args_ty, box r.clone(), span.clone()),
+        //     _ => unimplemented!(),
+        // };
+        self.arg_ty = new_args_ty;
     }
 }
 
@@ -289,8 +287,7 @@ pub struct TyViewFn {
 pub struct TyFnDecl {
     pub name: Alias,
     pub fn_params: Vec<TyFnDeclParam>,
-    pub param_ty: Type,
-    pub return_ty: Type,
+    pub fn_ty: Type,
     pub func_block: Box<TyTerm>,
     pub span: ByteSpan,
 }

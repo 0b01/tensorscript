@@ -71,6 +71,7 @@ impl Constraints {
             &TyViewFn(ref view_fn) => {
                 self.collect(&view_fn.arg.arg, tenv);
             }
+            &TyNone => (),
             _ => {
                 panic!("{:#?}", typed_term);
             }
@@ -118,7 +119,13 @@ fn collect_fn_decl(cs: &mut Constraints, decl: &TyFnDecl, tenv: &mut TypeEnv) {
     tenv.push_scope_collection(&module);
 
     cs.collect(&decl.func_block, tenv);
-    cs.add(decl.return_ty.clone(), decl.func_block.ty());
+    cs.add(decl.fn_ty.clone(),
+        Type::FUN(
+            box decl.fn_params.to_ty(&decl.span),
+            box decl.func_block.ty(),
+            decl.span.clone()
+            )
+        );
     // cs.add(
     //     decl.fn_ty.clone(),
     //     Type::FUN(

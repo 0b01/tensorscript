@@ -31,6 +31,8 @@
 
 extern crate pest;
 #[macro_use]
+mod typed_ast;
+#[macro_use]
 extern crate pest_derive;
 #[macro_use]
 extern crate maplit;
@@ -39,8 +41,6 @@ extern crate codespan;
 extern crate clap;
 extern crate codespan_reporting;
 
-#[macro_use]
-mod typed_ast;
 mod core;
 mod parser;
 mod span;
@@ -115,6 +115,6 @@ fn main() {
     // println!("{:#?}", subs);
     // println!("{:#?}", subs.apply(&cs));
     let test = type_reconstruction::inferred_ast::subs(&ast, &mut subs);
-    println!("{:#?}", test);
-    println!("{:#?}", tenv);
+    // println!("{:#?}", test);
+    // println!("{:#?}", tenv);
 }

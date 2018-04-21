@@ -61,6 +61,7 @@ fn consume(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnost
         expr => build_expr(pair, cspan),
         block => build_block(pair, cspan),
         pipes => build_pipes(pair, cspan),
+        semicolon => Ok(Term::None),
 
         // Rule::statements                  => build_block(pair),
         // Rule::integer_zero_literal        => integer!(0),
