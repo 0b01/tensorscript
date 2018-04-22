@@ -46,7 +46,10 @@ impl Core {
                 "Linear" => box self::lin::Linear,
                 _ => unimplemented!(),
             },
-            _ => unimplemented!(),
+            _ => {
+                println!("{}::{}", path_name, mod_name);
+                unimplemented!()
+            }
         }
     }
 }

@@ -39,8 +39,8 @@ graph Mnist<IMAGE -> LABELS> {
         // b |> view(?, FC2) |> self.example()
 
         b
-        // |> conv1            |> maxpool2d(kernel_size=2)
-        // |> conv2 |> dropout |> maxpool2d(kernel_size=2)
+        |> conv1            |> maxpool2d(kernel_size=2)
+        |> conv2 |> dropout |> maxpool2d(kernel_size=2)
         |> view(?, FC1)
         |> fc1 |> relu
         |> self.example()

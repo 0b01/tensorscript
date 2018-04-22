@@ -8,6 +8,7 @@ weights Xor<[?,2] -> [?,1]> {
     fc1 = Linear::new(in=2, out=3);
     fc2 = Linear::<[?,3]->[?,1]>::new(in=3, out=1);
 }
+
 graph Xor<[?,2] -> [?,1]> {
     def new() -> Self {
         self

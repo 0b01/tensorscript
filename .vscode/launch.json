@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Debug",
             "program": "${workspaceFolder}/target/debug/tsrc",
-            "args": ["--in", "examples/xor.trs"],
+            "args": ["--in", "examples/mnist.trs"],
             "cwd": "${workspaceFolder}"
         }
     ]

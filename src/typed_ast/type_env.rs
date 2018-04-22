@@ -374,15 +374,15 @@ impl TypeEnv {
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         let (mod_name, mod_ty) = {
-            if let Type::Module(name, opty, span) = module {
+            if let Type::Module(name, opty, _) = module {
                 (name, opty.clone().map(|i| *i))
             } else {
                 panic!();
             }
         };
 
-        if let Type::UnresolvedModuleFun(p0, p1, p2, span) = ty {
-            assert_eq!(fn_name, &format!("self.{}", p2));
+        if let Type::UnresolvedModuleFun(p0, p1, p2, _) = ty {
+            assert_eq!(fn_name, p2);
             let op = Core::find(p0, p1);
             let ty = op.resolve(self, mod_ty, fn_name, inits);
             ty

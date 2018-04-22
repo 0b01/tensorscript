@@ -17,11 +17,10 @@ impl Op for sigmoid {
     }
 
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        let ty = tenv.fresh_var(&CSpan::fresh_span());
         vec![
             (
                 "forward",
-                fun!("sigmoid", "forward", args!(arg!("x", ty.clone())), ty)
+                UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
             )
         ]
     }
@@ -34,6 +33,10 @@ impl Op for sigmoid {
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {
+            "forward" => {
+                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                Some(fun!("sigmoid", "forward", args!(arg!("x", ty.clone())), ty))
+            }
             _ => unimplemented!(),
         }
     }
@@ -43,19 +46,21 @@ impl Op for relu {
         "relu"
     }
 
-    fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        let ty = tenv.fresh_var(&CSpan::fresh_span());
-        vec![("forward", fun!("relu", "forward", args!(arg!("x", ty.clone())), ty))]
+    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+        vec![
+            (
+                "forward",
+                UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
+            )
+        ]
     }
 
-    fn resolve(
-        &self,
-        tenv: &mut TypeEnv,
-        _module: Option<Type>,
-        fn_name: &str,
-        inits: Option<Vec<TyFnAppArg>>,
-    ) -> Option<Type> {
+    fn resolve(&self, tenv: &mut TypeEnv, _module: Option<Type>, fn_name: &str, inits: Option<Vec<TyFnAppArg>>) -> Option<Type> {
         match fn_name {
+            "forward" => {
+                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                Some(fun!("relu", "forward", args!(arg!("x", ty.clone())), ty))
+            },
             _ => unimplemented!(),
         }
     }
@@ -67,10 +72,9 @@ impl Op for log_softmax {
     }
 
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        let ty = tenv.fresh_var(&CSpan::fresh_span());
         vec![(
             "forward",
-            fun!("log_softmax", "forward", args!(arg!("x", ty.clone()), arg!("dim", int!())), ty),
+            UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
         )]
     }
 
@@ -82,6 +86,10 @@ impl Op for log_softmax {
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {
+            "forward" => {
+                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                Some(fun!("log_softmax", "forward", args!(arg!("x", ty.clone()), arg!("dim", int!())), ty))
+            }
             _ => unimplemented!(),
         }
     }

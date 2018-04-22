@@ -34,13 +34,7 @@ impl Op for Conv2d {
         ]
     }
 
-    fn resolve(
-        &self,
-        tenv: &mut TypeEnv,
-        module: Option<Type>,
-        _fn_name: &str,
-        inits: Option<Vec<TyFnAppArg>>,
-    ) -> Option<Type> {
+    fn resolve( &self, tenv: &mut TypeEnv, module: Option<Type>, _fn_name: &str, inits: Option<Vec<TyFnAppArg>>,) -> Option<Type> {
         println!("TODO!");
         None
     }
@@ -53,14 +47,32 @@ impl Op for Dropout2d {
 
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         let span = CSpan::fresh_span();
-        let ty = tenv.fresh_var(&span);
         vec![
             (
                 "new",
                 fun!("Dropout2d", "new", args!(arg!("p", float!())), module!(self.get_name())),
             ),
-            ("forward", fun!("Dropout2d", "forward", ty.clone(), ty)),
+            (
+                "forward",
+                Type::UnresolvedModuleFun("conv", self.get_name(), "forward", CSpan::fresh_span()),
+            ),
         ]
+    }
+
+    fn resolve(
+        &self,
+        tenv: &mut TypeEnv,
+        module: Option<Type>,
+        fn_name: &str,
+        inits: Option<Vec<TyFnAppArg>>,
+    ) -> Option<Type> {
+        match fn_name {
+            "forward" => {
+                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                Some(fun!("Dropout2d", "forward", ty.clone(), ty))
+            }
+            _ => unimplemented!(),
+        }
     }
 }
 
@@ -73,10 +85,12 @@ impl Op for maxpool2d {
     }
 
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![(
-            "forward",
-            Type::UnresolvedModuleFun("conv", self.get_name(), "forward", CSpan::fresh_span()),
-        )]
+        vec![
+            (
+                "forward",
+                Type::UnresolvedModuleFun("conv", self.get_name(), "forward", CSpan::fresh_span()),
+            )
+        ]
     }
 
     fn resolve(

@@ -72,8 +72,10 @@ impl Ty for TyTerm {
     }
 
     fn int(&self) -> Option<i64> {
+        // panic!("{:#?}", self);
         match self {
             &TyTerm::TyInteger(_, i, _) => Some(i),
+            &TyTerm::TyExpr{ref items, ty:_, span: _} => items.int(),
             _ => None,
         }
     }

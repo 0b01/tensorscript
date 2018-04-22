@@ -14,7 +14,10 @@ impl Op for Linear {
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         use self::Type::*;
         vec![
-            ("init_normal", fun!("Linear", "init_normal", args!(arg!("std", float!())), unit!())),
+            (
+                "init_normal",
+                fun!("Linear", "init_normal", args!(arg!("std", float!())), unit!())
+            ),
             (
                 "new",
                 fun!(
@@ -35,26 +38,31 @@ impl Op for Linear {
         &self,
         tenv: &mut TypeEnv,
         module: Option<Type>,
-        _fn_name: &str,
+        fn_name: &str,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
-        if inits.is_some() {
-            let hm = inits.unwrap().to_btreemap().unwrap();
-            if !hm.contains_key("in") {
-                panic!("Initatialize Linear with parameter in=");
-            } else if !hm.contains_key("out") {
-                panic!("Initatialize Linear with parameter out=");
+        match fn_name {
+            "forward" => {
+                if inits.is_some() {
+                    let hm = inits.unwrap().to_btreemap().unwrap();
+                    if !hm.contains_key("in") {
+                        panic!("Initatialize Linear with parameter in=");
+                    } else if !hm.contains_key("out") {
+                        panic!("Initatialize Linear with parameter out=");
+                    }
+
+                    let in_dim = hm.get("in").and_then(unwrap_dim).unwrap();
+                    let out_dim = hm.get("out").and_then(unwrap_dim).unwrap();
+
+                    // println!("({:?}, {:?})", in_dim, out_dim);
+                    // println!("{:#?}", module);
+                    // unimplemented!()
+                    None
+                } else {
+                    None
+                }
             }
-
-            let in_dim = hm.get("in").and_then(unwrap_dim).unwrap();
-            let out_dim = hm.get("out").and_then(unwrap_dim).unwrap();
-
-            // println!("({:?}, {:?})", in_dim, out_dim);
-            // println!("{:#?}", module);
-            // unimplemented!()
-            None
-        } else {
-            None
+            _ => unimplemented!(),
         }
     }
 }
