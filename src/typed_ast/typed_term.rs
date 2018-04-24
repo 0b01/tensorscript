@@ -24,15 +24,8 @@ pub enum TyTerm {
         ret: Box<TyTerm>,
         span: ByteSpan,
     },
-    TyExpr {
-        items: Box<TyTerm>,
-        ty: Type,
-        span: ByteSpan,
-    },
-    TyStmt {
-        items: Box<TyTerm>,
-        span: ByteSpan,
-    },
+    TyExpr(Box<TyTerm>, Type, ByteSpan),
+    TyStmt(Box<TyTerm>, ByteSpan),
     TyViewFn(TyViewFn),
 }
 
@@ -61,12 +54,8 @@ impl Ty for TyTerm {
                 ret: _,
                 ref span,
             } => span.clone(),
-            &TyExpr {
-                items: _,
-                ty: _,
-                ref span,
-            } => span.clone(),
-            &TyStmt { items: _, ref span } => span.clone(),
+            &TyExpr(_, _, ref span) => span.clone(),
+            &TyStmt(_, ref span) => span.clone(),
             &TyViewFn(ref view_fn) => view_fn.span(),
             _ => panic!("{:?}", self),
         }
@@ -89,12 +78,8 @@ impl Ty for TyTerm {
                 ref ret,
                 span: _,
             } => ret.ty(),
-            &TyExpr {
-                items: _,
-                ref ty,
-                span: _,
-            } => ty.clone(),
-            &TyStmt { items: _, span: _ } => Unit(CSpan::fresh_span()),
+            &TyExpr(_,ref ty, _) => ty.clone(),
+            &TyStmt(..) => Unit(CSpan::fresh_span()),
             &TyViewFn(ref view_fn) => view_fn.ty(),
             &TyTuple(ref t, ..) => t.clone(),
         }
@@ -104,7 +89,7 @@ impl Ty for TyTerm {
         // panic!("{:#?}", self);
         match self {
             &TyTerm::TyInteger(_, i, _) => Some(i),
-            &TyTerm::TyExpr{ref items, ty:_, span: _} => items.int(),
+            &TyTerm::TyExpr(ref items, ..) => items.int(),
             _ => None,
         }
     }

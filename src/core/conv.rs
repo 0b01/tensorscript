@@ -12,7 +12,7 @@ impl Op for Conv2d {
         "Conv2d"
     }
 
-    fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
                 "new",
@@ -39,11 +39,26 @@ impl Op for Conv2d {
                 if !x_ty.is_resolved() {
                     None
                 } else {
-                    // ...
-                    println!(">>>>>>>>>>:\nTODO: Conv2d!");
-                    println!("{:#?}, {:#?}", inits, ret_ty);
-                    println!("x_ty: {:?}", x_ty);
-                    println!("<<<<<<<<<<");
+                    let init_map = inits?.to_btreemap()?;
+                    let kernel_size = init_map.get("kernel_size")?;
+                    let kernel_ty = kernel_size.ty();
+                    let (k0,k1) = if let Type::Tuple(..) = kernel_ty {
+                        if let box TyTerm::TyTuple(_,vs,_) = kernel_size { // TyExpr
+                            (vs[0].clone(), vs[1].clone())
+                        } else {
+                            println!("{:#?}", kernel_size);
+                            panic!();
+                        }
+                    } else {
+                        panic!();
+                    };
+                    println!("::::: {} {}", k0, k1);
+                    // println!(">>>>>>>>>>:\nTODO: Conv2d!");
+                    // // println!("{:#?}, {:#?}", inits, ret_ty);
+                    // println!("x_ty: {:?}", x_ty);
+                    // println!("kernel_ty: {:?}", kernel_ty);
+                    // println!("<<<<<<<<<<");
+                    // panic!();
                     None
                 }
             },

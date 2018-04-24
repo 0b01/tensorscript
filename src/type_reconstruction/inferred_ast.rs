@@ -22,22 +22,15 @@ pub fn subs(typed_term: &TyTerm, s: &mut Substitution) -> TyTerm {
             ret: box subs(&ret, s),
             span: span.clone(),
         },
-        &TyExpr {
-            ref items,
-            ref ty,
-            ref span,
-        } => TyExpr {
-            items: box subs(&items, s),
-            ty: s.apply_ty(ty),
-            span: span.clone(),
-        },
-        &TyStmt {
-            ref items,
-            ref span,
-        } => TyStmt {
-            items: box subs(&items, s),
-            span: span.clone(),
-        },
+        &TyExpr(ref items, ref ty, ref span) => TyExpr(
+            box subs(&items, s),
+            s.apply_ty(ty),
+            span.clone(),
+        ),
+        &TyStmt(ref items, ref span) => TyStmt(
+            box subs(&items, s),
+            span.clone(),
+        ),
         &TyViewFn(ref view_fn) => TyViewFn(typed_term::TyViewFn {
             ty: s.apply_ty(&view_fn.ty),
             arg: subs_fn_app_arg(&view_fn.arg, s),

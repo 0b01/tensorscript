@@ -25,12 +25,13 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TyTerm {
         &Program(ref decls) => TyProgram(decls.iter().map(|d| annotate_decl(d, tenv)).collect()),
 
         &Expr(ref items, ref span) => {
-            let ret = Box::new(annotate(&items, tenv));
-            TyExpr {
-                ty: ret.ty(),
-                items: ret,
-                span: span.clone(),
-            }
+            let ret = annotate(&items, tenv);
+            let ret_ty = ret.ty();
+            TyExpr(
+                box ret,
+                ret_ty,
+                span.clone(),
+            )
         }
 
         &Integer(i, s) => TyInteger(Type::INT(s.clone()), i, s),
@@ -51,10 +52,10 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TyTerm {
             ret
         }
         &List(ref stmts) => TyList(stmts.iter().map(|s| annotate(&s, tenv)).collect()),
-        &Stmt(ref items, ref span) => TyStmt {
-            items: Box::new(annotate(&items, tenv)),
-            span: span.clone(),
-        },
+        &Stmt(ref items, ref span) => TyStmt(
+            box annotate(&items, tenv),
+            span.clone(),
+        ),
         &FieldAccess(ref f_a) => annotate_field_access(f_a, tenv),
         &None => TyNone,
         &Pipes(ref pipes) => annotate_pipes(pipes, tenv),

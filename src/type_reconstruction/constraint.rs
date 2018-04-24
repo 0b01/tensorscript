@@ -60,15 +60,11 @@ impl Constraints {
                 self.collect(&ret, tenv);
                 tenv.pop_scope(&module);
             }
-            &TyExpr {
-                ref items,
-                ref ty,
-                span: _,
-            } => {
+            &TyExpr(ref items, ref ty, _) => {
                 self.collect(&items, tenv);
                 self.add(ty.clone(), items.ty());
             }
-            &TyStmt { ref items, span: _ } => self.collect(&items, tenv),
+            &TyStmt(ref items, _) => self.collect(&items, tenv),
             &TyViewFn(ref view_fn) => {
                 self.collect(&view_fn.arg.arg, tenv);
             }
