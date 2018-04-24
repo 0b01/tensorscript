@@ -11,8 +11,9 @@ pub trait Op {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
-        module: Option<Type>,
         fn_name: &str,
+        arg_ty: Type,
+        ret_ty: Type,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         unimplemented!();

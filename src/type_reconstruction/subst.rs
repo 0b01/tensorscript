@@ -24,7 +24,7 @@ use type_reconstruction::constraint::{Constraints, Equals};
 use typed_ast::type_env::TypeId;
 use typed_ast::Type;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Substitution(pub BTreeMap<Type, Type>);
 
 impl Substitution {

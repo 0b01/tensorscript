@@ -34,9 +34,30 @@ impl Op for Conv2d {
         ]
     }
 
-    fn resolve( &self, tenv: &mut TypeEnv, module: Option<Type>, _fn_name: &str, inits: Option<Vec<TyFnAppArg>>,) -> Option<Type> {
-        println!("TODO!");
-        None
+    fn resolve( &self,
+        tenv: &mut TypeEnv,
+        fn_name: &str,
+        arg_ty: Type,
+        ret_ty: Type,
+        inits: Option<Vec<TyFnAppArg>>
+    ) -> Option<Type> {
+        match fn_name {
+            "forward" => {
+                let forward_args = arg_ty.as_args_map()?;
+                let x_ty = forward_args.get("x")?;
+                if !x_ty.is_resolved() {
+                    None
+                } else {
+                    // ...
+                    println!(">>>>>>>>>>:\nTODO: Conv2d!");
+                    println!("{:#?}, {:#?}", arg_ty, ret_ty);
+                    println!("x_ty: {:?}", x_ty);
+                    println!("<<<<<<<<<<");
+                    None
+                }
+            }
+            _ => unimplemented!(),
+        }
     }
 }
 
@@ -62,8 +83,9 @@ impl Op for Dropout2d {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
-        module: Option<Type>,
         fn_name: &str,
+        arg_ty: Type,
+        ret_ty: Type,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {
@@ -96,11 +118,12 @@ impl Op for maxpool2d {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
-        module: Option<Type>,
         _fn_name: &str,
+        arg_ty: Type,
+        ret_ty: Type,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
-        println!("TODO!");
+        // println!("TODO!");
         None
     }
 }

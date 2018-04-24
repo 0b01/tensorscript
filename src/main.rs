@@ -55,6 +55,7 @@ use type_reconstruction::constraint::Constraints;
 use type_reconstruction::unifier::Unifier;
 use typed_ast::annotate::annotate;
 use typed_ast::type_env::TypeEnv;
+use type_reconstruction::inferred_ast::subs;
 
 use codespan::CodeMap;
 use clap::{Arg, App, ArgMatches};
@@ -79,6 +80,7 @@ fn get_matches<'a>() -> ArgMatches<'a> {
 }
 
 fn main() {
+    // --------------- get command line options -----------------
     let matches = get_matches();
     let fname = matches.value_of("input").unwrap();
 
@@ -86,6 +88,7 @@ fn main() {
     let mut src = String::new();
     file.read_to_string(&mut src).expect("Unable to read the file");
 
+    // --------------- parse into untyped ast   -----------------
 
     let mut code_map = CodeMap::new();
     let file_map = code_map.add_filemap("test".into(), src.clone());
@@ -100,21 +103,37 @@ fn main() {
         },
     };
 
+    // ------------- annotate ast with type vars --------------
+
     let mut tenv = TypeEnv::new();
     let ast = annotate(&program, &mut tenv);
     // println!("{}", ast);
     // println!("initial tenv: {:#?}", tenv);
 
-    let mut cs = Constraints::new();
-    cs.collect(&ast, &mut tenv);
+    // ------------ first unitfication pass ---------------
+    let mut cs = Constraints::new(); cs.collect(&ast, &mut tenv);               // collect constraints
     // println!("{:#?}", cs);
-
     let mut unifier = Unifier::new();
-    let mut subs = unifier.unify(cs.clone(), &mut tenv);
+    let mut last_sub = unifier.unify(cs.clone(), &mut tenv);                  // unify
     unifier.errs.print_errs(&code_map);
-    // println!("{:#?}", subs);
-    // println!("{:#?}", subs.apply(&cs));
-    let test = type_reconstruction::inferred_ast::subs(&ast, &mut subs);
-    // println!("{:#?}", test);
+    // println!("{:#?}", last_sub);
+
+    // ------------ resolve module constraints until it stabilizes ----------
+    let mut last_ast = subs(&ast, &mut last_sub);;
+    let resolve_modules = move || loop {
+        // collect constraints
+        let mut new_cs = Constraints::new(); new_cs.collect(&last_ast, &mut tenv);
+        // unify constraints
+        let mut new_unifier = Unifier::new(); let mut new_sub = new_unifier.unify(new_cs, &mut tenv);
+        let temp_ast = subs(&last_ast, &mut new_sub);
+        if temp_ast != last_ast {
+            last_ast = temp_ast;
+            continue;
+        }
+        return last_ast;
+    };
+    let final_ast = resolve_modules();
+    // println!("{:#?}", final_ast);
     // println!("{:#?}", tenv);
+    // println!("{:#?}", new_cs);
 }

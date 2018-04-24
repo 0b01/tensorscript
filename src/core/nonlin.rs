@@ -28,8 +28,9 @@ impl Op for sigmoid {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
-        _module: Option<Type>,
         fn_name: &str,
+        arg_ty: Type,
+        ret_ty: Type,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {
@@ -55,7 +56,13 @@ impl Op for relu {
         ]
     }
 
-    fn resolve(&self, tenv: &mut TypeEnv, _module: Option<Type>, fn_name: &str, inits: Option<Vec<TyFnAppArg>>) -> Option<Type> {
+    fn resolve(&self,
+        tenv: &mut TypeEnv,
+        fn_name: &str,
+        arg_ty: Type,
+        ret_ty: Type,
+        inits: Option<Vec<TyFnAppArg>>
+    ) -> Option<Type> {
         match fn_name {
             "forward" => {
                 let ty = tenv.fresh_var(&CSpan::fresh_span());
@@ -81,8 +88,9 @@ impl Op for log_softmax {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
-        _module: Option<Type>,
         fn_name: &str,
+        arg_ty: Type,
+        ret_ty: Type,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {

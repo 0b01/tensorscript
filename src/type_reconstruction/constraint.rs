@@ -221,7 +221,17 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
 
     if let Type::UnresolvedModuleFun(_, _, _, _) = ty {
         let inits = tenv.resolve_init(&current_mod, &fn_app.orig_name.clone().unwrap());
-        if let Some(resolved_fn_ty) = tenv.resolve_unresolved(ty.clone(), &symbol_name, &symbol_mod_ty, fn_name.as_str(), inits) {
+        let resolution = tenv.resolve_unresolved(
+            ty.clone(),
+            &symbol_name,
+            &symbol_mod_ty,
+            fn_name.as_str(),
+            fn_app.arg_ty.clone(),
+            fn_app.ret_ty.clone(),
+            inits
+        );
+        if let Some(resolved_fn_ty) = resolution {
+            println!("{:#?}", resolved_fn_ty);
             cs.add(
                 resolved_fn_ty,
                 fun!(
@@ -231,7 +241,6 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
                     fn_app.ret_ty.clone()
                 )
             );
-            // panic!("{:#?}", resolved_fn_ty);
         } else {
             tenv.add_unverified(ty.clone());
         }

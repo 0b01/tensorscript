@@ -37,9 +37,10 @@ impl Op for Linear {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
-        module: Option<Type>,
         fn_name: &str,
-        inits: Option<Vec<TyFnAppArg>>,
+        arg_ty: Type,
+        ret_ty: Type,
+        inits: Option<Vec<TyFnAppArg>>, // ... refactor into span error
     ) -> Option<Type> {
         match fn_name {
             "forward" => {
@@ -51,12 +52,19 @@ impl Op for Linear {
                         panic!("Initatialize Linear with parameter out=");
                     }
 
+                    let arg_dim = arg_ty
+                        .first_arg_ty()?
+                        .last_dim()?
+                        .as_num();
+                    let ret_dim = ret_ty
+                        .last_dim()?
+                        .as_num();
+
                     let in_dim = hm.get("in").and_then(unwrap_dim).unwrap();
                     let out_dim = hm.get("out").and_then(unwrap_dim).unwrap();
 
-                    // println!("({:?}, {:?})", in_dim, out_dim);
-                    // println!("{:#?}", module);
-                    // unimplemented!()
+                    assert!((arg_dim == in_dim) && (ret_dim == out_dim));
+
                     None
                 } else {
                     None

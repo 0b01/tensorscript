@@ -3,6 +3,7 @@ use std::fmt::{Debug, Error, Formatter};
 /// Types for typed AST
 use std::hash::{Hash, Hasher};
 use typed_ast::type_env::TypeId;
+use std::collections::BTreeMap;
 
 #[derive(Clone, Eq, PartialOrd, Ord)]
 pub enum Type {
@@ -114,6 +115,38 @@ impl Hash for Type {
 }
 
 impl Type {
+
+    pub fn as_args_map(&self) -> Option<BTreeMap<String, Type>> {
+        use self::Type::{FnArg, FnArgs};
+        match self {
+            FnArgs(vs, _) => {
+                Some(
+                    vs.iter()
+                    .filter_map(|ty| 
+                        if let FnArg(ref name,box ref ty, _) = ty {
+                            if name.is_some() {
+                                Some((name.clone().unwrap(), ty.clone()))
+                            } else {
+                                None
+                            }
+                        } else { None }
+                    )
+                    .collect()
+                )
+            }
+            _ => None
+        }
+    }
+
+    pub fn last_dim(&self) -> Option<Type> {
+        match self {
+            Type::TSR(vs, _) => {
+                Some(vs[vs.len()-1].clone())
+            }
+            _ => None
+        }
+    }
+
     pub fn first_arg_ty(&self) -> Option<Type> {
         match self {
             Type::FnArgs(vs, _) => {
@@ -170,29 +203,28 @@ impl Type {
         }
     }
 
-    // pub fn is_resolved(&self) -> bool {
-    //     use self::Type::*;
-    //     match self {
-    //         Unit => true,
-    //         INT => true,
-    //         FLOAT => true,
-    //         BOOL => true,
-    //         UnresolvedModuleFun(_,_,_) => false,
+    pub fn is_resolved(&self) -> bool {
+        use self::Type::*;
+        match self {
+            Unit(..) => true,
+            INT(..) => true,
+            FLOAT(..) => true,
+            BOOL(..) => true,
+            UnresolvedModuleFun(..) => false,
 
-    //         VAR(_) => false,
-    //         DIM(_) => false,
+            VAR(..) => false,
+            DIM(..) => false,
 
-    //         Module(_, Some(i)) => i.is_resolved(),
-    //         Module(_, None) => false,
-    //         FnArgs(ts) => ts.iter().map(|t| t.is_resolved()).all(|t| t),
-    //         FnArg(_, t) => t.is_resolved(),
-    //         ResolvedDim(_) => true,
-    //         FUN(p, r) => Type::is_resolved(p) && r.is_resolved(),
-    //         TSR(ts) => ts.iter().map(|t| t.is_resolved()).all(|t|t),
-    //         MismatchedDim(_,_) => true,
-    //         _ => unimplemented!(),
-    //     }
-    // }
+            Module(_, Some(i), _) => i.is_resolved(),
+            Module(_, None, _) => false,
+            FnArgs(ts, _) => ts.iter().map(|t| t.is_resolved()).all(|t| t),
+            FnArg(_, t, _) => t.is_resolved(),
+            ResolvedDim(_, _) => true,
+            FUN(_,_, p, r, _) => Type::is_resolved(p) && r.is_resolved(),
+            TSR(ts, _) => true, //ts.iter().map(|t| t.is_resolved()).all(|t|t),
+            _ => unimplemented!(),
+        }
+    }
 }
 
 impl Debug for Type {

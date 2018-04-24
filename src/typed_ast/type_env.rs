@@ -371,6 +371,8 @@ impl TypeEnv {
         symbol_name: &str,
         module: &Type,
         fn_name: &str,
+        arg_ty: Type,
+        ret_ty: Type,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         let (mod_name, mod_ty) = {
@@ -384,7 +386,7 @@ impl TypeEnv {
         if let Type::UnresolvedModuleFun(p0, p1, p2, _) = ty {
             assert_eq!(fn_name, p2);
             let op = Core::find(p0, p1);
-            let ty = op.resolve(self, mod_ty, fn_name, inits);
+            let ty = op.resolve(self, fn_name, arg_ty, ret_ty, inits);
             ty
         } else {
             unimplemented!();
