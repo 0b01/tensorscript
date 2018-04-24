@@ -20,7 +20,7 @@ node Mnist<IMAGE -> LABELS> {
 }
 
 weights Mnist<IMAGE -> LABELS> {
-    conv1 = Conv2d::new(in_ch=1, out_ch=10, kernel_size=5);
+    conv1 = Conv2d::new(in_ch=1, out_ch=10, kernel_size=(1,5));
     conv2 = Conv2d::new(in_ch=10, out_ch=20, kernel_size=5);
     dropout = Dropout2d::new(p=0.5);
     fc1 = Linear::<[?,FC1] -> [?,FC2]>::new(in=FC1, out=FC2);

@@ -311,7 +311,7 @@ mod tests {
     use codespan::{Span, ByteIndex};
     #[test]
     fn should_not_take_span_into_hash() {
-        let h = btreeset!(
+        let h = hashset!(
             Type::VAR(1, Span::new(ByteIndex(1), ByteIndex(1))),
             Type::VAR(1, Span::new(ByteIndex(2), ByteIndex(2))),
 

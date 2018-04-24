@@ -179,7 +179,8 @@ field_access = { ident ~ "." ~ ident ~ fn_app_param? }
 
 view_fn = { view_lit ~ "(" ~ ( batch_lit | cap_ident)? ~ ("," ~ ( batch_lit |cap_ident))* ~ ","? ~ ")" }
 
-expr_item = _{ view_fn | field_access | literal | bool_not | fn_app | ident | conditional }
+tuple = { "(" ~ (expr ~ ",")* ~ expr? ~ ","? ~ ")" }
+expr_item = _{ view_fn | field_access | literal | bool_not | fn_app | ident | conditional | tuple }
 expr = { expr_item ~ !"|>" | pipes }
 
 bool_not = _{ op_not ~ expr }
