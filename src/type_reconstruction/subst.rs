@@ -114,6 +114,7 @@ fn substitute_tvar(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
                 .collect(),
             span,
         ),
+        Tuple(tys, s) => Tuple(tys.into_iter().map(|t| substitute_tvar(t, tvar, replacement)).collect(), s),
         FUN(a,b,p, r, s) => FUN(
             a,
             b,

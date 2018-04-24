@@ -44,6 +44,11 @@ pub fn subs(typed_term: &TyTerm, s: &mut Substitution) -> TyTerm {
             span: view_fn.span.clone(),
         }),
         &TyNone => TyNone,
+        &TyTuple(ref ty, ref vs, ref span) => TyTuple(
+            s.apply_ty(ty),
+            vs.iter().map(|i|subs(i,s)).collect(),
+            span.clone()
+        ),
         _ => {
             panic!("{:#?}", typed_term);
         }

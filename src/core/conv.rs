@@ -16,16 +16,7 @@ impl Op for Conv2d {
         vec![
             (
                 "new",
-                fun!(
-                    "Conv2d",
-                    "new",
-                    args!(
-                        arg!("in_ch", int!()),
-                        arg!("out_ch", int!()),
-                        arg!("kernel_size", int!())
-                    ),
-                    module!(self.get_name())
-                ),
+                Type::UnresolvedModuleFun("conv", self.get_name(), "new", CSpan::fresh_span()),
             ),
             (
                 "forward",
@@ -50,11 +41,23 @@ impl Op for Conv2d {
                 } else {
                     // ...
                     println!(">>>>>>>>>>:\nTODO: Conv2d!");
-                    println!("{:#?}, {:#?}", arg_ty, ret_ty);
+                    println!("{:#?}, {:#?}", inits, ret_ty);
                     println!("x_ty: {:?}", x_ty);
                     println!("<<<<<<<<<<");
                     None
                 }
+            },
+            "new" => {
+                Some(fun!(
+                    "Conv2d",
+                    "new",
+                    args!(
+                        arg!("in_ch", int!()),
+                        arg!("out_ch", int!()),
+                        arg!("kernel_size", tenv.fresh_var(&CSpan::fresh_span()))
+                    ),
+                    module!(self.get_name())
+                ))
             }
             _ => unimplemented!(),
         }

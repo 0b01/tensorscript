@@ -59,7 +59,9 @@ impl Unifier {
             Equals(ty, DIM(tvar, _)) => self.unify_var(tvar, ty),
 
             Equals(FnArgs(v1, _), FnArgs(v2, _)) => self.unify(
-                Constraints(v1.into_iter().zip(v2).map(|(i, j)| Equals(i, j)).collect()),
+                Constraints(
+                    v1.into_iter().zip(v2).map(|(i, j)| Equals(i, j)).collect()
+                ),
                 tenv,
             ),
 
@@ -89,6 +91,14 @@ impl Unifier {
                     panic!()
                 }
             },
+
+            Equals(Tuple(vs1, _), Tuple(vs2, _)) => self.unify(
+                Constraints(
+                    vs1.into_iter().zip(vs2).map(|(i,j)| Equals(i,j)).collect()
+                ),
+                tenv
+            ),
+
             Equals(ts1 @ TSR(_, _), ts2 @ TSR(_, _)) => {
                 if ts1.as_rank() == ts2.as_rank() {
                     match (ts1, ts2) {

@@ -40,6 +40,7 @@ impl Constraints {
             &TyInteger(_, _, _) => (),
             &TyFloat(_, _, _) => (),
             &TyList(ref terms) => terms.iter().map(|t| self.collect(&t, tenv)).collect(),
+            &TyTuple(_, ref terms, _) => terms.iter().map(|t| self.collect(&t, tenv)).collect(),
             &TyIdent(ref t, ref name, ref sp) => self.add(
                 t.clone(),
                 tenv.resolve_type(&module, &name)
@@ -213,23 +214,38 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
 
     let symbol_modname = ModName::Named(symbol_mod_ty.as_str().to_owned());
     let fn_name = &fn_app.name;
-    // println!(
-    //     "{:?} | {} | {:?} | {:?} | {:?} ",
-    //     fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name
-    // );
     let ty = tenv.resolve_type(&symbol_modname, &fn_name).unwrap();
+    // println!(
+    //     "{:?} | {:?} | {} | {:?} | {:?} | {:?} ",
+    //     ty, fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name
+    // );
 
-    if let Type::UnresolvedModuleFun(_, _, _, _) = ty {
-        let inits = tenv.resolve_init(&current_mod, &fn_app.orig_name.clone().unwrap());
-        let resolution = tenv.resolve_unresolved(
-            ty.clone(),
-            &symbol_name,
-            &symbol_mod_ty,
-            fn_name.as_str(),
-            fn_app.arg_ty.clone(),
-            fn_app.ret_ty.clone(),
-            inits
-        );
+    if let Type::UnresolvedModuleFun(..) = ty {
+        let resolution = if fn_app.orig_name.is_none() { // this is in a weight assign fn
+            println!("{:?}, {:?}", &fn_app.mod_name.clone().unwrap().as_str(), fn_app.name);
+            // panic!();
+            tenv.resolve_unresolved(
+                ty.clone(),
+                &symbol_name,
+                &Type::Module(fn_app.mod_name.clone().unwrap(), None, CSpan::fresh_span()),
+                &fn_app.name.as_str(),
+                fn_app.arg_ty.clone(),
+                fn_app.ret_ty.clone(),
+                None
+            )
+        } else {
+            let inits = tenv.resolve_init(&current_mod, &fn_app.orig_name.clone().unwrap());
+            tenv.resolve_unresolved(
+                ty.clone(),
+                &symbol_name,
+                &symbol_mod_ty,
+                fn_name.as_str(),
+                fn_app.arg_ty.clone(),
+                fn_app.ret_ty.clone(),
+                inits
+            )
+        };
+
         if let Some(resolved_fn_ty) = resolution {
             println!("{:#?}", resolved_fn_ty);
             cs.add(
@@ -244,7 +260,7 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
         } else {
             tenv.add_unverified(ty.clone());
         }
-        // cs.add(ty.clone(), fun!(fn_app.arg_ty.clone(), fn_app.ret_ty.clone()));
+
     }
 
     cs.add(

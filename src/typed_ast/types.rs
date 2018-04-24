@@ -16,6 +16,7 @@ pub enum Type {
     // type variables that need to be resolved
     VAR(TypeId, ByteSpan),
     DIM(TypeId, ByteSpan),
+    Tuple(Vec<Type>, ByteSpan),
 
     // recursive types
     Module(String, Option<Box<Type>>, ByteSpan),
@@ -39,6 +40,7 @@ impl PartialEq for Type {
             (DIM(b, _), DIM(a, _)) => a == b,
             (Module(a1, b1, _), Module(a2, b2, _)) => (a1 == a2) && (b1 == b2),
             (FnArgs(ta, _), FnArgs(tb, _)) => ta == tb,
+            (Tuple(ta, _), Tuple(tb, _)) => ta == tb,
             (FnArg(n1, t1, _), FnArg(n2, t2, _)) => (n1 == n2) && (t1 == t2),
             (ResolvedDim(a, _), ResolvedDim(b, _)) => a == b,
             (FUN(m1, n1, p1, r1, _), FUN(m2, n2, p2, r2, _)) => (p1 == p2) && (r1 == r2) && (m1 == m2) && (n1 == n2),
@@ -175,6 +177,7 @@ impl Type {
             Module(ref s, ref ty, _) => Module(s.clone(), ty.clone(), sp.clone()),
             FUN(ref m,ref n,ref p, ref r, _) => FUN(m.clone(),n.clone(),p.clone(), r.clone(), sp.clone()),
             TSR(ref dims, _) => TSR(dims.clone(), sp.clone()),
+            Tuple(ref vs, _) => Tuple(vs.clone(), sp.clone()),
             _ => panic!("{:?}", self),
         }
     }
@@ -238,6 +241,7 @@ impl Debug for Type {
             UnresolvedModuleFun(ref a, ref b, ref c, _) => {
                 write!(f, "UNRESOLVED({}::{}::{})", a, b, c)
             }
+            Tuple(ref tys, _) => write!(f, "({:?})", tys),
             VAR(ref t_id, _) => write!(f, "'{:?}", t_id),
             DIM(ref t_id, _) => write!(f, "!{:?}", t_id),
             FnArgs(ref args, _) => write!(f, "FnArgs({:?})", args),

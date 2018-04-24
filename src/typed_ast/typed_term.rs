@@ -8,6 +8,34 @@ use std::fmt::{Display, Error, Formatter};
 use typed_ast::type_env::Alias;
 use typed_ast::Type;
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum TyTerm {
+    TyNone,
+    TyProgram(Vec<TyDecl>),
+    TyInteger(Type, i64, ByteSpan),
+    TyFloat(Type, f64, ByteSpan),
+    TyList(Vec<TyTerm>),
+    TyIdent(Type, Alias, ByteSpan),
+    TyFieldAccess(TyFieldAccess),
+    TyFnApp(TyFnApp),
+    TyTuple(Type, Vec<TyTerm>, ByteSpan),
+    TyBlock {
+        stmts: Box<TyTerm>,
+        ret: Box<TyTerm>,
+        span: ByteSpan,
+    },
+    TyExpr {
+        items: Box<TyTerm>,
+        ty: Type,
+        span: ByteSpan,
+    },
+    TyStmt {
+        items: Box<TyTerm>,
+        span: ByteSpan,
+    },
+    TyViewFn(TyViewFn),
+}
+
 pub trait Ty {
     fn ty(&self) -> Type;
     fn span(&self) -> ByteSpan;
@@ -68,6 +96,7 @@ impl Ty for TyTerm {
             } => ty.clone(),
             &TyStmt { items: _, span: _ } => Unit(CSpan::fresh_span()),
             &TyViewFn(ref view_fn) => view_fn.ty(),
+            &TyTuple(ref t, ..) => t.clone(),
         }
     }
 
@@ -106,33 +135,6 @@ impl Ty for TyViewFn {
     fn ty(&self) -> Type {
         self.ty.clone()
     }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum TyTerm {
-    TyNone,
-    TyProgram(Vec<TyDecl>),
-    TyInteger(Type, i64, ByteSpan),
-    TyFloat(Type, f64, ByteSpan),
-    TyList(Vec<TyTerm>),
-    TyIdent(Type, Alias, ByteSpan),
-    TyFieldAccess(TyFieldAccess),
-    TyFnApp(TyFnApp),
-    TyBlock {
-        stmts: Box<TyTerm>,
-        ret: Box<TyTerm>,
-        span: ByteSpan,
-    },
-    TyExpr {
-        items: Box<TyTerm>,
-        ty: Type,
-        span: ByteSpan,
-    },
-    TyStmt {
-        items: Box<TyTerm>,
-        span: ByteSpan,
-    },
-    TyViewFn(TyViewFn),
 }
 
 impl Display for TyTerm {

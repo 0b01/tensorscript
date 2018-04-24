@@ -63,6 +63,7 @@ fn consume(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnost
 
         stmt => build_stmt(pair, cspan),
         expr => build_expr(pair, cspan),
+        tuple => build_tuple(pair, cspan),
         block => build_block(pair, cspan),
         pipes => build_pipes(pair, cspan),
         semicolon => Ok(Term::None),
@@ -94,6 +95,16 @@ fn consume(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnost
         // Rule::map_literal                 => build_map(pair),
         _ => unexpected_token(pair),
     }
+}
+
+fn build_tuple(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnostic> {
+    let sp = cspan.from_pest(pair.clone().into_span());
+    let tokens = pair.into_inner();
+    let res = tokens
+        .map(|i| consume(i, cspan).unwrap())
+        .collect::<Vec<_>>();
+
+    Ok(Term::Tuple(res, sp))
 }
 
 fn build_block(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnostic> {
@@ -159,20 +170,14 @@ fn build_expr(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagn
         }
         _ => consume(p, cspan).unwrap(),
     };
-    Ok(Term::Expr {
-        items: Box::new(val),
-        span: sp,
-    })
+    Ok(Term::Expr(Box::new(val), sp))
 }
 
 fn build_stmt(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnostic> {
     let sp = cspan.from_pest(pair.clone().into_span());
     let tokens = pair.into_inner();
     let vals = tokens.map(|p| consume(p, cspan).unwrap()).collect();
-    Ok(Term::Stmt {
-        items: Box::new(Term::List(vals)),
-        span: sp,
-    })
+    Ok(Term::Stmt(Box::new(Term::List(vals)), sp))
 }
 
 fn build_fn_decl(pair: Pair<Rule>, cspan: &CSpan) -> Result<FnDecl, TensorScriptDiagnostic> {

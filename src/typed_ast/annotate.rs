@@ -24,10 +24,7 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TyTerm {
 
         &Program(ref decls) => TyProgram(decls.iter().map(|d| annotate_decl(d, tenv)).collect()),
 
-        &Expr {
-            ref items,
-            ref span,
-        } => {
+        &Expr(ref items, ref span) => {
             let ret = Box::new(annotate(&items, tenv));
             TyExpr {
                 ty: ret.ty(),
@@ -54,18 +51,27 @@ pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TyTerm {
             ret
         }
         &List(ref stmts) => TyList(stmts.iter().map(|s| annotate(&s, tenv)).collect()),
-        &Stmt {
-            ref items,
-            ref span,
-        } => TyStmt {
+        &Stmt(ref items, ref span) => TyStmt {
             items: Box::new(annotate(&items, tenv)),
             span: span.clone(),
         },
         &FieldAccess(ref f_a) => annotate_field_access(f_a, tenv),
         &None => TyNone,
         &Pipes(ref pipes) => annotate_pipes(pipes, tenv),
+        &Tuple(ref terms, ref s) => annotate_tuples(terms, s, tenv),
         _ => unimplemented!(),
     }
+}
+
+fn annotate_tuples(tup: &[Term], s: &ByteSpan, tenv: &mut TypeEnv) -> TyTerm {
+    let (vs, tys)  = tup.iter().map(|i| {
+        let tyterm = annotate(i, tenv);
+        let ty = tyterm.ty();
+        (tyterm, ty)
+    })
+    .unzip();
+
+    TyTerm::TyTuple(Type::Tuple(tys, s.clone()), vs, s.clone())
 }
 
 fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TyTerm {

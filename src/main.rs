@@ -133,7 +133,7 @@ fn main() {
         return last_ast;
     };
     let final_ast = resolve_modules();
-    // println!("{:#?}", final_ast);
+    println!("{:#?}", final_ast);
     // println!("{:#?}", tenv);
     // println!("{:#?}", new_cs);
 }

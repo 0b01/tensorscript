@@ -23,15 +23,10 @@ pub enum Term {
         ret: Expression,
         span: ByteSpan,
     },
-    Expr {
-        items: Box<Term>,
-        span: ByteSpan,
-    },
-    Stmt {
-        items: Box<Term>,
-        span: ByteSpan,
-    },
+    Expr(Box<Term>, ByteSpan),
+    Stmt(Box<Term>, ByteSpan),
     Pipes(Vec<Term>),
+    Tuple(Vec<Term>, ByteSpan),
 }
 
 // impl Term {
