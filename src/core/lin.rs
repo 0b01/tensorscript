@@ -60,8 +60,8 @@ impl Op for Linear {
                         .last_dim()?
                         .as_num();
 
-                    let in_dim = hm.get("in").and_then(unwrap_dim).unwrap();
-                    let out_dim = hm.get("out").and_then(unwrap_dim).unwrap();
+                    let in_dim = hm.get("in").and_then(unwrap_dim)?;
+                    let out_dim = hm.get("out").and_then(unwrap_dim)?;
 
                     assert!((arg_dim == in_dim) && (ret_dim == out_dim));
 

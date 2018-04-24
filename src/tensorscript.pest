@@ -169,7 +169,7 @@ fn_decl = { fn_decl_head ~ block }
 fn_app_param = { ("(" ~ ")") | ("(" ~ fn_app_args ~ ")") }
 fn_app_arg_pair = { ident ~ "=" ~ expr }
 fn_app_arg = { ident ~ "=" ~ expr }
-fn_app_args = { (fn_app_arg ~ ",")* ~ fn_app_arg }
+fn_app_args = { (fn_app_arg ~ ",")* ~ fn_app_arg? ~ ","? }
 fn_app = { ident ~ "(" ~ fn_app_args? ~ ")" }
 
 

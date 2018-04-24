@@ -21,12 +21,16 @@ pub fn parse_str(source: &str, cspan: &CSpan) -> Result<Term, TensorScriptDiagno
     if parser.is_err() {
         let e = parser.err().unwrap();
         return if let PestError::ParsingError{ ref positives, ref negatives, ref pos } = e {
-            match &positives[0] {
+            let e = &positives[0];
+            match e {
                 semicolon => Err(
                     TensorScriptDiagnostic::ParseError("Missing semicolon".to_owned(),
                         Span::new(ByteIndex(pos.pos() as u32 - 1) , ByteIndex(pos.pos() as u32 - 1 ))
                 )),
-                _ => unimplemented!(),
+                _ => {
+                    panic!("{:#?}", e);
+                    unimplemented!()
+                }
             }
         } else { unimplemented!() };
     } else {
