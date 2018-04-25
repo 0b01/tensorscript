@@ -4,8 +4,19 @@ use span::CSpan;
 use typed_ast::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
 use typed_ast::{Type, TypeEnv};
 
+use self::TyTerm::*;
 pub struct Conv2d;
 pub struct Dropout2d;
+
+macro_rules! read_2_tuple {
+    ($var:expr) => {
+        if let box TyExpr(box TyTuple(_,vs,_),_,_) = $var { // TyExpr
+            (vs[0].clone().int()?, vs[1].clone().int()?)
+        } else {
+            panic!("{:#?}", $var);
+        }
+    };
+}
 
 impl Op for Conv2d {
     fn get_name(&self) -> &'static str {
@@ -42,17 +53,16 @@ impl Op for Conv2d {
                     let init_map = inits?.to_btreemap()?;
                     let kernel_size = init_map.get("kernel_size")?;
                     let kernel_ty = kernel_size.ty();
-                    let (k0,k1) = if let Type::Tuple(..) = kernel_ty {
-                        if let box TyTerm::TyTuple(_,vs,_) = kernel_size { // TyExpr
-                            (vs[0].clone(), vs[1].clone())
-                        } else {
-                            println!("{:#?}", kernel_size);
-                            panic!();
-                        }
+                    let (k0, k1) = if kernel_ty.is_tuple() {
+                        let (k0,k1) = read_2_tuple!(kernel_size);
+                        (k0, k1)
                     } else {
-                        panic!();
+                        let k0 = kernel_size.int()?;
+                        let k1 = k0;
+                        (k0, k1)
                     };
                     println!("::::: {} {}", k0, k1);
+
                     // println!(">>>>>>>>>>:\nTODO: Conv2d!");
                     // // println!("{:#?}, {:#?}", inits, ret_ty);
                     // println!("x_ty: {:?}", x_ty);

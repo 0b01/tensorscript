@@ -274,12 +274,21 @@ impl TypeEnv {
         let dims_ty = dims.iter()
             .map(|t| {
                 match t.parse::<i64>() {
-                    Ok(i) => Type::ResolvedDim(i, span.clone()),
-                    Err(e) => self.resolve_type(mod_name, &Alias::Variable(t.to_string()))
-                        .unwrap()
-                        .clone()
+                    Ok(i) => vec![Type::ResolvedDim(i, span.clone())],
+                    Err(e) => {
+                        let alias = Alias::Variable(t.to_string());
+                        let ty = self.resolve_type(mod_name, &alias)
+                            .unwrap()
+                            .clone();
+                        if let Type::TSR(vs, _) = ty {
+                            vs
+                        } else {
+                            vec![ty]
+                        }
+                    }
                 }
             })
+            .flatten()
             .collect();
         // create the tensor type
         Type::TSR(dims_ty, span.clone())
@@ -293,7 +302,9 @@ impl TypeEnv {
         span: &ByteSpan,
     ) -> Type {
         match t {
-            &TensorTy::Generic(ref dims, ref sp) => self.create_tensor(mod_name, &dims, sp),
+            &TensorTy::Generic(ref dims, ref sp) => {
+                self.create_tensor(mod_name, &dims, sp)
+            }
             &TensorTy::Tensor(ref alias, ref sp) => {
                 self.resolve_type(mod_name, &Alias::Variable(alias.to_string()))
                     .unwrap().with_span(sp)

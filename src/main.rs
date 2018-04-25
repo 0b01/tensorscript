@@ -1,3 +1,4 @@
+#![feature(iterator_flatten)]
 #![feature(box_syntax)]
 #![feature(box_patterns)]
 
@@ -119,6 +120,9 @@ fn main() {
     // println!("{:#?}", last_sub);
 
     // ------------ resolve module constraints until it stabilizes ----------
+    // this is an inefficient workaround because the type inference algorithm
+    // is not a full HM but with constraint collection and unification as seperate
+    // stages.
     let mut last_ast = subs(&ast, &mut last_sub);;
     let resolve_modules = move || loop {
         // collect constraints
@@ -133,7 +137,7 @@ fn main() {
         return last_ast;
     };
     let final_ast = resolve_modules();
-    // println!("{:#?}", final_ast);
+    println!("{:#?}", final_ast);
     // println!("{:#?}", tenv);
     // println!("{:#?}", new_cs);
 }

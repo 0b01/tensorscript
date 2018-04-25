@@ -118,6 +118,14 @@ impl Hash for Type {
 
 impl Type {
 
+    pub fn is_tuple(&self) -> bool {
+        use self::Type::Tuple;
+        match self {
+            Tuple(..) => true,
+            _ => false
+        }
+    }
+
     pub fn as_args_map(&self) -> Option<BTreeMap<String, Type>> {
         use self::Type::{FnArg, FnArgs};
         match self {
