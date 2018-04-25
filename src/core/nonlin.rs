@@ -16,7 +16,7 @@ impl Op for sigmoid {
         "sigmoid"
     }
 
-    fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
                 "forward",
@@ -29,10 +29,10 @@ impl Op for sigmoid {
         &self,
         tenv: &mut TypeEnv,
         fn_name: &str,
-        arg_ty: Type,
-        ret_ty: Type,
-        args: Vec<TyFnAppArg>,
-        inits: Option<Vec<TyFnAppArg>>,
+        _arg_ty: Type,
+        _ret_ty: Type,
+        _args: Vec<TyFnAppArg>,
+        _inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {
             "forward" => {
@@ -60,10 +60,10 @@ impl Op for relu {
     fn resolve(&self,
         tenv: &mut TypeEnv,
         fn_name: &str,
-        arg_ty: Type,
-        ret_ty: Type,
-        args: Vec<TyFnAppArg>,
-        inits: Option<Vec<TyFnAppArg>>
+        _arg_ty: Type,
+        _ret_ty: Type,
+        _args: Vec<TyFnAppArg>,
+        _inits: Option<Vec<TyFnAppArg>>
     ) -> Option<Type> {
         match fn_name {
             "forward" => {
@@ -80,7 +80,7 @@ impl Op for log_softmax {
         "log_softmax"
     }
 
-    fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![(
             "forward",
             UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
@@ -91,10 +91,10 @@ impl Op for log_softmax {
         &self,
         tenv: &mut TypeEnv,
         fn_name: &str,
-        arg_ty: Type,
-        ret_ty: Type,
-        args: Vec<TyFnAppArg>,
-        inits: Option<Vec<TyFnAppArg>>,
+        _arg_ty: Type,
+        _ret_ty: Type,
+        _args: Vec<TyFnAppArg>,
+        _inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {
             "forward" => {

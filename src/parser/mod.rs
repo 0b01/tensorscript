@@ -1,7 +1,7 @@
 #[macro_use]
 mod macros;
-mod builder;
+mod ast_builder;
 mod grammar;
 pub mod term;
 
-pub use self::builder::parse_str;
+pub use self::ast_builder::parse_str;

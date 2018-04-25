@@ -1,4 +1,3 @@
-use self::Type::*;
 use core::{MethodName, Op};
 use span::CSpan;
 use typing::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
@@ -58,14 +57,14 @@ impl Op for Conv2d {
         tenv: &mut TypeEnv,
         fn_name: &str,
         arg_ty: Type,
-        ret_ty: Type,
-        args: Vec<TyFnAppArg>,
+        _ret_ty: Type,
+        _args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>
     ) -> Option<Type> {
         match fn_name {
             "forward" => {
                 let forward_args = arg_ty.as_args_map()?;
-                let x_ty = forward_args.get("x").unwrap();
+                let x_ty = &forward_args["x"];
                 if !x_ty.is_resolved() {
                     None
                 } else {
@@ -101,9 +100,9 @@ impl Op for Conv2d {
                             arg_ty,
                             Type::TSR(vec![
                                 n,
-                                Type::ResolvedDim(out_ch, span.clone()),
-                                Type::ResolvedDim(h_out, span.clone()),
-                                Type::ResolvedDim(w_out, span.clone()),
+                                Type::ResolvedDim(out_ch, span),
+                                Type::ResolvedDim(h_out, span),
+                                Type::ResolvedDim(w_out, span),
                             ], span)
                         )
                     )
@@ -131,8 +130,7 @@ impl Op for Dropout2d {
         "Dropout2d"
     }
 
-    fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        let span = CSpan::fresh_span();
+    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
                 "new",
@@ -149,10 +147,10 @@ impl Op for Dropout2d {
         &self,
         tenv: &mut TypeEnv,
         fn_name: &str,
-        arg_ty: Type,
-        ret_ty: Type,
-        args: Vec<TyFnAppArg>,
-        inits: Option<Vec<TyFnAppArg>>,
+        _arg_ty: Type,
+        _ret_ty: Type,
+        _args: Vec<TyFnAppArg>,
+        _inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {
             "forward" => {
@@ -169,7 +167,7 @@ impl Op for maxpool2d {
         "maxpool2d"
     }
 
-    fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
                 "forward",
@@ -180,12 +178,12 @@ impl Op for maxpool2d {
 
     fn resolve(
         &self,
-        tenv: &mut TypeEnv,
+        _tenv: &mut TypeEnv,
         fn_name: &str,
         arg_ty: Type,
-        ret_ty: Type,
+        _ret_ty: Type,
         args: Vec<TyFnAppArg>,
-        inits: Option<Vec<TyFnAppArg>>,
+        _inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {
             "forward" => {
@@ -222,8 +220,8 @@ impl Op for maxpool2d {
                             Type::TSR(vec![
                                 n,
                                 c_in.clone(),
-                                Type::ResolvedDim(h_out, span.clone()),
-                                Type::ResolvedDim(w_out, span.clone()),
+                                Type::ResolvedDim(h_out, span),
+                                Type::ResolvedDim(w_out, span),
                             ], span)
                         )
                     )

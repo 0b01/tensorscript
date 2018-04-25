@@ -2,7 +2,7 @@ macro_rules! err {
     ($msg:expr, $span:expr) => {
         TensorScriptDiagnostic::ParseError(
             $msg.to_owned(),
-            $span.clone(),
+            $span,
         )
     };
 }

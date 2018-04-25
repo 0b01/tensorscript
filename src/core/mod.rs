@@ -11,12 +11,12 @@ pub trait Op {
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)>;
     fn resolve(
         &self,
-        tenv: &mut TypeEnv,
-        fn_name: &str,
-        arg_ty: Type,
-        ret_ty: Type,
-        args: Vec<TyFnAppArg>,
-        inits: Option<Vec<TyFnAppArg>>,
+        _tenv: &mut TypeEnv,
+        _fn_name: &str,
+        _arg_ty: Type,
+        _ret_ty: Type,
+        _args: Vec<TyFnAppArg>,
+        _inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         unimplemented!();
     }

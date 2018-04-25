@@ -11,7 +11,7 @@ impl Op for Linear {
         "Linear"
     }
 
-    fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         use self::Type::*;
         vec![
             (
@@ -36,11 +36,11 @@ impl Op for Linear {
     /// output same shape as input
     fn resolve(
         &self,
-        tenv: &mut TypeEnv,
+        _tenv: &mut TypeEnv,
         fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
-        args: Vec<TyFnAppArg>,
+        _args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>, // ... refactor into span error
     ) -> Option<Type> {
         match fn_name {
@@ -61,8 +61,8 @@ impl Op for Linear {
                         .last_dim()?
                         .as_num().unwrap();
 
-                    let in_dim = hm.get("in").and_then(unwrap_dim)?;
-                    let out_dim = hm.get("out").and_then(unwrap_dim)?;
+                    let in_dim = hm.get("in").and_then(|t| unwrap_dim(t))?;
+                    let out_dim = hm.get("out").and_then(|t| unwrap_dim(t))?;
 
                     assert!((arg_dim == in_dim) && (ret_dim == out_dim));
 
@@ -76,7 +76,7 @@ impl Op for Linear {
     }
 }
 
-fn unwrap_dim(in_dim: &Box<TyTerm>) -> Option<i64> {
+fn unwrap_dim(in_dim: &TyTerm) -> Option<i64> {
     match in_dim.ty() {
         Type::INT(_) => in_dim.int(),
         Type::ResolvedDim(num, _) => Some(num),

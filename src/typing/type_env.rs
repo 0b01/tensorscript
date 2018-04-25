@@ -26,8 +26,8 @@ pub enum ModName {
 impl ModName {
     pub fn as_str(&self) -> &str {
         match self {
-            &Global => unimplemented!(),
-            &Named(ref s) => s,
+            Global => unimplemented!(),
+            Named(ref s) => s,
         }
     }
 }
@@ -35,8 +35,8 @@ impl ModName {
 impl Debug for ModName {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         match self {
-            &Named(ref s) => write!(f, "MOD({})", s),
-            &Global => write!(f, "MOD(Global)"),
+            Named(ref s) => write!(f, "MOD({})", s),
+            Global => write!(f, "MOD(Global)"),
         }
     }
 }
@@ -105,14 +105,14 @@ impl TypeEnv {
     /// create new dimension type variable
     pub fn fresh_dim(&mut self, span: &ByteSpan) -> Type {
         self.counter += 1;
-        Type::DIM(self.counter, span.clone())
+        Type::DIM(self.counter, *span)
     }
 
     /// create new type variable
     pub fn fresh_var(&mut self, span: &ByteSpan) -> Type {
         self.counter += 1;
         // println!("new_var: {}", self.counter);
-        Type::VAR(self.counter, span.clone())
+        Type::VAR(self.counter, *span)
     }
 
     /// push scope onto stack during tree traversal
@@ -136,7 +136,7 @@ impl TypeEnv {
     }
 
     pub fn resolve_init(&self, mod_name: &ModName, alias: &str) -> Option<Vec<TyFnAppArg>> {
-        let stack = self.modules.get(mod_name).unwrap();
+        let stack = &self.modules[mod_name];
         stack.2.get(alias).cloned()
     }
 
@@ -145,7 +145,7 @@ impl TypeEnv {
     /// then check in the global scope
     pub fn resolve_type(&self, mod_name: &ModName, alias: &Alias) -> Option<Type> {
         self.resolve_type_inner(mod_name, alias)
-            .or(self.resolve_type_inner(&Global, alias))
+            .or_else(|| self.resolve_type_inner(&Global, alias))
     }
 
     /// inside the module or global scope, iterate over block scope and find
@@ -190,7 +190,7 @@ impl TypeEnv {
         });
 
         let top = stack.0.len() - 1;
-        let scope = stack.0.get_mut(top).unwrap();
+        let scope = &mut stack.0[top];
         if scope.types.contains_key(alias) {
             panic!("duplicate item");
         }
@@ -207,7 +207,7 @@ impl TypeEnv {
         });
 
         let top = stack.0.len() - 1;
-        let scope = stack.0.get_mut(top).unwrap();
+        let scope = &mut stack.0[top];
         // if scope.types.contains_key(alias) {
         //     panic!("duplicate item");
         // }
@@ -238,7 +238,7 @@ impl TypeEnv {
         num: i64,
         span: &ByteSpan,
     ) {
-        let tyvar = Type::ResolvedDim(num, span.clone());
+        let tyvar = Type::ResolvedDim(num, *span);
         self.add_type(mod_name, alias, tyvar);
     }
 
@@ -251,14 +251,12 @@ impl TypeEnv {
         span: &ByteSpan,
     ) {
         // first insert all the dims
-        tsr.iter()
-            .map(|t| Alias::Variable(t.to_string()))
-            .map(|t| {
-                if !self.exists(mod_name, &t) {
-                    self.add_dim_alias(mod_name, &t, span);
-                }
-            })
-            .collect::<Vec<()>>();
+        for t in tsr.iter() {
+            let alias = Alias::Variable(t.to_string());
+            if !self.exists(mod_name, &alias) {
+                self.add_dim_alias(mod_name, &alias, span);
+            }
+        }
 
         // then insert the tensor itself
         let tsr = self.create_tensor(mod_name, tsr, span);
@@ -276,11 +274,11 @@ impl TypeEnv {
         let dims_ty = dims.iter()
             .map(|t| {
                 match t.parse::<i64>() {
-                    Ok(i) => vec![Type::ResolvedDim(i, span.clone())],
-                    Err(e) => {
+                    Ok(i) => vec![Type::ResolvedDim(i, *span)],
+                    Err(_e) => {
                         let alias = Alias::Variable(t.to_string());
                         let ty = self.resolve_type(mod_name, &alias)
-                            .unwrap_or(self.fresh_dim(span))
+                            .unwrap_or_else(|| self.fresh_dim(span))
                             .clone();
                         if let Type::TSR(vs, _) = ty {
                             vs
@@ -293,7 +291,7 @@ impl TypeEnv {
             .flatten()
             .collect();
         // create the tensor type
-        Type::TSR(dims_ty, span.clone())
+        Type::TSR(dims_ty, *span)
     }
 
     /// generate a tensor from untyped ast tensor signature
@@ -301,13 +299,13 @@ impl TypeEnv {
         &mut self,
         mod_name: &ModName,
         t: &TensorTy,
-        span: &ByteSpan,
+        _span: &ByteSpan,
     ) -> Type {
         match t {
-            &TensorTy::Generic(ref dims, ref sp) => {
+            TensorTy::Generic(ref dims, ref sp) => {
                 self.create_tensor(mod_name, &dims, sp)
             }
-            &TensorTy::Tensor(ref alias, ref sp) => {
+            TensorTy::Tensor(ref alias, ref sp) => {
                 self.resolve_type(mod_name, &Alias::Variable(alias.to_string()))
                     .unwrap().with_span(sp)
             }
@@ -317,25 +315,25 @@ impl TypeEnv {
     /// check if an alias exists
     pub fn exists(&self, mod_name: &ModName, alias: &Alias) -> bool {
         let types = self.get_scoped_types(mod_name, alias);
-        types.len() > 0
+        !types.is_empty()
     }
 
     /// create aliases for an untyped AST node assign
     pub fn import_node_assign(&mut self, mod_name: &ModName, a: &NodeAssign) {
         match a {
-            &NodeAssign::Tensor {
+            NodeAssign::Tensor {
                 ident: ref id,
                 rhs: TensorTy::Generic(ref tys, ref sp),
-                span: _,
+                ..
             } => {
                 self.add_tsr_alias(mod_name, &Alias::Variable(id.to_string()), tys, sp);
             }
-            &NodeAssign::Dimension {
+            NodeAssign::Dimension {
                 ident: ref id,
                 rhs: Term::Integer(num, _),
                 ref span,
             } => {
-                self.add_resolved_dim_alias(mod_name, &Alias::Variable(id.to_string()), num, span);
+                self.add_resolved_dim_alias(mod_name, &Alias::Variable(id.to_string()), *num, span);
             }
             _ => unimplemented!(),
         }
@@ -344,15 +342,12 @@ impl TypeEnv {
     pub fn import_top_level_ty_sig(&mut self, mod_name: &ModName, ty_sig: &TensorTy) {
         if let TensorTy::Generic(dims, span) = ty_sig {
             // first insert all the dims
-            dims.iter()
-                .filter(|t| t.parse::<i64>().is_err())
-                .map(|t| Alias::Variable(t.to_string()))
-                .map(|t| {
-                    if !self.exists(mod_name, &t) {
-                        self.add_dim_alias(mod_name, &t, span);
-                    }
-                })
-                .collect::<Vec<()>>();
+            for t in dims.iter().filter(|t| t.parse::<i64>().is_err()) {
+                let alias =  Alias::Variable(t.to_string());
+                if !self.exists(mod_name, &alias) {
+                    self.add_dim_alias(mod_name, &alias, span);
+                }
+            }
         }
     }
 
@@ -369,7 +364,7 @@ impl TypeEnv {
     /// import module type and associated methods into type environment
     pub fn import_module(&mut self, path_name: &str, mod_name: &str) {
         let methods = Core::import(path_name, mod_name, self);
-        for &(ref name, ref ty) in methods.iter() {
+        for &(ref name, ref ty) in &methods {
             self.add_type(
                 &Named(mod_name.to_owned()),
                 &Alias::Function(name.to_string()),
@@ -379,7 +374,7 @@ impl TypeEnv {
     }
 
     pub fn import_prelude(&mut self) {
-        for fun in vec!["view"].iter() {
+        for fun in &vec!["view"] {
             self.add_type(&Global,
                 &Alias::Variable(fun.to_string()),
                 module!(fun.to_string())
@@ -390,28 +385,25 @@ impl TypeEnv {
 
     pub fn resolve_unresolved(
         &mut self,
-        ty: Type,
-        symbol_name: &str,
-        module: &Type,
+        ty: &Type,
         fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
         args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
-        let (mod_name, mod_ty) = {
-            if let Type::Module(name, opty, _) = module {
-                (name, opty.clone().map(|i| *i))
-            } else {
-                panic!();
-            }
-        };
+        // let (mod_name, mod_ty) = {
+        //     if let Type::Module(name, opty, _) = module {
+        //         (name, opty.clone().map(|i| *i))
+        //     } else {
+        //         panic!();
+        //     }
+        // };
 
-        if let Type::UnresolvedModuleFun(p0, p1, p2, _) = ty {
-            assert_eq!(fn_name, p2);
+        if let Type::UnresolvedModuleFun(ref p0, ref p1, ref p2, _) = ty {
+            assert_eq!(fn_name.to_owned(), p2.to_owned());
             let op = Core::find(p0, p1);
-            let ty = op.resolve(self, fn_name, arg_ty, ret_ty, args, inits);
-            ty
+            op.resolve(self, fn_name, arg_ty, ret_ty, args, inits)
         } else {
             unimplemented!();
         }

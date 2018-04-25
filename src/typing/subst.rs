@@ -65,7 +65,13 @@ impl Substitution {
     }
 }
 
-fn substitute_ty(ty: Type, replaced: &Type, replacement: &Type) -> Type {
+/// magic...
+///
+/// basically, a workaround to replace UnresolvedModuleFunction...
+/// for more info take a look at unify_one
+///         Equals(u @ UnresolvedModuleFun(_, _, _, _), ty) => {..}
+/// which is the only place that calls it
+fn substitute_ty(ty: Type, _replaced: &Type, replacement: &Type) -> Type {
     if let Type::FUN(m1,n1,_,_,_) = ty.clone() {
     if let Type::FUN(m2,n2,_,_,_) = replacement.clone() {
         if (m1 == m2) && (n1 == n2) {
@@ -77,6 +83,7 @@ fn substitute_ty(ty: Type, replaced: &Type, replacement: &Type) -> Type {
     }
 }
 
+#[allow(many_single_char_names)]
 /// replace tvar with replacement in ty
 fn substitute_tvar(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
     use self::Type::*;
@@ -92,14 +99,14 @@ fn substitute_tvar(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
         FLOAT(_) => ty,
         ResolvedDim(_, _) => ty,
         VAR(tvar2, span) => {
-            if tvar.clone() == tvar2 {
+            if *tvar == tvar2 {
                 replacement.with_span(&span)
             } else {
                 ty
             }
         }
         DIM(tvar2, span) => {
-            if tvar.clone() == tvar2 {
+            if *tvar == tvar2 {
                 replacement.with_span(&span)
             } else {
                 ty
@@ -130,8 +137,5 @@ fn substitute_tvar(ty: Type, tvar: &TypeId, replacement: &Type) -> Type {
 
         Module(_, None, _) => ty,
         FnArg(name, box ty, s) => FnArg(name, box substitute_tvar(ty, tvar, replacement), s),
-        _ => {
-            panic!("{:?}", ty);
-        }
     }
 }

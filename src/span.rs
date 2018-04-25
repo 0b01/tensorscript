@@ -19,7 +19,7 @@ impl CSpan {
         Span::new(ByteIndex(0), ByteIndex(0))
     }
 
-    pub fn from_pest(&self, sp: PestSpan) -> ByteSpan {
+    pub fn convert_span(&self, sp: &PestSpan) -> ByteSpan {
         // Span::new(ByteIndex(sp.start() as u32 + 1), ByteIndex(sp.end() as u32 + 1))
         self.sp.subspan(ByteOffset(sp.start() as i64), ByteOffset(sp.end() as i64))
     }

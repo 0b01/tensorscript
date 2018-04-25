@@ -128,7 +128,7 @@ impl Type {
     pub fn span(&self) -> ByteSpan {
         use self::Type::*;
         match self {
-            TSR(_, s) => s.clone(),
+            TSR(_, s) => *s,
             _ => unimplemented!(),
         }
     }
@@ -140,14 +140,6 @@ impl Type {
             _ => {
                 panic!("{:#?}", self);
             }
-        }
-    }
-
-    pub fn is_tuple(&self) -> bool {
-        use self::Type::Tuple;
-        match self {
-            Tuple(..) => true,
-            _ => false
         }
     }
 
@@ -185,7 +177,7 @@ impl Type {
     pub fn first_arg_ty(&self) -> Option<Type> {
         match self {
             Type::FnArgs(vs, _) => {
-                if let &Type::FnArg(_,box ref ty, _) = &vs[0] {
+                if let Type::FnArg(_,box ref ty, _) = vs[0] {
                     Some(ty.clone())
                 } else { None }
             }
@@ -197,21 +189,20 @@ impl Type {
     pub fn with_span(&self, sp: &ByteSpan) -> Type {
         use self::Type::*;
         match self {
-            Unit(_) => Unit(sp.clone()),
-            VAR(ref a, _) => VAR(*a, sp.clone()),
-            DIM(ref a, _) => DIM(*a, sp.clone()),
-            INT(_) => INT(sp.clone()),
-            FLOAT(_) => FLOAT(sp.clone()),
-            BOOL(_) => BOOL(sp.clone()),
-            UnresolvedModuleFun(ref a, ref b, ref c, _) => UnresolvedModuleFun(a, b, c, sp.clone()),
-            FnArgs(ref args, _) => FnArgs(args.clone(), sp.clone()),
-            FnArg(ref name, ref ty, _) => FnArg(name.clone(), ty.clone(), sp.clone()),
-            ResolvedDim(ref d, _) => ResolvedDim(d.clone(), sp.clone()),
-            Module(ref s, ref ty, _) => Module(s.clone(), ty.clone(), sp.clone()),
-            FUN(ref m,ref n,ref p, ref r, _) => FUN(m.clone(),n.clone(),p.clone(), r.clone(), sp.clone()),
-            TSR(ref dims, _) => TSR(dims.clone(), sp.clone()),
-            Tuple(ref vs, _) => Tuple(vs.clone(), sp.clone()),
-            _ => panic!("{:?}", self),
+            Unit(_) => Unit(*sp),
+            VAR(ref a, _) => VAR(*a, *sp),
+            DIM(ref a, _) => DIM(*a, *sp),
+            INT(_) => INT(*sp),
+            FLOAT(_) => FLOAT(*sp),
+            BOOL(_) => BOOL(*sp),
+            UnresolvedModuleFun(ref a, ref b, ref c, _) => UnresolvedModuleFun(a, b, c, *sp),
+            FnArgs(ref args, _) => FnArgs(args.clone(), *sp),
+            FnArg(ref name, ref ty, _) => FnArg(name.clone(), ty.clone(), *sp),
+            ResolvedDim(ref d, _) => ResolvedDim(*d, *sp),
+            Module(ref s, ref ty, _) => Module(s.clone(), ty.clone(), *sp),
+            FUN(ref m,ref n,ref p, ref r, _) => FUN(m.clone(),n.clone(),p.clone(), r.clone(), *sp),
+            TSR(ref dims, _) => TSR(dims.clone(), *sp),
+            Tuple(ref vs, _) => Tuple(vs.clone(), *sp),
         }
     }
 
@@ -257,13 +248,14 @@ impl Type {
             FnArg(_, t, _) => t.is_resolved(),
             ResolvedDim(_, _) => true,
             FUN(_,_, p, r, _) => Type::is_resolved(p) && r.is_resolved(),
-            TSR(ts, _) => true, //ts.iter().map(|t| t.is_resolved()).all(|t|t),
+            TSR(_ts, _) => true, //ts.iter().map(|t| t.is_resolved()).all(|t|t),
             _ => unimplemented!(),
         }
     }
 }
 
 impl Debug for Type {
+    #[allow(many_single_char_names)]
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         use self::Type::*;
         match self {
@@ -279,11 +271,11 @@ impl Debug for Type {
             DIM(ref t_id, _) => write!(f, "!{:?}", t_id),
             FnArgs(ref args, _) => write!(f, "FnArgs({:?})", args),
             FnArg(ref name, ref ty, _) => write!(f, "ARG({:?}={:?})", name, ty),
-            ResolvedDim(ref d, ref s) => write!(f, "<{}>", d),
+            ResolvedDim(ref d, _) => write!(f, "<{}>", d),
             Module(ref s, ref ty, _) => write!(f, "MODULE({}, {:?})", s, ty),
             FUN(ref m, ref n,ref p, ref r, _) => write!(f, "{}::{}({:?} -> {:?})", m,n,p, r),
             TSR(ref dims, _) => {
-                if dims.len() > 0 {
+                if !dims.is_empty() {
                     write!(f, "[")?;
                     for i in dims[0..dims.len() - 1].iter() {
                         write!(f, "{:?}, ", i)?;

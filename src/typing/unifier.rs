@@ -180,8 +180,8 @@ impl Unifier {
 fn occurs(tvar: TypeId, ty: &Type) -> bool {
     use self::Type::*;
     match ty {
-        &FUN(_,_, ref p, ref r, _) => occurs(tvar, &p) | occurs(tvar, &r),
-        &VAR(ref tvar2, _) => tvar == *tvar2,
+        FUN(_,_, ref p, ref r, _) => occurs(tvar, &p) | occurs(tvar, &r),
+        VAR(ref tvar2, _) => tvar == *tvar2,
         _ => false,
     }
 }

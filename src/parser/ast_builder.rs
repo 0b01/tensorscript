@@ -20,19 +20,16 @@ pub fn parse_str(source: &str, cspan: &CSpan) -> Result<Term, TensorScriptDiagno
     let parser = TensorScriptParser::parse(Rule::input, source);
     if parser.is_err() {
         let e = parser.err().unwrap();
-        return if let PestError::ParsingError{ ref positives, ref negatives, ref pos } = e {
+        if let PestError::ParsingError{ ref positives, ref pos, .. } = e {
             let e = &positives[0];
             match e {
                 semicolon => Err(
                     TensorScriptDiagnostic::ParseError("Missing semicolon".to_owned(),
                         Span::new(ByteIndex(pos.pos() as u32 - 1) , ByteIndex(pos.pos() as u32 - 1 ))
                 )),
-                _ => {
-                    panic!("{:#?}", e);
-                    unimplemented!()
-                }
+                _ => panic!("{:#?}", e),
             }
-        } else { unimplemented!() };
+        } else { unimplemented!() }
     } else {
         let decls = parser.unwrap();
         let terms = decls
@@ -67,38 +64,12 @@ fn consume(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnost
         block => build_block(pair, cspan),
         pipes => build_pipes(pair, cspan),
         semicolon => Ok(Term::None),
-
-        // Rule::statements                  => build_block(pair),
-        // Rule::integer_zero_literal        => integer!(0),
-        // Rule::integer_binary_literal      => build_integer(pair, 2),
-        // Rule::integer_octal_literal       => build_integer(pair, 8),
-        // Rule::integer_decimal_literal     => build_integer(pair, 10),
-        // Rule::integer_hexadecimal_literal => build_integer(pair, 16),
-        // Rule::float_literal               => build_float(pair),
-        // Rule::atom_literal                => build_atom(pair),
-        // Rule::string_literal              => build_string(pair),
-        // Rule::bool_true                   => boolean!(true),
-        // Rule::bool_false                  => boolean!(false),
-        // Rule::unary_not                   => unary_not!(consume(pair.into_inner().next().unwrap())),
-        // Rule::unary_complement            => unary_complement!(consume(pair.into_inner().next().unwrap())),
-        // Rule::unary_plus                  => unary_plus!(consume(pair.into_inner().next().unwrap())),
-        // Rule::unary_minus                 => unary_minus!(consume(pair.into_inner().next().unwrap())),
-        // Rule::braced_expression           => braced!(consume(pair.into_inner().next().unwrap())),
-        // Rule::const_literal               => build_const(pair),
-        // Rule::local_var_access            => build_lvar_access(pair),
-        // Rule::call_with_implicit_receiver => build_implicit_call(pair.into_inner().next().unwrap()),
-        // Rule::call_with_explicit_receiver => build_explicit_call(pair),
-        // Rule::list_literal                => build_list(pair),
-        // Rule::index                       => build_index(pair),
-        // Rule::function_literal            => build_function(pair),
-        // Rule::block                       => build_block(pair),
-        // Rule::map_literal                 => build_map(pair),
-        _ => unexpected_token(pair),
+        _ => unexpected_token(&pair),
     }
 }
 
 fn build_tuple(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let tokens = pair.into_inner();
     let res = tokens
         .map(|i| consume(i, cspan).unwrap())
@@ -108,10 +79,10 @@ fn build_tuple(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiag
 }
 
 fn build_block(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let statements = eat!(tokens, stmts, "Cannot parse statements", sp.clone());
-    let possible_expr = eat!(tokens, expr, "Does not have a dangling expr", sp.clone());
+    let statements = eat!(tokens, stmts, "Cannot parse statements", sp);
+    let possible_expr = eat!(tokens, expr, "Does not have a dangling expr", sp);
     let ret = if possible_expr.is_err() {
         Term::None
     } else {
@@ -126,9 +97,9 @@ fn build_block(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiag
 }
 
 fn build_fn_app_param(pair: Pair<Rule>, cspan: &CSpan) -> Result<Vec<FnAppArg>, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let args = eat!(tokens, fn_app_args, "Does not have args", sp.clone());
+    let args = eat!(tokens, fn_app_args, "Does not have args", sp);
     if args.is_err() {
         Ok(vec![])
     } else {
@@ -137,11 +108,11 @@ fn build_fn_app_param(pair: Pair<Rule>, cspan: &CSpan) -> Result<Vec<FnAppArg>, 
 }
 
 fn build_field_access(pair: Pair<Rule>, cspan: &CSpan) -> Result<FieldAccess, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let var_name = eat!(tokens, ident, "Failed to parse variable name", sp.clone())?;
-    let field_name = eat!(tokens, ident, "Failed to parse field name", sp.clone())?;
-    let func_call = eat!(tokens, fn_app_param, "Is not a function call", sp.clone());
+    let var_name = eat!(tokens, ident, "Failed to parse variable name", sp)?;
+    let field_name = eat!(tokens, ident, "Failed to parse field name", sp)?;
+    let func_call = eat!(tokens, fn_app_param, "Is not a function call", sp);
     let func_call = if func_call.is_err() {
         None
     } else {
@@ -151,13 +122,13 @@ fn build_field_access(pair: Pair<Rule>, cspan: &CSpan) -> Result<FieldAccess, Te
     Ok(FieldAccess {
         mod_name: var_name.as_str().to_owned(),
         field_name: field_name.as_str().to_owned(),
-        func_call: func_call,
+        func_call,
         span: sp,
     })
 }
 
 fn build_expr(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
     let p = tokens.next().unwrap();
     assert!(tokens.next().is_none());
@@ -165,7 +136,7 @@ fn build_expr(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagn
         field_access => Term::FieldAccess(build_field_access(p, cspan).unwrap()),
         fn_app => Term::FnApp(build_fn_app(p, cspan).unwrap()),
         ident => {
-            let sp = cspan.from_pest(p.clone().into_span());
+            let sp = cspan.convert_span(&p.clone().into_span());
             Term::Ident(p.as_str().to_owned(), sp)
         }
         _ => consume(p, cspan).unwrap(),
@@ -174,32 +145,32 @@ fn build_expr(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagn
 }
 
 fn build_stmt(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let tokens = pair.into_inner();
     let vals = tokens.map(|p| consume(p, cspan).unwrap()).collect();
     Ok(Term::Stmt(Box::new(Term::List(vals)), sp))
 }
 
 fn build_fn_decl(pair: Pair<Rule>, cspan: &CSpan) -> Result<FnDecl, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let mut head = eat!(tokens, fn_decl_head, "Failed to parse fn_decl_head", sp.clone())?.into_inner();
-    let name = eat!(head, ident, "Failed to parse fn_decl_head ident", sp.clone())?;
-    let fn_sig = eat!(head, fn_decl_sig, "Failed to parse fn decl signature", sp.clone())?;
-    let func_block = eat!(tokens, block, "Failed to parse function block", sp.clone())?;
+    let mut head = eat!(tokens, fn_decl_head, "Failed to parse fn_decl_head", sp)?.into_inner();
+    let name = eat!(head, ident, "Failed to parse fn_decl_head ident", sp)?;
+    let fn_sig = eat!(head, fn_decl_sig, "Failed to parse fn decl signature", sp)?;
+    let func_block = eat!(tokens, block, "Failed to parse function block", sp)?;
 
     let mut tokens = fn_sig.into_inner();
-    let param = eat!(tokens, fn_decl_param, "Failed to parse fn_decl_param", sp.clone())?;
+    let param = eat!(tokens, fn_decl_param, "Failed to parse fn_decl_param", sp)?;
     let return_ty = {
-        let temp = eat!(tokens, ty_sig, "Function does not have a type signature", sp.clone());
+        let temp = eat!(tokens, ty_sig, "Function does not have a type signature", sp);
         if temp.is_err() {
-            TensorTy::Generic(vec![], sp.clone())
+            TensorTy::Generic(vec![], sp)
         } else {
             let temp = temp?.into_inner().next().unwrap();
             if temp.as_rule() == cap_ident {
-                TensorTy::Tensor(temp.as_str().to_owned(), sp.clone())
+                TensorTy::Tensor(temp.as_str().to_owned(), sp)
             } else {
-                TensorTy::Generic(to_idents!(temp), sp.clone())
+                TensorTy::Generic(to_idents!(temp), sp)
             }
         }
     };
@@ -213,7 +184,7 @@ fn build_fn_decl(pair: Pair<Rule>, cspan: &CSpan) -> Result<FnDecl, TensorScript
     Ok(FnDecl {
         name: name.as_str().to_owned(),
         fn_params: params,
-        return_ty: return_ty,
+        return_ty,
         func_block: Box::new(consume(func_block, cspan)?),
         span: sp,
     })
@@ -236,14 +207,14 @@ fn build_fn_decls(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptD
 }
 
 fn build_fn_decl_param(pair: Pair<Rule>, cspan: &CSpan) -> Result<FnDeclParam, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let param = eat!(tokens, ident, "Failed to parse function parameter", sp.clone())?;
-    let typ = eat!(tokens, ty_sig, "Failed to parse type signature", sp.clone());
+    let param = eat!(tokens, ident, "Failed to parse function parameter", sp)?;
+    let typ = eat!(tokens, ty_sig, "Failed to parse type signature", sp);
     let typ = if typ.is_err() {
-        TensorTy::Generic(vec![], sp.clone())
+        TensorTy::Generic(vec![], sp)
     } else {
-        TensorTy::Generic(to_idents!(typ?.into_inner().next().unwrap()), sp.clone())
+        TensorTy::Generic(to_idents!(typ?.into_inner().next().unwrap()), sp)
     };
 
     Ok(FnDeclParam {
@@ -260,7 +231,7 @@ fn build_fn_decl_params(pair: Pair<Rule>, cspan: &CSpan) -> Result<Vec<FnDeclPar
 }
 
 fn build_view_fn(pair: Pair<Rule>, cspan: &CSpan) -> Result<ViewFn, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let tokens = pair.into_inner();
     let dims = tokens.map(|p| String::from(p.as_str())).collect();
     let span = sp;
@@ -268,9 +239,9 @@ fn build_view_fn(pair: Pair<Rule>, cspan: &CSpan) -> Result<ViewFn, TensorScript
 }
 
 fn build_fn_app(pair: Pair<Rule>, cspan: &CSpan) -> Result<FnApp, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let name = eat!(tokens, ident, "Cannot parse function call identifier", sp.clone())?;
+    let name = eat!(tokens, ident, "Cannot parse function call identifier", sp)?;
     let args = if let Some(args) = tokens.next() {
         build_fn_app_args(args, cspan)?
     } else {
@@ -279,16 +250,16 @@ fn build_fn_app(pair: Pair<Rule>, cspan: &CSpan) -> Result<FnApp, TensorScriptDi
 
     Ok(FnApp {
         name: name.as_str().to_owned(),
-        args: args,
+        args,
         span: sp,
     })
 }
 
 fn build_fn_app_arg(pair: Pair<Rule>, cspan: &CSpan) -> Result<FnAppArg, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let param = eat!(tokens, ident, "Failed to parse function call argument", sp.clone())?;
-    let param_val = eat!(tokens, expr, "Failed to parse function call parameter", sp.clone())?;
+    let param = eat!(tokens, ident, "Failed to parse function call argument", sp)?;
+    let param_val = eat!(tokens, expr, "Failed to parse function call parameter", sp)?;
 
     Ok(FnAppArg {
         name: param.as_str().to_owned(),
@@ -304,15 +275,15 @@ fn build_fn_app_args(pair: Pair<Rule>, cspan: &CSpan) -> Result<Vec<FnAppArg>, T
 }
 
 fn build_weights_decl(pair: Pair<Rule>, cspan: &CSpan) -> Result<Decl, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let mut head = eat!(tokens, weights_decl_head, "Parsing `weight_head` error", sp.clone())?.into_inner();
-    let weights_name = eat!(head, cap_ident, "Does not have a weight name", sp.clone())?.as_str();
-    let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`", sp.clone())?;
+    let mut head = eat!(tokens, weights_decl_head, "Parsing `weight_head` error", sp)?.into_inner();
+    let weights_name = eat!(head, cap_ident, "Does not have a weight name", sp)?.as_str();
+    let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`", sp)?;
     let weights_body = eat!(
         tokens,
         weights_decl_body,
-        "Failed to parse `weights_decl_body`", sp.clone()
+        "Failed to parse `weights_decl_body`", sp
     )?.into_inner()
         .map(|p| build_weights_assign(p, cspan).unwrap())
         .collect();
@@ -326,14 +297,14 @@ fn build_weights_decl(pair: Pair<Rule>, cspan: &CSpan) -> Result<Decl, TensorScr
 }
 
 fn build_weights_assign(body: Pair<Rule>, cspan: &CSpan) -> Result<WeightsAssign, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(body.clone().into_span());
+    let sp = cspan.convert_span(&body.clone().into_span());
     let mut tokens = body.into_inner();
-    let name = eat!(tokens, ident, "Failed to parse ident", sp.clone())?;
-    let _assign = eat!(tokens, op_assign, "Failed to parse `=`", sp.clone())?;
-    let mod_name = eat!(tokens, cap_ident, "Failed to parse `mod_name`", sp.clone())?;
+    let name = eat!(tokens, ident, "Failed to parse ident", sp)?;
+    let _assign = eat!(tokens, op_assign, "Failed to parse `=`", sp)?;
+    let mod_name = eat!(tokens, cap_ident, "Failed to parse `mod_name`", sp)?;
     let nxt = tokens.next().unwrap();
     if nxt.as_rule() == fn_ty_sig {
-        let func = eat!(tokens, fn_app, "Failed to parse `fn_app`", sp.clone())?;
+        let func = eat!(tokens, fn_app, "Failed to parse `fn_app`", sp)?;
         let fncall = build_fn_app(func, cspan)?;
         Ok(WeightsAssign {
             name: name.as_str().to_owned(),
@@ -362,7 +333,7 @@ fn _process_level(curr: Pair<Rule>, cspan: &CSpan) -> Term {
     } else if curr.as_rule() == field_access {
         Term::FieldAccess(build_field_access(curr, cspan).unwrap())
     } else if curr.as_rule() == ident {
-        let span = cspan.from_pest(curr.clone().into_span());
+        let span = cspan.convert_span(&curr.clone().into_span());
         Term::Ident(curr.as_str().to_owned(), span)
     } else if curr.as_rule() == view_fn {
         Term::ViewFn(build_view_fn(curr, cspan).unwrap())
@@ -428,12 +399,12 @@ fn build_pipes(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiag
 }
 
 fn build_graph_decl(pair: Pair<Rule>, cspan: &CSpan) -> Result<Decl, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let mut head = eat!(tokens, graph_decl_head, "Parsing `graph_head` error", sp.clone())?.into_inner();
-    let node_name = eat!(head, cap_ident, "Does not have a graph name", sp.clone())?.as_str();
-    let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`", sp.clone())?;
-    let graph_body = eat!(tokens, graph_decl_body, "Failed to parse `graph_decl_body`", sp.clone())?;
+    let mut head = eat!(tokens, graph_decl_head, "Parsing `graph_head` error", sp)?.into_inner();
+    let node_name = eat!(head, cap_ident, "Does not have a graph name", sp)?.as_str();
+    let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`", sp)?;
+    let graph_body = eat!(tokens, graph_decl_body, "Failed to parse `graph_decl_body`", sp)?;
     let func_decls = graph_body
         .into_inner()
         .next()
@@ -451,20 +422,20 @@ fn build_graph_decl(pair: Pair<Rule>, cspan: &CSpan) -> Result<Decl, TensorScrip
 }
 
 fn build_graph_decl_body(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let fns = eat!(tokens, fn_decls, "Failed to parse `fn_decls`", sp.clone())?;
+    let fns = eat!(tokens, fn_decls, "Failed to parse `fn_decls`", sp)?;
     let vals = fns.into_inner().map(|p| consume(p, cspan).unwrap()).collect();
     Ok(Term::List(vals))
 }
 
 fn build_node_decl(pair: Pair<Rule>, cspan: &CSpan) -> Result<Decl, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let mut head = eat!(tokens, node_decl_head, "Parsing `node_head` error", sp.clone())?.into_inner();
-    let node_name = eat!(head, cap_ident, "Does not have a node name", sp.clone())?.as_str();
-    let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`", sp.clone())?;
-    let node_body = eat!(tokens, node_decl_body, "Failed to parse `node_decl_body`", sp.clone())?;
+    let mut head = eat!(tokens, node_decl_head, "Parsing `node_head` error", sp)?.into_inner();
+    let node_name = eat!(head, cap_ident, "Does not have a node name", sp)?.as_str();
+    let ty_decl = eat!(head, fn_ty_sig, "Failed to parse `fn_ty_sig`", sp)?;
+    let node_body = eat!(tokens, node_decl_body, "Failed to parse `node_decl_body`", sp)?;
 
     let ty_signature = build_fn_ty_sig(ty_decl, cspan)?;
 
@@ -489,12 +460,12 @@ fn build_node_decl(pair: Pair<Rule>, cspan: &CSpan) -> Result<Decl, TensorScript
 fn build_node_assign(pair: Pair<Rule>, cspan: &CSpan) -> Result<NodeAssign, TensorScriptDiagnostic> {
     if pair.as_rule() != node_assign {
         let errmsg = format!("ty mismatch: {:?}", node_assign);
-        return Err(err!(errmsg, cspan.from_pest(pair.clone().into_span())));
+        return Err(err!(errmsg, cspan.convert_span(&pair.clone().into_span())));
     }
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let identifier = eat!(tokens, upper_ident, "Failed to parse `upper_ident`", sp.clone())?;
-    let _assign = eat!(tokens, op_assign, "Cannot parse `=`", sp.clone())?;
+    let identifier = eat!(tokens, upper_ident, "Failed to parse `upper_ident`", sp)?;
+    let _assign = eat!(tokens, op_assign, "Cannot parse `=`", sp)?;
 
     let identifier = identifier.as_str().to_owned();
 
@@ -511,7 +482,7 @@ fn build_node_assign(pair: Pair<Rule>, cspan: &CSpan) -> Result<NodeAssign, Tens
         let ty = to_idents!(ty);
         Ok(NodeAssign::Tensor {
             ident: id,
-            rhs: TensorTy::Generic(ty, sp.clone()),
+            rhs: TensorTy::Generic(ty, sp),
             span: sp,
         })
     };
@@ -527,21 +498,21 @@ fn build_node_assign(pair: Pair<Rule>, cspan: &CSpan) -> Result<NodeAssign, Tens
 
 fn build_float_lit(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnostic> {
     let ret = pair.as_str().parse().unwrap();
-    let span = cspan.from_pest(pair.into_span());
+    let span = cspan.convert_span(&pair.into_span());
     Ok(Term::Float(ret, span))
 }
 
 fn build_int_lit(pair: Pair<Rule>, cspan: &CSpan) -> Result<Term, TensorScriptDiagnostic> {
     let ret = pair.as_str().parse().unwrap();
-    let span = cspan.from_pest(pair.into_span());
+    let span = cspan.convert_span(&pair.into_span());
     Ok(Term::Integer(ret, span))
 }
 
 fn build_fn_ty_sig(pair: Pair<Rule>, cspan: &CSpan) -> Result<FnTySig, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
 
-    let handle_tensor_ty = |token: Pair<Rule>| TensorTy::Generic(to_idents!(token), sp.clone());
+    let handle_tensor_ty = |token: Pair<Rule>| TensorTy::Generic(to_idents!(token), sp);
     let handle_alias = |token: Pair<Rule>| TensorTy::Tensor(token.as_str().to_owned(), sp);
     let handle = |tok: Pair<Rule>| match tok.as_rule() {
         ty_ident_list => handle_tensor_ty(tok),
@@ -562,11 +533,11 @@ fn build_fn_ty_sig(pair: Pair<Rule>, cspan: &CSpan) -> Result<FnTySig, TensorScr
 }
 
 fn build_use_stmt(pair: Pair<Rule>, cspan: &CSpan) -> Result<Decl, TensorScriptDiagnostic> {
-    let sp = cspan.from_pest(pair.clone().into_span());
+    let sp = cspan.convert_span(&pair.clone().into_span());
     let mut tokens = pair.into_inner();
-    let _use_lit = eat!(tokens, use_lit, "Parsing `use` error", sp.clone())?;
-    let module_name = eat!(tokens, ident, "module name not defined", sp.clone())?.as_str();
-    let imported = eat!(tokens, "no imported modules", sp.clone())?;
+    let _use_lit = eat!(tokens, use_lit, "Parsing `use` error", sp)?;
+    let module_name = eat!(tokens, ident, "module name not defined", sp)?.as_str();
+    let imported = eat!(tokens, "no imported modules", sp)?;
 
     let mut imported_tokens = vec![];
     match imported.as_rule() {
@@ -575,7 +546,7 @@ fn build_use_stmt(pair: Pair<Rule>, cspan: &CSpan) -> Result<Decl, TensorScriptD
             .map(|tok| imported_tokens.push(tok.as_str().to_owned()))
             .collect(),
         Rule::ident => imported_tokens.push(imported.as_str().to_owned()),
-        _ => unexpected_token(imported),
+        _ => unexpected_token(&imported),
     };
 
     Ok(Decl::UseStmt(UseStmt {
@@ -585,7 +556,7 @@ fn build_use_stmt(pair: Pair<Rule>, cspan: &CSpan) -> Result<Decl, TensorScriptD
     }))
 }
 
-fn unexpected_token(pair: Pair<Rule>) -> ! {
+fn unexpected_token(pair: &Pair<Rule>) -> ! {
     let message = format!("Unexpected token: {:#}", pair);
     panic!(message);
 }

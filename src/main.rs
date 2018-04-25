@@ -69,7 +69,7 @@ fn get_matches<'a>() -> ArgMatches<'a> {
             .short("f")
             .long("in")
             .value_name("FILE")
-            .help("Sets a custom config file")
+            .help("Sets a custom input file")
             .takes_value(true)
             .required(true))
         .arg(Arg::with_name("v")

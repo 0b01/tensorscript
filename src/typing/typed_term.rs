@@ -17,7 +17,7 @@ pub enum TyTerm {
     TyList(Vec<TyTerm>),
     TyIdent(Type, Alias, ByteSpan),
     TyFieldAccess(TyFieldAccess),
-    TyFnApp(TyFnApp),
+    TyFnApp(Box<TyFnApp>),
     TyTuple(Type, Vec<TyTerm>, ByteSpan),
     TyBlock {
         stmts: Box<TyTerm>,
@@ -40,21 +40,16 @@ impl Ty for TyTerm {
     fn span(&self) -> ByteSpan {
         use self::TyTerm::*;
         match self {
-            &TyNone => CSpan::fresh_span(),
-            &TyProgram(_) => CSpan::fresh_span(),
-            &TyInteger(_, _, ref s) => s.clone(),
-            &TyFloat(_, _, ref s) => s.clone(),
-            // &TyList(_) => Unit(CSpan::fresh_span()),
-            &TyIdent(_, _, ref s) => s.clone(),
-            &TyFieldAccess(ref f_a) => f_a.span(),
-            &TyFnApp(ref f_a) => f_a.span(),
-            &TyBlock {
-                stmts: _,
-                ret: _,
-                ref span,
-            } => span.clone(),
-            &TyExpr(_, _, ref span) => span.clone(),
-            &TyStmt(_, ref span) => span.clone(),
+            TyNone => CSpan::fresh_span(),
+            TyProgram(_) => CSpan::fresh_span(),
+            TyInteger(_, _, ref s) => *s,
+            TyFloat(_, _, ref s) => *s,
+            TyIdent(_, _, ref s) => *s,
+            TyFieldAccess(ref f_a) => f_a.span(),
+            TyFnApp(ref f_a) => f_a.span(),
+            TyBlock {ref span, ..} => *span,
+            TyExpr(_, _, ref span) => *span,
+            TyStmt(_, ref span) => *span,
             _ => panic!("{:?}", self),
         }
     }
@@ -63,30 +58,26 @@ impl Ty for TyTerm {
         use self::TyTerm::*;
         use self::Type::*;
         match self {
-            &TyNone => Unit(CSpan::fresh_span()),
-            &TyProgram(_) => Unit(CSpan::fresh_span()),
-            &TyInteger(ref t, _, _) => t.clone(),
-            &TyFloat(ref t, _, _) => t.clone(),
-            &TyList(_) => Unit(CSpan::fresh_span()),
-            &TyIdent(ref t, _, _) => t.clone(),
-            &TyFieldAccess(ref f_a) => f_a.ty(),
-            &TyFnApp(ref f_a) => f_a.ty(),
-            &TyBlock {
-                stmts: _,
-                ref ret,
-                span: _,
-            } => ret.ty(),
-            &TyExpr(_,ref ty, _) => ty.clone(),
-            &TyStmt(..) => Unit(CSpan::fresh_span()),
-            &TyTuple(ref t, ..) => t.clone(),
+            TyNone => Unit(CSpan::fresh_span()),
+            TyProgram(_) => Unit(CSpan::fresh_span()),
+            TyInteger(ref t, _, _) => t.clone(),
+            TyFloat(ref t, _, _) => t.clone(),
+            TyList(_) => Unit(CSpan::fresh_span()),
+            TyIdent(ref t, _, _) => t.clone(),
+            TyFieldAccess(ref f_a) => f_a.ty(),
+            TyFnApp(ref f_a) => f_a.ty(),
+            TyBlock {ref ret, ..} => ret.ty(),
+            TyExpr(_,ref ty, _) => ty.clone(),
+            TyStmt(..) => Unit(CSpan::fresh_span()),
+            TyTuple(ref t, ..) => t.clone(),
         }
     }
 
     fn int(&self) -> Option<i64> {
         // panic!("{:#?}", self);
         match self {
-            &TyTerm::TyInteger(_, i, _) => Some(i),
-            &TyTerm::TyExpr(ref items, ..) => items.int(),
+            TyTerm::TyInteger(_, i, _) => Some(*i),
+            TyTerm::TyExpr(ref items, ..) => items.int(),
             _ => None,
         }
     }
@@ -94,7 +85,7 @@ impl Ty for TyTerm {
 
 impl Ty for TyFieldAccess {
     fn span(&self) -> ByteSpan {
-        self.span.clone()
+        self.span
     }
     fn ty(&self) -> Type {
         self.ty.clone()
@@ -103,7 +94,7 @@ impl Ty for TyFieldAccess {
 
 impl Ty for TyFnApp {
     fn span(&self) -> ByteSpan {
-        self.span.clone()
+        self.span
     }
     fn ty(&self) -> Type {
         self.ret_ty.clone()
@@ -176,11 +167,11 @@ pub struct TyFnApp {
 }
 
 impl TyFnApp {
-    pub fn extend_arg(&mut self, arg: TyFnAppArg) {
+    pub fn extend_arg(&mut self, arg: &TyFnAppArg) {
         self.args.insert(0, arg.clone());
         let new_args_ty = self.args.to_ty(&self.span);
         // self.fn_ty = match &self.fn_ty {
-        // Type::FUN(_, box r, span) => Type::FUN(box new_args_ty, box r.clone(), span.clone()),
+        // Type::FUN(_, box r, span) => Type::FUN(box new_args_ty, box r.clone(), span),
         //     _ => unimplemented!(),
         // };
         self.arg_ty = new_args_ty;
@@ -207,11 +198,11 @@ impl ArgsVecInto for [TyFnAppArg] {
                     Type::FnArg(
                         t_arg.name.clone(),
                         box t_arg.arg.ty().clone(),
-                        t_arg.span.clone(),
+                        t_arg.span,
                     )
                 })
                 .collect(),
-            span.clone(),
+            *span,
         )
     }
     fn to_btreemap(&self) -> Option<BTreeMap<String, Box<TyTerm>>> {
@@ -237,11 +228,11 @@ impl ArgsVecInto for [TyFnDeclParam] {
                     Type::FnArg(
                         Some(t_arg.name.clone()),
                         box t_arg.ty.clone(),
-                        t_arg.span.clone(),
+                        t_arg.span,
                     )
                 })
                 .collect(),
-            span.clone(),
+            *span,
         )
     }
     fn to_btreemap(&self) -> Option<BTreeMap<String, Box<TyTerm>>> {

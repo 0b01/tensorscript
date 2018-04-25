@@ -15,12 +15,12 @@ pub enum TensorScriptDiagnostic {
 impl TensorScriptDiagnostic {
 
     pub fn print_err(&self, code_map: &CodeMap) {
-        let diagnostic = self.into_diagnostic(code_map);
+        let diagnostic = self.as_diagnostic(code_map);
         let writer = StandardStream::stderr(ColorArg::from_str("auto").unwrap().into());
         emit(&mut writer.lock(), &code_map, &diagnostic).unwrap();
     }
 
-    pub fn into_diagnostic(&self, code_map: &CodeMap) -> Diagnostic {
+    pub fn as_diagnostic(&self, code_map: &CodeMap) -> Diagnostic {
         use self::TensorScriptDiagnostic::*;
         match self {
             DimensionMismatch(Type::ResolvedDim(v1, s1), Type::ResolvedDim(v2,s2)) => {
@@ -28,8 +28,8 @@ impl TensorScriptDiagnostic {
                     Severity::Error,
                     format!("Dimension mismatch: {} != {}", v1, v2),
                 )
-                .with_label(Label::new_primary(s1.clone()))
-                .with_label(Label::new_primary(s2.clone()))
+                .with_label(Label::new_primary(*s1))
+                .with_label(Label::new_primary(*s2))
             }
 
             RankMismatch(Type::TSR(dims1, s1), Type::TSR(dims2, s2)) => {
@@ -37,8 +37,8 @@ impl TensorScriptDiagnostic {
                     Severity::Error,
                     format!("Tensor rank mismatch: rank({:?}) != rank({:?})", dims1, dims2),
                 )
-                .with_label(Label::new_primary(s1.clone()))
-                .with_label(Label::new_primary(s2.clone()))
+                .with_label(Label::new_primary(*s1))
+                .with_label(Label::new_primary(*s2))
             },
 
             ParseError(msg, sp) => {
@@ -54,7 +54,7 @@ impl TensorScriptDiagnostic {
                     format!("{} on line {}:", msg, prev_line + 1),
                 )
                 .with_label(Label::new_primary(prev_line_span))
-                .with_label(Label::new_primary(sp.clone()))
+                .with_label(Label::new_primary(*sp))
             }
 
             _ => panic!("unimplemented errors")
@@ -77,7 +77,7 @@ impl Errors {
     }
 
     pub fn print_errs(&self, code_map: &CodeMap) {
-        let diagnostics: Vec<Diagnostic> = self.errs.iter().map(|e|e.into_diagnostic(code_map)).collect();
+        let diagnostics: Vec<Diagnostic> = self.errs.iter().map(|e|e.as_diagnostic(code_map)).collect();
         let writer = StandardStream::stderr(ColorArg::from_str("auto").unwrap().into());
         for diagnostic in &diagnostics {
             emit(&mut writer.lock(), &code_map, &diagnostic).unwrap();

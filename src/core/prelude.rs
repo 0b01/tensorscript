@@ -1,6 +1,6 @@
 use core::{MethodName, Op};
 use span::CSpan;
-use typing::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
+use typing::typed_term::TyFnAppArg;
 use typing::{Type, TypeEnv};
 
 #[allow(non_camel_case_types)]
@@ -11,7 +11,7 @@ impl Op for view {
         "view"
     }
 
-    fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         use self::Type::*;
         vec![
             (
@@ -24,12 +24,12 @@ impl Op for view {
     /// output same shape as input
     fn resolve(
         &self,
-        tenv: &mut TypeEnv,
+        _tenv: &mut TypeEnv,
         fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
-        args: Vec<TyFnAppArg>,
-        inits: Option<Vec<TyFnAppArg>>, // ... refactor into span error
+        _args: Vec<TyFnAppArg>,
+        _inits: Option<Vec<TyFnAppArg>>, // ... refactor into span error
     ) -> Option<Type> {
         match fn_name {
             "forward" => {
@@ -49,13 +49,13 @@ impl Op for view {
                     panic!("Cannot elide more than 1 tensor dimension");
                 }
 
-                let ret_prod = resolved_ret_tsr.iter().fold(1, |acc, i| acc * i); // product of dims
-                let arg_prod = resolved_arg_tsr.iter().fold(1, |acc, i| acc * i); // product of dims
+                let ret_prod: i64 = resolved_ret_tsr.iter().product();
+                let arg_prod: i64 = resolved_arg_tsr.iter().product();
 
                 let is_only_one_arg_dim_unresolved = (arg_tsr.len() - resolved_arg_tsr.len()) == 1;
                 if ret_prod == arg_prod && is_only_one_arg_dim_unresolved {
-                    let unresolved_arg_dim = arg_tsr.iter().filter(|i| i.as_num().is_none()).next().unwrap();
-                    let unresolved_ret_dim = ret_tsr.iter().filter(|i| i.as_num().is_none()).next().unwrap();
+                    let unresolved_arg_dim = arg_tsr.iter().find(|i| i.as_num().is_none()).unwrap();
+                    let unresolved_ret_dim = ret_tsr.iter().find(|i| i.as_num().is_none()).unwrap();
                     let modified_ret_ty = ret_tsr
                         .iter()
                         .map(|i|
