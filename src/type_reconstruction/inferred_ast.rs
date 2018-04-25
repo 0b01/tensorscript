@@ -98,7 +98,6 @@ fn subs_use_stmt(decl: &TyUseStmt, _tenv: &mut Substitution) -> TyUseStmt {
 
 fn subs_weights_assign(w_a: &TyWeightsAssign, s: &mut Substitution) -> TyWeightsAssign {
     let mut c = w_a.clone();
-    c.ty = s.apply_ty(&c.ty);
     c.arg_ty = s.apply_ty(&c.arg_ty);
     c.fn_args = c.fn_args.iter().map(|a| subs_fn_app_arg(a, s)).collect();
     c

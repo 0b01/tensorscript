@@ -7,6 +7,9 @@ use typed_ast::{Type, TypeEnv};
 use self::TyTerm::*;
 pub struct Conv2d;
 pub struct Dropout2d;
+#[allow(non_camel_case_types)]
+pub struct maxpool2d;
+
 
 macro_rules! read_2_tuple {
     ($var:expr) => {
@@ -15,6 +18,21 @@ macro_rules! read_2_tuple {
         } else {
             panic!("{:#?}", $var);
         }
+    };
+}
+
+macro_rules! read_from_init {
+    ($var:expr, $default:expr) => {
+        $var
+            .map(|t| (t, t.ty()) )
+            .and_then(|(t, ty)|
+                if let Type::Tuple(..) = ty {
+                    Some(read_2_tuple!(t))
+                } else {
+                    let p0 = t.int()?;
+                    Some((p0, p0))
+                }
+            ).unwrap_or($default)
     };
 }
 
@@ -41,35 +59,54 @@ impl Op for Conv2d {
         fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
+        args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>
     ) -> Option<Type> {
         match fn_name {
             "forward" => {
                 let forward_args = arg_ty.as_args_map()?;
-                let x_ty = forward_args.get("x")?;
+                let x_ty = forward_args.get("x").unwrap();
                 if !x_ty.is_resolved() {
                     None
                 } else {
                     let init_map = inits?.to_btreemap()?;
-                    let kernel_size = init_map.get("kernel_size")?;
-                    let kernel_ty = kernel_size.ty();
-                    let (k0, k1) = if kernel_ty.is_tuple() {
-                        let (k0,k1) = read_2_tuple!(kernel_size);
-                        (k0, k1)
-                    } else {
-                        let k0 = kernel_size.int()?;
-                        let k1 = k0;
-                        (k0, k1)
-                    };
-                    println!("::::: {} {}", k0, k1);
+                    let (k0, k1) = read_from_init!(init_map.get("kernel_size"), (0, 0));
+                    let (p0, p1) = read_from_init!(init_map.get("padding"), (0, 0));
+                    let (d0, d1) = read_from_init!(init_map.get("dilation"), (1, 1));
+                    let (s0, s1) = read_from_init!(init_map.get("stride"), (1, 1));
 
-                    // println!(">>>>>>>>>>:\nTODO: Conv2d!");
-                    // // println!("{:#?}, {:#?}", inits, ret_ty);
-                    // println!("x_ty: {:?}", x_ty);
-                    // println!("kernel_ty: {:?}", kernel_ty);
-                    // println!("<<<<<<<<<<");
-                    // panic!();
-                    None
+
+                    let in_ch = init_map.get("in_ch").map(|t|t.int().unwrap()).expect("does not have in_ch");
+                    let out_ch = init_map.get("out_ch").map(|t|t.int().unwrap()).expect("does not have in_ch");
+
+                    let dims = x_ty.as_vec();
+                    let (n, c_in, h_in, w_in) = (
+                        dims[0].to_owned(),
+                        dims[1].to_owned().as_num(),
+                        dims[2].to_owned().as_num(),
+                        dims[3].to_owned().as_num()
+                    );
+
+                    assert_eq!(c_in, in_ch);
+                    // println!("BLAH: {:?}", x_ty);
+                    let h_out = (h_in + 2 * p0 - d0 * (k0 -1) - 1) / s0 + 1;
+                    let w_out = (w_in + 2 * p1 - d1 * (k1 -1) - 1) / s1 + 1;
+
+                    let span = x_ty.span();
+
+                    Some( // returns a function
+                        fun!(
+                            "Conv2d",
+                            "forward",
+                            arg_ty,
+                            Type::TSR(vec![
+                                n,
+                                Type::ResolvedDim(out_ch, span.clone()),
+                                Type::ResolvedDim(h_out, span.clone()),
+                                Type::ResolvedDim(w_out, span.clone()),
+                            ], span)
+                        )
+                    )
                 }
             },
             "new" => {
@@ -114,20 +151,18 @@ impl Op for Dropout2d {
         fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
+        args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {
             "forward" => {
                 let ty = tenv.fresh_var(&CSpan::fresh_span());
-                Some(fun!("Dropout2d", "forward", ty.clone(), ty))
+                Some(fun!("log_softmax", "forward", args!(arg!("x", ty.clone())), ty))
             }
             _ => unimplemented!(),
         }
     }
 }
-
-#[allow(non_camel_case_types)]
-pub struct maxpool2d;
 
 impl Op for maxpool2d {
     fn get_name(&self) -> &'static str {
@@ -146,12 +181,55 @@ impl Op for maxpool2d {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
-        _fn_name: &str,
+        fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
+        args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
-        // println!("TODO!");
-        None
+        match fn_name {
+            "forward" => {
+                let args_ty_map = arg_ty.as_args_map()?;
+                let x_ty = args_ty_map.get("x").expect("No x argument");
+                let args_map = args.to_btreemap()?;
+
+                if !x_ty.is_resolved() {
+                    None
+                } else {
+                    let (k0, k1) = read_from_init!(args_map.get("kernel_size"), (0, 0));
+                    let (p0, p1) = read_from_init!(args_map.get("padding"), (0, 0));
+                    let (d0, d1) = read_from_init!(args_map.get("dilation"), (1, 1));
+                    let (s0, s1) = read_from_init!(args_map.get("stride"), (k0, k1));
+
+                    let dims = x_ty.as_vec();
+                    let (n, c_in, h_in, w_in) = (
+                        dims[0].to_owned(),
+                        dims[1].to_owned(),
+                        dims[2].to_owned().as_num(),
+                        dims[3].to_owned().as_num()
+                    );
+                    // println!("BLAH: {:?}", x_ty);
+                    let h_out = (h_in + 2 * p0 - d0 * (k0 -1) - 1) / s0 + 1;
+                    let w_out = (w_in + 2 * p1 - d1 * (k1 -1) - 1) / s1 + 1;
+
+                    let span = x_ty.span();
+
+                    Some( // returns a function
+                        fun!(
+                            "maxpool2d",
+                            "forward",
+                            arg_ty,
+                            Type::TSR(vec![
+                                n,
+                                c_in.clone(),
+                                Type::ResolvedDim(h_out, span.clone()),
+                                Type::ResolvedDim(w_out, span.clone()),
+                            ], span)
+                        )
+                    )
+                }
+            },
+            _ => None,
+        }
     }
 }

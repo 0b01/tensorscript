@@ -278,7 +278,7 @@ impl TypeEnv {
                     Err(e) => {
                         let alias = Alias::Variable(t.to_string());
                         let ty = self.resolve_type(mod_name, &alias)
-                            .unwrap()
+                            .unwrap_or(self.fresh_dim(span))
                             .clone();
                         if let Type::TSR(vs, _) = ty {
                             vs
@@ -384,6 +384,7 @@ impl TypeEnv {
         fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
+        args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         let (mod_name, mod_ty) = {
@@ -397,7 +398,7 @@ impl TypeEnv {
         if let Type::UnresolvedModuleFun(p0, p1, p2, _) = ty {
             assert_eq!(fn_name, p2);
             let op = Core::find(p0, p1);
-            let ty = op.resolve(self, fn_name, arg_ty, ret_ty, inits);
+            let ty = op.resolve(self, fn_name, arg_ty, ret_ty, args, inits);
             ty
         } else {
             unimplemented!();

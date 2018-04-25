@@ -169,7 +169,6 @@ pub struct TyWeightsDecl {
 #[derive(Debug, PartialEq, Clone)]
 pub struct TyWeightsAssign {
     pub name: String,
-    pub ty: Type,
     pub mod_name: String,
     pub fn_name: String,
     pub arg_ty: Type,

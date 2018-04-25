@@ -14,6 +14,7 @@ pub trait Op {
         fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
+        args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         unimplemented!();

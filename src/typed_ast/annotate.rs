@@ -288,7 +288,6 @@ fn annotate_weights_assign(w_assign: &WeightsAssign, tenv: &mut TypeEnv) -> TyWe
 
     TyWeightsAssign {
         name: name,
-        ty: tenv.fresh_var(&w_assign.span),
         mod_name: w_assign.mod_name.clone(),
         fn_name: w_assign.fn_name.clone(),
         arg_ty: fn_args.to_ty(&w_assign.span),

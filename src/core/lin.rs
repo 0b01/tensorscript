@@ -40,6 +40,7 @@ impl Op for Linear {
         fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
+        args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>, // ... refactor into span error
     ) -> Option<Type> {
         match fn_name {

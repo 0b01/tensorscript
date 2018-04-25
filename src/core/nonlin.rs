@@ -31,6 +31,7 @@ impl Op for sigmoid {
         fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
+        args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {
@@ -61,6 +62,7 @@ impl Op for relu {
         fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
+        args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>
     ) -> Option<Type> {
         match fn_name {
@@ -91,6 +93,7 @@ impl Op for log_softmax {
         fn_name: &str,
         arg_ty: Type,
         ret_ty: Type,
+        args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Type> {
         match fn_name {

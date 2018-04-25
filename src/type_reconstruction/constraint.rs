@@ -67,6 +67,7 @@ impl Constraints {
             &TyStmt(ref items, _) => self.collect(&items, tenv),
             &TyViewFn(ref view_fn) => {
                 self.collect(&view_fn.arg.arg, tenv);
+                // ...
             }
             &TyNone => (),
             _ => {
@@ -218,8 +219,7 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
 
     if let Type::UnresolvedModuleFun(..) = ty {
         let resolution = if fn_app.orig_name.is_none() { // this is in a weight assign fn
-            println!("{:?}, {:?}", &fn_app.mod_name.clone().unwrap().as_str(), fn_app.name);
-            // panic!();
+            // println!("{:?}, {:?}", &fn_app.mod_name.clone().unwrap().as_str(), fn_app.name);
             tenv.resolve_unresolved(
                 ty.clone(),
                 &symbol_name,
@@ -227,6 +227,7 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
                 &fn_app.name.as_str(),
                 fn_app.arg_ty.clone(),
                 fn_app.ret_ty.clone(),
+                fn_app.args.clone(),
                 None
             )
         } else {
@@ -238,12 +239,13 @@ fn collect_fn_app(cs: &mut Constraints, fn_app: &TyFnApp, tenv: &mut TypeEnv) {
                 fn_name.as_str(),
                 fn_app.arg_ty.clone(),
                 fn_app.ret_ty.clone(),
+                fn_app.args.clone(),
                 inits
             )
         };
 
         if let Some(resolved_fn_ty) = resolution {
-            println!("{:#?}", resolved_fn_ty);
+            // println!("{:#?}", resolved_fn_ty);
             cs.add(
                 resolved_fn_ty,
                 fun!(

@@ -43,13 +43,17 @@ impl PartialEq for Type {
             (Tuple(ta, _), Tuple(tb, _)) => ta == tb,
             (FnArg(n1, t1, _), FnArg(n2, t2, _)) => (n1 == n2) && (t1 == t2),
             (ResolvedDim(a, _), ResolvedDim(b, _)) => a == b,
-            (FUN(m1, n1, p1, r1, _), FUN(m2, n2, p2, r2, _)) => (p1 == p2) && (r1 == r2) && (m1 == m2) && (n1 == n2),
+            (FUN(m1, n1, p1, r1, _), FUN(m2, n2, p2, r2, _)) =>
+                (p1 == p2) && (r1 == r2) && (m1 == m2) && (n1 == n2),
             (TSR(ts1, _), TSR(ts2, _)) => ts1 == ts2,
             (UnresolvedModuleFun(a1, b1, c1, _), UnresolvedModuleFun(a2, b2, c2, _)) =>
                 (a1 == a2) && (b1 == b2) && (c1 == c2),
-            // MismatchedDim(_,_) => true,
+            (TSR(..), VAR(..)) => false,
             _ => {
-                panic!("{:?}", self);
+                println!("Undefined comparison:");
+                println!("(1) {:?}", self);
+                println!("(2) {:?}", other);
+                false
             }
         }
     }
@@ -118,6 +122,24 @@ impl Hash for Type {
 
 impl Type {
 
+    pub fn span(&self) -> ByteSpan {
+        use self::Type::*;
+        match self {
+            TSR(_, s) => s.clone(),
+            _ => unimplemented!(),
+        }
+    }
+
+    pub fn as_vec(&self) -> Vec<Type> {
+        use self::Type::TSR;
+        match self {
+            TSR(ts, _) => ts.to_owned(),
+            _ => {
+                panic!("{:#?}", self);
+            }
+        }
+    }
+
     pub fn is_tuple(&self) -> bool {
         use self::Type::Tuple;
         match self {
@@ -132,7 +154,7 @@ impl Type {
             FnArgs(vs, _) => {
                 Some(
                     vs.iter()
-                    .filter_map(|ty| 
+                    .filter_map(|ty|
                         if let FnArg(ref name,box ref ty, _) = ty {
                             if name.is_some() {
                                 Some((name.clone().unwrap(), ty.clone()))
