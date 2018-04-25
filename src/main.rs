@@ -14,14 +14,36 @@
 /// 3. Annotate untyped AST into typed AST for type inference and reconstruction. The
 /// idea is to annotate each tree node with a dummy type variable.
 ///
-/// 4. Hindley-Milner type inference. This is consisted of a few substeps. See module
-/// documentation for more details.
+/// 4. Hindley-Milner type inference for type reconstruction. This is consisted
+/// of a few substeps.
 ///
-/// 5. ...
+///   a. Collect constraints. (handled in constraint.rs)
+///       In this step, traverse typed ast and collect types of adjacent nodes that should
+///       be equivalent. This generates a Constraint struct which is just a thin wrapper
+///       around a btreeset of (Type, Type) tuple.
+///
+///   b. Unify constraints by generating substitutions.
+///       This is a variant to Algorithm W in H-M type inference. Bascially, unify_one
+///       function tries to replace 1 type var with a concrete type. The parent function, unify,
+///       then uses that substitution on the rest of the constraints, thus eliminating the type
+///       variable from the constraint set. The process is iterated until one of these conditions are met:
+///       a) all type variable are exhausted. b) equivalence that can never happen. c) circular
+///       type dependence (handled by occurs check).
+///
+///   c. Generate Substitutions
+///       Now after the unification is complete, the function returns a list of substitutions that
+///       should remove all type variables from the typed AST.
+///
+/// 5. code gen // ... todo
+///
+///
+/// A note about `Span`s: Span contains the location in the source code for
+/// error reporting. Think of it as a lightweight tag that can be associated with
+/// data structures such as AST nodes, types, etc...
 ///
 /// TODO:
 /// 1. [*] implement module pattern matching
-/// 2. [ ] type level computation (resolved tensor dimension)
+/// 2. [*] type level computation (resolved tensor dimension)
 /// 3. [*] BUG: dimension mismatch for mnist example
 ///             need to create fresh type variables for different static forward functions
 /// 4. [*] BUG: non-determinism
@@ -30,6 +52,8 @@
 /// 7. [*] set up commandline
 /// 8. [*] more examples
 /// 9. [*] better errors in parser
+/// 10. [ ] code gen
+/// 11. [ ] add more examples
 
 extern crate pest;
 #[macro_use]
@@ -44,7 +68,7 @@ extern crate clap;
 extern crate codespan_reporting;
 
 mod core;
-mod parser;
+mod parsing;
 mod span;
 mod errors;
 
@@ -94,7 +118,7 @@ fn main() {
     let file_map = code_map.add_filemap("test".into(), src.clone());
     let cspan = span::CSpan::new(file_map.span());
 
-    let parsed_terms = parser::parse_str(&src, &cspan);
+    let parsed_terms = parsing::parse_str(&src, &cspan);
     let program = match parsed_terms {
         Ok(program) => program,
         Err(e) => {

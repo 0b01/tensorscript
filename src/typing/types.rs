@@ -255,7 +255,6 @@ impl Type {
 }
 
 impl Debug for Type {
-    #[allow(many_single_char_names)]
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         use self::Type::*;
         match self {
@@ -273,7 +272,7 @@ impl Debug for Type {
             FnArg(ref name, ref ty, _) => write!(f, "ARG({:?}={:?})", name, ty),
             ResolvedDim(ref d, _) => write!(f, "<{}>", d),
             Module(ref s, ref ty, _) => write!(f, "MODULE({}, {:?})", s, ty),
-            FUN(ref m, ref n,ref p, ref r, _) => write!(f, "{}::{}({:?} -> {:?})", m,n,p, r),
+            FUN(ref module, ref name,ref p, ref r, _) => write!(f, "{}::{}({:?} -> {:?})", module,name,p, r),
             TSR(ref dims, _) => {
                 if !dims.is_empty() {
                     write!(f, "[")?;

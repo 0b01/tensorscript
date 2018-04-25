@@ -8,7 +8,7 @@ use span::CSpan;
 /// 1. Type Aliasing during the first pass (annotate)
 /// 2. pushing and popping scopes (during `annotate` and `collect`)
 /// 3. module type and method type reconstruction
-use parser::term::{NodeAssign, TensorTy, Term};
+use parsing::term::{NodeAssign, TensorTy, Term};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt::{Debug, Error, Formatter};
 use typing::typed_term::TyFnAppArg;

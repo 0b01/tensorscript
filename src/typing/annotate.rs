@@ -1,5 +1,5 @@
 use codespan::ByteSpan;
-use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, TensorTy,
+use parsing::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, TensorTy,
                    Term, ViewFn, WeightsAssign};
 use span::CSpan;
 use typing::type_env::{Alias, ModName, TypeEnv};

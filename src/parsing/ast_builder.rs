@@ -1,9 +1,9 @@
 /// builds untyped AST from token tree.
 ///
 use codespan::{ByteSpan, Span, ByteIndex};
-use parser::grammar::Rule::*;
-use parser::grammar::{Rule, TensorScriptParser};
-use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, GraphDecl,
+use parsing::grammar::Rule::*;
+use parsing::grammar::{Rule, TensorScriptParser};
+use parsing::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, GraphDecl,
                    NodeAssign, NodeDecl, TensorTy, Term, UseStmt, ViewFn, WeightsAssign,
                    WeightsDecl};
 use pest::iterators::Pair;
