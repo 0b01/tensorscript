@@ -1,8 +1,8 @@
 use self::Type::*;
 use core::{MethodName, Op};
 use span::CSpan;
-use typed_ast::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
-use typed_ast::{Type, TypeEnv};
+use typing::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
+use typing::{Type, TypeEnv};
 
 use self::TyTerm::*;
 pub struct Conv2d;

@@ -1,7 +1,7 @@
 use self::TyTerm::*;
-use type_reconstruction::subst::Substitution;
-use typed_ast::typed_term;
-use typed_ast::typed_term::*;
+use typing::subst::Substitution;
+use typing::typed_term;
+use typing::typed_term::*;
 
 pub fn subs(typed_term: &TyTerm, s: &mut Substitution) -> TyTerm {
     // println!("{}", typed_term);

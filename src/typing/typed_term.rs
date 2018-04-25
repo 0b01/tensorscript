@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 ///
 ///
 use std::fmt::{Display, Error, Formatter};
-use typed_ast::type_env::Alias;
-use typed_ast::Type;
+use typing::type_env::Alias;
+use typing::Type;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TyTerm {

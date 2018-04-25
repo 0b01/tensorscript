@@ -1,5 +1,5 @@
-use typed_ast::typed_term::TyFnAppArg;
-use typed_ast::{Type, TypeEnv};
+use typing::typed_term::TyFnAppArg;
+use typing::{Type, TypeEnv};
 
 mod prelude;
 mod conv;

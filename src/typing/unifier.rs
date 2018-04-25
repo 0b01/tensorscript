@@ -1,11 +1,11 @@
-use typed_ast::{Type, TypeEnv};
-use typed_ast::type_env::TypeId;
+use typing::{Type, TypeEnv};
+use typing::type_env::TypeId;
 use span::CSpan;
 use errors::{TensorScriptDiagnostic, Errors};
 
 
-use type_reconstruction::constraint::{Constraints, Equals};
-use type_reconstruction::subst::Substitution;
+use typing::constraint::{Constraints, Equals};
+use typing::subst::Substitution;
 
 pub struct Unifier {
     pub errs: Errors

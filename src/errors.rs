@@ -2,7 +2,7 @@ use std::str::FromStr;
 use codespan::CodeMap;
 use codespan_reporting::termcolor::StandardStream;
 use codespan_reporting::{emit, ColorArg, Diagnostic, Label, Severity};
-use typed_ast::Type;
+use typing::Type;
 use codespan::{ByteSpan, LineIndex};
 
 #[derive(Debug)]

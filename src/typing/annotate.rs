@@ -2,12 +2,12 @@ use codespan::ByteSpan;
 use parser::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, TensorTy,
                    Term, ViewFn, WeightsAssign};
 use span::CSpan;
-use typed_ast::type_env::{Alias, ModName, TypeEnv};
-use typed_ast::typed_term::{ArgsVecInto, Ty};
-use typed_ast::typed_term::{TyDecl, TyFieldAccess, TyFnApp, TyFnAppArg, TyFnDecl, TyFnDeclParam,
+use typing::type_env::{Alias, ModName, TypeEnv};
+use typing::typed_term::{ArgsVecInto, Ty};
+use typing::typed_term::{TyDecl, TyFieldAccess, TyFnApp, TyFnAppArg, TyFnDecl, TyFnDeclParam,
                             TyGraphDecl, TyNodeDecl, TyTerm, TyUseStmt, TyWeightsAssign,
                             TyWeightsDecl};
-use typed_ast::Type;
+use typing::Type;
 
 pub fn annotate(term: &Term, tenv: &mut TypeEnv) -> TyTerm {
     use self::Term::*;

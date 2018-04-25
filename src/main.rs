@@ -33,7 +33,7 @@
 
 extern crate pest;
 #[macro_use]
-mod typed_ast;
+mod typing;
 #[macro_use]
 extern crate pest_derive;
 #[macro_use]
@@ -47,16 +47,15 @@ mod core;
 mod parser;
 mod span;
 mod errors;
-mod type_reconstruction;
 
 use std::fs::File;
 use std::io::Read;
 
-use type_reconstruction::constraint::Constraints;
-use type_reconstruction::unifier::Unifier;
-use typed_ast::annotate::annotate;
-use typed_ast::type_env::TypeEnv;
-use type_reconstruction::inferred_ast::subs;
+use typing::constraint::Constraints;
+use typing::unifier::Unifier;
+use typing::annotate::annotate;
+use typing::type_env::TypeEnv;
+use typing::inferred_ast::subs;
 
 use codespan::CodeMap;
 use clap::{Arg, App, ArgMatches};

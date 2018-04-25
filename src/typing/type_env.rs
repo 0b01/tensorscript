@@ -11,8 +11,8 @@ use span::CSpan;
 use parser::term::{NodeAssign, TensorTy, Term};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt::{Debug, Error, Formatter};
-use typed_ast::typed_term::TyFnAppArg;
-use typed_ast::Type;
+use typing::typed_term::TyFnAppArg;
+use typing::Type;
 use self::ModName::*;
 
 pub type TypeId = usize;

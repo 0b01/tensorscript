@@ -1,9 +1,9 @@
 use std::collections::BTreeSet;
 
-use typed_ast::type_env::{Alias, ModName, TypeEnv};
-use typed_ast::typed_term::Ty;
-use typed_ast::typed_term::*;
-use typed_ast::Type;
+use typing::type_env::{Alias, ModName, TypeEnv};
+use typing::typed_term::Ty;
+use typing::typed_term::*;
+use typing::Type;
 
 use span::CSpan;
 

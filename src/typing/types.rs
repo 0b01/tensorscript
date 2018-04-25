@@ -2,7 +2,7 @@ use codespan::ByteSpan;
 use std::fmt::{Debug, Error, Formatter};
 /// Types for typed AST
 use std::hash::{Hash, Hasher};
-use typed_ast::type_env::TypeId;
+use typing::type_env::TypeId;
 use std::collections::BTreeMap;
 
 #[derive(Clone, Eq, PartialOrd, Ord)]

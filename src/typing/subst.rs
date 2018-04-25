@@ -20,9 +20,9 @@
 ///     should remove all type variables from the typed AST.
 ///
 use std::collections::BTreeMap;
-use type_reconstruction::constraint::{Constraints, Equals};
-use typed_ast::type_env::TypeId;
-use typed_ast::Type;
+use typing::constraint::{Constraints, Equals};
+use typing::type_env::TypeId;
+use typing::Type;
 
 #[derive(Debug, PartialEq)]
 pub struct Substitution(pub BTreeMap<Type, Type>);

@@ -4,10 +4,10 @@
 
 // #[test]
 // fn mnist() {
-//     use type_reconstruction::constraint::Constraints;
-//     use type_reconstruction::unifier::Unifier;
-//     use typed_ast::annotate::annotate;
-//     use typed_ast::type_env::TypeEnv;
+//     use typing::constraint::Constraints;
+//     use typing::unifier::Unifier;
+//     use typing::annotate::annotate;
+//     use typing::type_env::TypeEnv;
 //     let fname = "examples/xor.trs";
 //     let mut file = File::open(fname).expect("Unable to open the file");
 //     let mut src = String::new();
@@ -35,7 +35,7 @@
 //     unifier.print_errs(&code_map);
 //     // println!("{:#?}", subs);
 //     // println!("{:#?}", subs.apply(&cs));
-//     let test = type_reconstruction::inferred_ast::subs(&ast, &mut subs);
+//     let test = typing::inferred_ast::subs(&ast, &mut subs);
 //     println!("{:#?}", test);
 //     println!("{:#?}", tenv);
 
