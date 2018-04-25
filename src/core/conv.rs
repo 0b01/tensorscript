@@ -82,9 +82,9 @@ impl Op for Conv2d {
                     let dims = x_ty.as_vec();
                     let (n, c_in, h_in, w_in) = (
                         dims[0].to_owned(),
-                        dims[1].to_owned().as_num(),
-                        dims[2].to_owned().as_num(),
-                        dims[3].to_owned().as_num()
+                        dims[1].to_owned().as_num().unwrap(),
+                        dims[2].to_owned().as_num().unwrap(),
+                        dims[3].to_owned().as_num().unwrap()
                     );
 
                     assert_eq!(c_in, in_ch);
@@ -205,8 +205,8 @@ impl Op for maxpool2d {
                     let (n, c_in, h_in, w_in) = (
                         dims[0].to_owned(),
                         dims[1].to_owned(),
-                        dims[2].to_owned().as_num(),
-                        dims[3].to_owned().as_num()
+                        dims[2].to_owned().as_num().unwrap(),
+                        dims[3].to_owned().as_num().unwrap()
                     );
                     // println!("BLAH: {:?}", x_ty);
                     let h_out = (h_in + 2 * p0 - d0 * (k0 -1) - 1) / s0 + 1;

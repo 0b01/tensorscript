@@ -1,5 +1,6 @@
 use codespan::ByteSpan;
 use core::Core;
+use span::CSpan;
 /// Type Environment holds the state during type reconstruction
 /// which is really just a few tree traversals.
 ///
@@ -12,6 +13,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt::{Debug, Error, Formatter};
 use typed_ast::typed_term::TyFnAppArg;
 use typed_ast::Type;
+use self::ModName::*;
 
 pub type TypeId = usize;
 
@@ -23,7 +25,6 @@ pub enum ModName {
 
 impl ModName {
     pub fn as_str(&self) -> &str {
-        use self::ModName::*;
         match self {
             &Global => unimplemented!(),
             &Named(ref s) => s,
@@ -33,7 +34,6 @@ impl ModName {
 
 impl Debug for ModName {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        use self::ModName::*;
         match self {
             &Named(ref s) => write!(f, "MOD({})", s),
             &Global => write!(f, "MOD(Global)"),
@@ -92,12 +92,14 @@ impl Alias {
 
 impl TypeEnv {
     pub fn new() -> Self {
-        Self {
+        let mut ret = Self {
             counter: 0,
-            current_mod: ModName::Global,
+            current_mod: Global,
             modules: BTreeMap::new(),
             to_verify: BTreeSet::new(),
-        }
+        };
+        ret.import_prelude();
+        ret
     }
 
     /// create new dimension type variable
@@ -143,7 +145,7 @@ impl TypeEnv {
     /// then check in the global scope
     pub fn resolve_type(&self, mod_name: &ModName, alias: &Alias) -> Option<Type> {
         self.resolve_type_inner(mod_name, alias)
-            .or(self.resolve_type_inner(&ModName::Global, alias))
+            .or(self.resolve_type_inner(&Global, alias))
     }
 
     /// inside the module or global scope, iterate over block scope and find
@@ -369,10 +371,20 @@ impl TypeEnv {
         let methods = Core::import(path_name, mod_name, self);
         for &(ref name, ref ty) in methods.iter() {
             self.add_type(
-                &ModName::Named(mod_name.to_owned()),
+                &Named(mod_name.to_owned()),
                 &Alias::Function(name.to_string()),
                 ty.clone(),
             );
+        }
+    }
+
+    pub fn import_prelude(&mut self) {
+        for fun in vec!["view"].iter() {
+            self.add_type(&Global,
+                &Alias::Variable(fun.to_string()),
+                module!(fun.to_string())
+            );
+            self.import_module("prelude", fun);
         }
     }
 

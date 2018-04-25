@@ -26,7 +26,6 @@ pub enum TyTerm {
     },
     TyExpr(Box<TyTerm>, Type, ByteSpan),
     TyStmt(Box<TyTerm>, ByteSpan),
-    TyViewFn(TyViewFn),
 }
 
 pub trait Ty {
@@ -56,7 +55,6 @@ impl Ty for TyTerm {
             } => span.clone(),
             &TyExpr(_, _, ref span) => span.clone(),
             &TyStmt(_, ref span) => span.clone(),
-            &TyViewFn(ref view_fn) => view_fn.span(),
             _ => panic!("{:?}", self),
         }
     }
@@ -80,7 +78,6 @@ impl Ty for TyTerm {
             } => ret.ty(),
             &TyExpr(_,ref ty, _) => ty.clone(),
             &TyStmt(..) => Unit(CSpan::fresh_span()),
-            &TyViewFn(ref view_fn) => view_fn.ty(),
             &TyTuple(ref t, ..) => t.clone(),
         }
     }
@@ -110,15 +107,6 @@ impl Ty for TyFnApp {
     }
     fn ty(&self) -> Type {
         self.ret_ty.clone()
-    }
-}
-
-impl Ty for TyViewFn {
-    fn span(&self) -> ByteSpan {
-        self.span.clone()
-    }
-    fn ty(&self) -> Type {
-        self.ty.clone()
     }
 }
 
@@ -265,17 +253,10 @@ impl ArgsVecInto for [TyFnDeclParam] {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct TyViewFn {
-    pub ty: Type,
-    pub arg: TyFnAppArg,
-    pub span: ByteSpan,
-}
-
-#[derive(Debug, PartialEq, Clone)]
 pub struct TyFnDecl {
     pub name: Alias,
     pub fn_params: Vec<TyFnDeclParam>,
-    pub fn_ty: Type,
+    pub fn_ty: Type, // must be a fun!
     pub func_block: Box<TyTerm>,
     pub span: ByteSpan,
 }

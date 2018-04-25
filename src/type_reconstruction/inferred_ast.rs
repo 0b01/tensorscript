@@ -31,11 +31,6 @@ pub fn subs(typed_term: &TyTerm, s: &mut Substitution) -> TyTerm {
             box subs(&items, s),
             span.clone(),
         ),
-        &TyViewFn(ref view_fn) => TyViewFn(typed_term::TyViewFn {
-            ty: s.apply_ty(&view_fn.ty),
-            arg: subs_fn_app_arg(&view_fn.arg, s),
-            span: view_fn.span.clone(),
-        }),
         &TyNone => TyNone,
         &TyTuple(ref ty, ref vs, ref span) => TyTuple(
             s.apply_ty(ty),

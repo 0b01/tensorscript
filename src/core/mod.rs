@@ -1,6 +1,7 @@
 use typed_ast::typed_term::TyFnAppArg;
 use typed_ast::{Type, TypeEnv};
 
+mod prelude;
 mod conv;
 mod lin;
 mod nonlin;
@@ -48,6 +49,12 @@ impl Core {
                 "Linear" => box self::lin::Linear,
                 _ => unimplemented!(),
             },
+            "prelude" => match mod_name {
+                "view" => box self::prelude::view,
+                _ => {
+                    panic!("{}", mod_name)
+                }
+            }
             _ => {
                 println!("{}::{}", path_name, mod_name);
                 unimplemented!()

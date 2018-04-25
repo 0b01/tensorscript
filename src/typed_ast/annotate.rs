@@ -5,7 +5,7 @@ use span::CSpan;
 use typed_ast::type_env::{Alias, ModName, TypeEnv};
 use typed_ast::typed_term::{ArgsVecInto, Ty};
 use typed_ast::typed_term::{TyDecl, TyFieldAccess, TyFnApp, TyFnAppArg, TyFnDecl, TyFnDeclParam,
-                            TyGraphDecl, TyNodeDecl, TyTerm, TyUseStmt, TyViewFn, TyWeightsAssign,
+                            TyGraphDecl, TyNodeDecl, TyTerm, TyUseStmt, TyWeightsAssign,
                             TyWeightsDecl};
 use typed_ast::Type;
 
@@ -130,7 +130,7 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TyTerm {
                     _ => panic!("Error: for field access in a pipeline, use parenthesis: f()"),
                 }
             }
-            &Term::ViewFn(ref v_f) => TyTerm::TyViewFn(annotate_view_fn(&v_f, prev_arg, tenv)),
+            &Term::ViewFn(ref v_f) => TyTerm::TyFnApp(annotate_view_fn(&v_f, prev_arg, tenv)),
             _ => unimplemented!(),
         };
         term0 = t.clone();
@@ -139,12 +139,16 @@ fn annotate_pipes(pipes: &[Term], tenv: &mut TypeEnv) -> TyTerm {
     term0
 }
 
-fn annotate_view_fn(v_fn: &ViewFn, arg: TyFnAppArg, tenv: &mut TypeEnv) -> TyViewFn {
+fn annotate_view_fn(v_fn: &ViewFn, arg: TyFnAppArg, tenv: &mut TypeEnv) -> TyFnApp {
     let module = tenv.module();
     let tsr = tenv.create_tensor(&module, &v_fn.dims, &v_fn.span);
-    TyViewFn {
-        ty: tsr,
-        arg,
+    TyFnApp {
+        mod_name: Some("view".to_string()),
+        orig_name: None,
+        name: Alias::Function("forward".to_owned()),
+        arg_ty: args!(arg!("x", arg.arg.ty())),
+        ret_ty: tsr.clone(),
+        args: vec![arg.clone()],
         span: v_fn.span.clone(),
     }
 }

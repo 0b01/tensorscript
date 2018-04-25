@@ -65,10 +65,6 @@ impl Constraints {
                 self.add(ty.clone(), items.ty());
             }
             &TyStmt(ref items, _) => self.collect(&items, tenv),
-            &TyViewFn(ref view_fn) => {
-                self.collect(&view_fn.arg.arg, tenv);
-                // ...
-            }
             &TyNone => (),
             _ => {
                 panic!("{:#?}", typed_term);

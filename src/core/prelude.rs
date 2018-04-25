@@ -1,0 +1,79 @@
+use core::{MethodName, Op};
+use span::CSpan;
+use typed_ast::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
+use typed_ast::{Type, TypeEnv};
+
+#[allow(non_camel_case_types)]
+pub struct view;
+
+impl Op for view {
+    fn get_name(&self) -> &'static str {
+        "view"
+    }
+
+    fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+        use self::Type::*;
+        vec![
+            (
+                "forward",
+                UnresolvedModuleFun("prelude", self.get_name(), "forward", CSpan::fresh_span())
+            )
+        ]
+    }
+
+    /// output same shape as input
+    fn resolve(
+        &self,
+        tenv: &mut TypeEnv,
+        fn_name: &str,
+        arg_ty: Type,
+        ret_ty: Type,
+        args: Vec<TyFnAppArg>,
+        inits: Option<Vec<TyFnAppArg>>, // ... refactor into span error
+    ) -> Option<Type> {
+        match fn_name {
+            "forward" => {
+                // println!("ret_ty: {:#?}\n arg_ty: {:#?}", ret_ty, arg_ty);
+                if !arg_ty.is_resolved() { return None; }
+                let args_map = arg_ty.as_args_map()?;
+                let arg_tsr = args_map.get("x")?.as_vec();
+                let ret_tsr = ret_ty.as_vec();
+
+                let resolved_arg_tsr: Vec<i64> = arg_tsr.iter().filter_map(|i| i.as_num()).collect();
+                let resolved_ret_tsr: Vec<i64> = ret_tsr.iter().filter_map(|i| i.as_num()).collect();
+
+                // suppose arg_ty = [!1, 10]
+                //         ret_ty = ['100, 2, 5]
+                // replace '100 with !1
+                if ret_tsr.len() - resolved_ret_tsr.len() > 1 {
+                    panic!("Cannot elide more than 1 tensor dimension");
+                }
+
+                let ret_prod = resolved_ret_tsr.iter().fold(1, |acc, i| acc * i); // product of dims
+                let arg_prod = resolved_arg_tsr.iter().fold(1, |acc, i| acc * i); // product of dims
+
+                let is_only_one_arg_dim_unresolved = (arg_tsr.len() - resolved_arg_tsr.len()) == 1;
+                if ret_prod == arg_prod && is_only_one_arg_dim_unresolved {
+                    let unresolved_arg_dim = arg_tsr.iter().filter(|i| i.as_num().is_none()).next().unwrap();
+                    let unresolved_ret_dim = ret_tsr.iter().filter(|i| i.as_num().is_none()).next().unwrap();
+                    let modified_ret_ty = ret_tsr
+                        .iter()
+                        .map(|i|
+                            if i == unresolved_ret_dim {
+                                unresolved_arg_dim
+                            } else {
+                                i
+                            } )
+                        .cloned()
+                        .collect();
+                    Some(
+                        fun!("view", "forward", arg_ty, tsr!(modified_ret_ty))
+                    )
+                } else {
+                    panic!("{} {}", ret_prod, arg_prod);// ...
+                }
+            }
+            _ => unimplemented!(),
+        }
+    }
+}

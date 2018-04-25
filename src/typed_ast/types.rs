@@ -48,7 +48,10 @@ impl PartialEq for Type {
             (TSR(ts1, _), TSR(ts2, _)) => ts1 == ts2,
             (UnresolvedModuleFun(a1, b1, c1, _), UnresolvedModuleFun(a2, b2, c2, _)) =>
                 (a1 == a2) && (b1 == b2) && (c1 == c2),
-            (TSR(..), VAR(..)) => false,
+            (VAR(..), _) => false,
+            (_, VAR(..)) => false,
+            (ResolvedDim(..), DIM(..)) => false,
+            (DIM(..), ResolvedDim(..)) => false,
             _ => {
                 println!("Undefined comparison:");
                 println!("(1) {:?}", self);
@@ -220,11 +223,11 @@ impl Type {
         }
     }
 
-    pub fn as_num(&self) -> i64 {
+    pub fn as_num(&self) -> Option<i64> {
         use self::Type::*;
         match self {
-            ResolvedDim(ref i, _) => *i,
-            _ => unimplemented!(),
+            ResolvedDim(ref i, _) => Some(*i),
+            _ => None,
         }
     }
 
@@ -317,6 +320,12 @@ macro_rules! fun {
 macro_rules! float {
     () => {
         Type::FLOAT(CSpan::fresh_span())
+    };
+}
+
+macro_rules! tsr {
+    ($tsr:expr) => {
+        Type::TSR($tsr, CSpan::fresh_span())
     };
 }
 

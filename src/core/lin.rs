@@ -56,10 +56,10 @@ impl Op for Linear {
                     let arg_dim = arg_ty
                         .first_arg_ty()?
                         .last_dim()?
-                        .as_num();
+                        .as_num().unwrap();
                     let ret_dim = ret_ty
                         .last_dim()?
-                        .as_num();
+                        .as_num().unwrap();
 
                     let in_dim = hm.get("in").and_then(unwrap_dim)?;
                     let out_dim = hm.get("out").and_then(unwrap_dim)?;
