@@ -10,12 +10,13 @@ impl Substitution {
 
     /// apply substitution to a set of constraints
     pub fn apply(&mut self, cs: &Constraints) -> Constraints {
-        Constraints(
-            cs.0
+        Constraints {
+            set: cs.set
                 .iter()
                 .map(|Equals(a, b)| Equals(self.apply_ty(a), self.apply_ty(b)))
                 .collect(),
-        )
+            emitter: cs.emitter.clone(),
+        }
     }
 
     pub fn apply_ty(&mut self, ty: &Type) -> Type {

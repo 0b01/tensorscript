@@ -72,14 +72,21 @@ mod parsing;
 mod span;
 mod errors;
 
-use std::fs::File;
-use std::io::Read;
 
 use typing::constraint::Constraints;
 use typing::unifier::Unifier;
 use typing::annotate::annotate;
 use typing::type_env::TypeEnv;
 use typing::inferred_ast::subs;
+use errors::{EmitErr, Emitter};
+use parsing::ast_builder::ASTBuilder;
+use span::CSpan;
+
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::fs::File;
+use std::io::Read;
+use std::process::exit;
 
 use codespan::CodeMap;
 use clap::{Arg, App, ArgMatches};
@@ -107,60 +114,51 @@ fn main() {
     // --------------- get command line options -----------------
     let matches = get_matches();
     let fname = matches.value_of("input").unwrap();
-
     let mut file = File::open(fname).expect("Unable to open the file");
     let mut src = String::new();
     file.read_to_string(&mut src).expect("Unable to read the file");
-
-    // --------------- parse into untyped ast   -----------------
-
+    // -------------------- create emitter --------------------
     let mut code_map = CodeMap::new();
     let file_map = code_map.add_filemap("test".into(), src.clone());
-    let cspan = span::CSpan::new(file_map.span());
-
-    let parsed_terms = parsing::parse_str(&src, &cspan);
-    let program = match parsed_terms {
-        Ok(program) => program,
-        Err(e) => {
-            e.print_err(&code_map);
-            return;
-        },
-    };
-
+    let emitter = Rc::new(RefCell::new(Emitter::new(code_map)));
+    // --------------- parse into untyped ast   -----------------
+    let cspan = CSpan::new(file_map.span());
+    let builder = ASTBuilder::new(Rc::clone(&emitter), cspan);
+    let parsed_terms = builder.parse_str(&src);
+    let program = parsed_terms
+        .unwrap_or_else(||{ builder.emit_err(); exit(-1); });
     // ------------- annotate ast with type vars --------------
-
     let mut tenv = TypeEnv::new();
     let ast = annotate(&program, &mut tenv);
     // println!("{}", ast);
     // println!("initial tenv: {:#?}", tenv);
-
     // ------------ first unitfication pass ---------------
-    let mut cs = Constraints::new(); cs.collect(&ast, &mut tenv);               // collect constraints
-    // println!("{:#?}", cs);
-    let mut unifier = Unifier::new();
+    let mut cs = Constraints::new(Rc::clone(&emitter));
+    cs.collect(&ast, &mut tenv);
+    let mut unifier = Unifier::new(Rc::clone(&emitter));
     let mut last_sub = unifier.unify(cs.clone(), &mut tenv);                  // unify
-    unifier.errs.print_errs(&code_map);
+    unifier.emit_err();
     // println!("{:#?}", last_sub);
 
     // ------------ resolve module constraints until it stabilizes ----------
-    // this is an inefficient workaround because the type inference algorithm
-    // is not a full HM but with constraint collection and unification as seperate
-    // stages.
     let mut last_ast = subs(&ast, &mut last_sub);;
-    let resolve_modules = move || loop {
-        // collect constraints
-        let mut new_cs = Constraints::new(); new_cs.collect(&last_ast, &mut tenv);
-        // unify constraints
-        let mut new_unifier = Unifier::new(); let mut new_sub = new_unifier.unify(new_cs, &mut tenv);
-        let temp_ast = subs(&last_ast, &mut new_sub);
-        if temp_ast != last_ast {
-            last_ast = temp_ast;
-            continue;
-        }
-        return last_ast;
-    };
+    let resolve_modules = move ||
+        loop {
+            // collect constraints
+            let mut new_cs = Constraints::new(Rc::clone(&emitter));
+            new_cs.collect(&last_ast, &mut tenv);
+            // unify constraints
+            let mut new_unifier = Unifier::new(Rc::clone(&emitter)); let mut new_sub = new_unifier.unify(new_cs, &mut tenv);
+            new_unifier.emit_err();
+            let temp_ast = subs(&last_ast, &mut new_sub);
+            if temp_ast != last_ast {
+                last_ast = temp_ast;
+                continue;
+            }
+            return last_ast;
+        };
     let final_ast = resolve_modules();
-    println!("{:#?}", final_ast);
+    // println!("{:#?}", final_ast);
     // println!("{:#?}", tenv);
     // println!("{:#?}", new_cs);
 }

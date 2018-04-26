@@ -1,24 +1,25 @@
+use codespan_reporting::{emit, ColorArg, Diagnostic, Label, Severity};
+use typing::Type;
 use std::str::FromStr;
 use codespan::CodeMap;
 use codespan_reporting::termcolor::StandardStream;
-use codespan_reporting::{emit, ColorArg, Diagnostic, Label, Severity};
-use typing::Type;
 use codespan::{ByteSpan, LineIndex};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TensorScriptDiagnostic {
     RankMismatch(Type, Type),
     DimensionMismatch(Type, Type),
     ParseError(String, ByteSpan),
+    SymbolNotFound(String, ByteSpan),
 }
 
 impl TensorScriptDiagnostic {
 
-    pub fn print_err(&self, code_map: &CodeMap) {
-        let diagnostic = self.as_diagnostic(code_map);
-        let writer = StandardStream::stderr(ColorArg::from_str("auto").unwrap().into());
-        emit(&mut writer.lock(), &code_map, &diagnostic).unwrap();
-    }
+    // pub fn print_err(&self, code_map: &CodeMap) {
+    //     let diagnostic = self.as_diagnostic(code_map);
+    //     let writer = StandardStream::stderr(ColorArg::from_str("auto").unwrap().into());
+    //     emit(&mut writer.lock(), &code_map, &diagnostic).unwrap();
+    // }
 
     pub fn as_diagnostic(&self, code_map: &CodeMap) -> Diagnostic {
         use self::TensorScriptDiagnostic::*;
@@ -55,32 +56,18 @@ impl TensorScriptDiagnostic {
                 )
                 .with_label(Label::new_primary(prev_line_span))
                 .with_label(Label::new_primary(*sp))
+            },
+
+            SymbolNotFound(msg, sp) => {
+                Diagnostic::new(
+                    Severity::Error,
+                    format!("Cannot find symbol `{}` in scope", msg),
+                )
+                .with_label(Label::new_primary(*sp))
             }
 
-            _ => panic!("unimplemented errors")
+            _ => unimplemented!(),
         }
     }
 
-}
-
-pub struct Errors {
-    pub errs: Vec<TensorScriptDiagnostic>,
-}
-
-impl Errors {
-    pub fn new() -> Self {
-        Errors { errs: vec![] }
-    }
-
-    pub fn add(&mut self, e: TensorScriptDiagnostic) {
-        self.errs.push(e);
-    }
-
-    pub fn print_errs(&self, code_map: &CodeMap) {
-        let diagnostics: Vec<Diagnostic> = self.errs.iter().map(|e|e.as_diagnostic(code_map)).collect();
-        let writer = StandardStream::stderr(ColorArg::from_str("auto").unwrap().into());
-        for diagnostic in &diagnostics {
-            emit(&mut writer.lock(), &code_map, &diagnostic).unwrap();
-        }
-    }
 }
