@@ -1,0 +1,31 @@
+node Generator<NOISE -> IMG> {
+    dim NOISE_DIM = 100;
+    dim IMG_DIM = 28;
+    tsr NOIsE = [?, NOISE_DIM];
+    tsr IMG = [?, IMG_DIM];
+}
+
+// class Generator(nn.Module):
+//     def __init__(self):
+//         super(Generator, self).__init__()
+// 
+//         self.model = nn.Sequential(
+//             nn.Linear(opt.latent_dim, 128),
+//             nn.LeakyReLU(0.2, inplace=True),
+//             nn.Linear(128, 256),
+//             nn.BatchNorm1d(256),
+//             nn.LeakyReLU(0.2, inplace=True),
+//             nn.Linear(256, 512),
+//             nn.BatchNorm1d(512),
+//             nn.LeakyReLU(0.2, inplace=True),
+//             nn.Linear(512, 1024),
+//             nn.BatchNorm1d(1024),
+//             nn.LeakyReLU(0.2, inplace=True),
+//             nn.Linear(1024, opt.img_size**2),
+//             nn.Tanh()
+//         )
+// 
+//     def forward(self, noise):
+//         img = self.model(noise)
+//         img = img.view(img.shape[0], opt.channels, opt.img_size, opt.img_size)
+//         return img

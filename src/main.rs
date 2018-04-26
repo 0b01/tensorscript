@@ -75,7 +75,7 @@ mod errors;
 
 use typing::constraint::Constraints;
 use typing::unifier::Unifier;
-use typing::annotate::annotate;
+use typing::annotate::Annotator;
 use typing::type_env::TypeEnv;
 use typing::inferred_ast::subs;
 use errors::{EmitErr, Emitter};
@@ -128,15 +128,16 @@ fn main() {
     let program = parsed_terms
         .unwrap_or_else(||{ builder.emit_err(); exit(-1); });
     // ------------- annotate ast with type vars --------------
-    let mut tenv = TypeEnv::new();
-    let ast = annotate(&program, &mut tenv);
+    let tenv = Rc::new(RefCell::new(TypeEnv::new()));
+    let annotator = Annotator::new(Rc::clone(&emitter), Rc::clone(&tenv));
+    let ast = annotator.annotate(&program);
     // println!("{}", ast);
     // println!("initial tenv: {:#?}", tenv);
     // ------------ first unitfication pass ---------------
-    let mut cs = Constraints::new(Rc::clone(&emitter));
-    cs.collect(&ast, &mut tenv);
-    let mut unifier = Unifier::new(Rc::clone(&emitter));
-    let mut last_sub = unifier.unify(cs.clone(), &mut tenv);                  // unify
+    let mut cs = Constraints::new(Rc::clone(&emitter), Rc::clone(&tenv));
+    cs.collect(&ast);
+    let mut unifier = Unifier::new(Rc::clone(&emitter), Rc::clone(&tenv));
+    let mut last_sub = unifier.unify(cs.clone());
     unifier.emit_err();
     // println!("{:#?}", last_sub);
 
@@ -145,10 +146,11 @@ fn main() {
     let resolve_modules = move ||
         loop {
             // collect constraints
-            let mut new_cs = Constraints::new(Rc::clone(&emitter));
-            new_cs.collect(&last_ast, &mut tenv);
+            let mut new_cs = Constraints::new(Rc::clone(&emitter), Rc::clone(&tenv));
+            new_cs.collect(&last_ast);
             // unify constraints
-            let mut new_unifier = Unifier::new(Rc::clone(&emitter)); let mut new_sub = new_unifier.unify(new_cs, &mut tenv);
+            let mut new_unifier = Unifier::new(Rc::clone(&emitter), Rc::clone(&tenv));
+            let mut new_sub = new_unifier.unify(new_cs);
             new_unifier.emit_err();
             let temp_ast = subs(&last_ast, &mut new_sub);
             if temp_ast != last_ast {

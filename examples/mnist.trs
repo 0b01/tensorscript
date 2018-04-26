@@ -1,5 +1,5 @@
 use conv::{Conv2d, Dropout2d, maxpool2d};
-use nonlin::{relu, log_softmax};
+use nonlin::{relu, log_softmax, leaky_relu};
 use lin::Linear;
 
 node Mnist<[?, IMAGE] -> LABELS> {

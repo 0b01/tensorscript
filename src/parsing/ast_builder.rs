@@ -41,15 +41,15 @@ impl ASTBuilder {
         let parser = TensorScriptParser::parse(Rule::input, source);
         if parser.is_err() {
             let e = parser.err().unwrap();
-            if let PestError::ParsingError{ ref positives, ref pos, .. } = e {
-                let e = &positives[0];
-                let err = match e {
+            if let PestError::ParsingError{ ref positives, ref pos, .. } = e.clone() {
+                let e0 = &positives[0];
+                let err = match e0 {
                     semicolon => {
                         TensorScriptDiagnostic::ParseError("Missing semicolon".to_owned(),
                             Span::new(ByteIndex(pos.pos() as u32 - 1) , ByteIndex(pos.pos() as u32 - 1 ))
                         )
                     }
-                    _ => panic!("{:#?}", e),
+                    _ => panic!("{}", e),
                 };
                 self.emitter.borrow_mut().add(err);
                 None
@@ -488,7 +488,7 @@ impl ASTBuilder {
         }
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
-        let identifier = eat!(tokens, upper_ident, "Failed to parse `upper_ident`", sp)?;
+        let identifier = eat!(tokens, ident, "Failed to parse `ident`", sp)?;
         let _assign = eat!(tokens, op_assign, "Cannot parse `=`", sp)?;
 
         let identifier = identifier.as_str().to_owned();

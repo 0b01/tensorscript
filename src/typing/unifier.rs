@@ -6,10 +6,11 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use typing::constraint::{Constraints, Equals};
-use typing::subst::Substitution;
+use typing::substitution::Substitution;
 
 pub struct Unifier {
     pub emitter: Rc<RefCell<Emitter>>,
+    pub tenv: Rc<RefCell<TypeEnv>>,
 }
 
 impl EmitErr for Unifier {
@@ -20,28 +21,32 @@ impl EmitErr for Unifier {
 
 impl Unifier {
 
-    pub fn new(emitter: Rc<RefCell<Emitter>>) -> Unifier {
+    pub fn new(emitter: Rc<RefCell<Emitter>>, tenv: Rc<RefCell<TypeEnv>>) -> Unifier {
         Unifier {
             emitter,
+            tenv,
         }
     }
 
-    pub fn unify(&mut self, cs: Constraints, tenv: &mut TypeEnv) -> Substitution {
+    pub fn unify(&mut self, cs: Constraints) -> Substitution {
         if cs.is_empty() {
             Substitution::empty()
         } else {
             let emitter = cs.emitter.clone();
+            let tenv = cs.tenv.clone();
             let mut it = cs.set.into_iter();
-            let mut subst = self.unify_one(it.next().unwrap(), tenv, emitter.clone());
-            let subst_tail = subst.apply(&Constraints {set: it.collect(), emitter});
-            let subst_tail: Substitution = self.unify(subst_tail, tenv);
+            let mut subst = self.unify_one(it.next().unwrap());
+            let subst_tail = subst.apply(&Constraints {set: it.collect(), emitter, tenv});
+            let subst_tail: Substitution = self.unify(subst_tail);
             subst.compose(subst_tail)
         }
     }
 
-    fn unify_one(&mut self, eq: Equals, tenv: &mut TypeEnv, emitter: Rc<RefCell<Emitter>>) -> Substitution {
+    fn unify_one(&mut self, eq: Equals) -> Substitution {
         use self::Type::*;
         // println!("{:?}", eq);
+        let emitter = Rc::clone(&self.emitter);
+        let tenv = Rc::clone(&self.tenv);
         match eq {
             Equals(Unit(_), Unit(_)) => Substitution::empty(),
             Equals(INT(_), INT(_)) => Substitution::empty(),
@@ -70,8 +75,8 @@ impl Unifier {
                 Constraints {
                     set: v1.into_iter().zip(v2).map(|(i, j)| Equals(i, j)).collect(),
                     emitter,
+                    tenv,
                 },
-                tenv,
             ),
 
             Equals(FnArg(Some(a), ty1, _), FnArg(Some(b), ty2, _)) => {
@@ -80,8 +85,9 @@ impl Unifier {
                         Constraints {
                             set: btreeset!{ Equals(*ty1, *ty2)},
                             emitter,
+                            tenv,
                         },
-                        tenv)
+                        )
                 } else {
                     panic!("supplied parameter is incorrect! {} != {}", a, b);
                 }
@@ -96,8 +102,8 @@ impl Unifier {
                                 Equals(*r1, *r2),
                             },
                             emitter,
+                            tenv,
                         },
-                        tenv,
                     )
                 } else {
                     println!("{} {} {} {}", m1, m2, n1, n2);
@@ -109,8 +115,8 @@ impl Unifier {
                 Constraints {
                     set: vs1.into_iter().zip(vs2).map(|(i,j)| Equals(i,j)).collect(),
                     emitter,
+                    tenv,
                 },
-                tenv
             ),
 
             Equals(ts1 @ TSR(_, _), ts2 @ TSR(_, _)) => {
@@ -123,9 +129,9 @@ impl Unifier {
                                     .zip(dims2)
                                     .map(|(i, j)| Equals(i.with_span(&s1), j.with_span(&s2)))
                                     .collect(),
-                                emitter
+                                emitter,
+                                tenv,
                             },
-                            tenv,
                         ),
                         _ => unimplemented!(),
                     }
@@ -145,8 +151,8 @@ impl Unifier {
                         }
                     },
                     emitter,
+                    tenv,
                 },
-                tenv,
             ),
 
             Equals(u @ UnresolvedModuleFun(_, _, _, _), ty) => {

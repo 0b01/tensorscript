@@ -1,4 +1,4 @@
-use codespan_reporting::{emit, ColorArg, Diagnostic, Label, Severity};
+use codespan_reporting::{Diagnostic, Label, Severity};
 use typing::Type;
 use std::str::FromStr;
 use codespan::CodeMap;
@@ -14,13 +14,6 @@ pub enum TensorScriptDiagnostic {
 }
 
 impl TensorScriptDiagnostic {
-
-    // pub fn print_err(&self, code_map: &CodeMap) {
-    //     let diagnostic = self.as_diagnostic(code_map);
-    //     let writer = StandardStream::stderr(ColorArg::from_str("auto").unwrap().into());
-    //     emit(&mut writer.lock(), &code_map, &diagnostic).unwrap();
-    // }
-
     pub fn as_diagnostic(&self, code_map: &CodeMap) -> Diagnostic {
         use self::TensorScriptDiagnostic::*;
         match self {

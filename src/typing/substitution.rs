@@ -15,6 +15,7 @@ impl Substitution {
                 .iter()
                 .map(|Equals(a, b)| Equals(self.apply_ty(a), self.apply_ty(b)))
                 .collect(),
+            tenv: cs.tenv.clone(),
             emitter: cs.emitter.clone(),
         }
     }

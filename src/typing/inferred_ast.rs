@@ -1,5 +1,5 @@
 use self::TyTerm::*;
-use typing::subst::Substitution;
+use typing::substitution::Substitution;
 use typing::typed_term;
 use typing::typed_term::*;
 

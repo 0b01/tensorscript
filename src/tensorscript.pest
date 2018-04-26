@@ -116,7 +116,7 @@ alpha = _{ lower | upper }
 ident = @{ (!digit ~ (alpha | digit | "_")+ ) | "?" }
 ident_list = { ident ~ ("," ~ ident)+ ~ ","? }
 cap_ident = @{ upper ~ (alpha|digit| "_")* }
-upper_ident = @{ (upper|digit)* }
+upper_ident = @{ (upper|digit|"_")* }
 
 use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident ) ~ semicolon}
 
@@ -130,8 +130,8 @@ tensor_ty_sig = _{ "[" ~ ty_ident_list ~ "]" }
 tensor_ty = _{ tensor_alias_ty | tensor_ty_sig }
 tensor_alias_ty = _{ cap_ident }
 
-dim_assign = _{ dim_lit ~ ( upper_ident | batch_lit ) ~ op_assign ~ int_lit ~ semicolon }
-tsr_assign = _{ tsr_lit ~ upper_ident ~ op_assign ~ tensor_ty ~ semicolon }
+dim_assign = _{ dim_lit ~ ( ident | batch_lit ) ~ op_assign ~ int_lit ~ semicolon }
+tsr_assign = _{ tsr_lit ~ ident ~ op_assign ~ tensor_ty ~ semicolon }
 node_assign = { dim_assign | tsr_assign }
 node_decl_body = { "{" ~ node_assign* ~ "}" }
 node_decl_head = { node_lit ~ cap_ident ~ fn_ty_sig }
