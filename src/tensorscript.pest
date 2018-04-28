@@ -122,13 +122,13 @@ use_stmt = { use_lit ~ ident ~ "::" ~ ( "{" ~ ident_list ~ "}" | ident ) ~ semic
 
 // type signature
 
-ty_ident = @{ (upper | digit | "?" | "_")+ }
+ty_ident = @{ (alpha | digit | "?" | "_")+ }
 ty_ident_list = { ty_ident ~ ("," ~ ty_ident)* }
 fn_ty_sig = { "<" ~ tensor_ty ~ "->" ~ tensor_ty ~ ">" }
 ty_sig = { "<"? ~ tensor_ty ~ ">"? }
 tensor_ty_sig = _{ "[" ~ ty_ident_list ~ "]" }
 tensor_ty = _{ tensor_alias_ty | tensor_ty_sig }
-tensor_alias_ty = _{ cap_ident }
+tensor_alias_ty = _{ ident }
 
 dim_assign = _{ dim_lit ~ ( ident | batch_lit ) ~ op_assign ~ int_lit ~ semicolon }
 tsr_assign = _{ tsr_lit ~ ident ~ op_assign ~ tensor_ty ~ semicolon }

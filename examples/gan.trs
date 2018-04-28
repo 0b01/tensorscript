@@ -1,8 +1,16 @@
-node Generator<NOISE -> IMG> {
-    dim NOISE_DIM = 100;
-    dim IMG_DIM = 28;
-    tsr NOIsE = [?, NOISE_DIM];
-    tsr IMG = [?, IMG_DIM];
+node Generator<noise -> image> {
+    dim noise_dim = 100;
+    dim image_dim = 28;
+    tsr noise = [?, noise_dim];
+    tsr image_dim = [?, image_dim];
+}
+
+weights Generator<noise -> image> {
+
+}
+
+graph Generator<noise -> image> {
+
 }
 
 // class Generator(nn.Module):

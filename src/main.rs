@@ -150,17 +150,18 @@ fn main() {
             new_cs.collect(&last_ast);
             // unify constraints
             let mut new_unifier = Unifier::new(Rc::clone(&emitter), Rc::clone(&tenv));
-            let mut new_sub = new_unifier.unify(new_cs);
+            let mut new_sub = new_unifier.unify(new_cs.clone());
             new_unifier.emit_err();
             let temp_ast = subs(&last_ast, &mut new_sub);
             if temp_ast != last_ast {
                 last_ast = temp_ast;
                 continue;
             }
-            return last_ast;
+            return (new_cs, last_ast);
         };
-    let final_ast = resolve_modules();
+    let (final_cs, final_ast) = resolve_modules();
     // println!("{:#?}", final_ast);
     // println!("{:#?}", tenv);
-    // println!("{:#?}", new_cs);
+    // println!("{:#?}", final_cs);
+    println!("OK");
 }

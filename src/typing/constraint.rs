@@ -253,19 +253,23 @@ impl Constraints {
                     inits
                 )
             };
-            if let Some(resolved_fn_ty) = resolution {
-                // println!("{:#?}", resolved_fn_ty);
-                self.add(
-                    resolved_fn_ty,
-                    fun!(
-                        symbol_name,
-                        fn_app.name.as_str(),
-                        fn_app.arg_ty.clone(),
-                        fn_app.ret_ty.clone()
-                    )
-                );
-            } else {
-                self.tenv.borrow_mut().add_unverified(ty.clone());
+
+            match resolution {
+                Ok(Some(resolved_fn_ty)) =>
+                    self.add(
+                        resolved_fn_ty,
+                        fun!(
+                            symbol_name,
+                            fn_app.name.as_str(),
+                            fn_app.arg_ty.clone(),
+                            fn_app.ret_ty.clone()
+                        )
+                    ),
+                Ok(None) => 
+                    self.tenv.borrow_mut().add_unverified(ty.clone()),
+                Err(e) => {
+                    self.emitter.borrow_mut().add(e);
+                }
             }
         }
 

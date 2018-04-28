@@ -11,6 +11,7 @@ pub enum TensorScriptDiagnostic {
     DimensionMismatch(Type, Type),
     ParseError(String, ByteSpan),
     SymbolNotFound(String, ByteSpan),
+    DuplicateVarInScope(String, Type, Type),
 }
 
 impl TensorScriptDiagnostic {
@@ -57,6 +58,15 @@ impl TensorScriptDiagnostic {
                     format!("Cannot find symbol `{}` in scope", msg),
                 )
                 .with_label(Label::new_primary(*sp))
+            }
+
+            DuplicateVarInScope(name, ty1, ty2) => {
+                Diagnostic::new(
+                    Severity::Error,
+                    format!("Duplicate symbol in scope: {}: {:?}, {:?}", name, ty1, ty2),
+                )
+                .with_label(Label::new_primary(ty1.span()))
+                .with_label(Label::new_primary(ty2.span()))
             }
 
             _ => unimplemented!(),

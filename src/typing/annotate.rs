@@ -29,7 +29,7 @@ impl Annotator {
         use self::Term::*;
         use self::TyTerm::*;
         // println!("{:#?}", term);
-        let module = self.tenv.borrow_mut().module();
+        let module = self.tenv.borrow().module();
         match term {
             Ident(ref id, ref span) => {
                 let ty = self.tenv.borrow_mut().resolve_type(&module, &Alias::Variable(id.clone()))
@@ -38,7 +38,7 @@ impl Annotator {
                 TyTerm::TyIdent(ty, alias, *span)
             }
 
-            Program(ref decls) => TyProgram(decls.iter().map(|d| self.annotate_decl(d)).collect()),
+            Program(ref decls) => TyProgram(decls.iter().map(|d|self.annotate_decl(d).unwrap()).collect()),
 
             Expr(ref items, ref span) => {
                 let ret = self.annotate(&items);
@@ -92,7 +92,7 @@ impl Annotator {
     }
 
     fn annotate_pipes(&self, pipes: &[Term]) -> TyTerm {
-        let module = self.tenv.borrow_mut().module();
+        let module = self.tenv.borrow().module();
         let mut it = pipes.iter();
 
         let p0 = it.next().unwrap();
@@ -106,20 +106,24 @@ impl Annotator {
             };
             let t = match t {
                 // this may be `fc1`
-                Term::Ident(ref id, ref span) => TyTerm::TyFnApp(box TyFnApp {
-                    mod_name: Some(
-                        self.tenv.borrow_mut().resolve_type(&module, &Alias::Variable(id.clone()))
-                            .unwrap()
-                            .as_str()
-                            .to_owned(),
-                    ),
-                    orig_name: Some(id.to_owned()),
-                    name: Alias::Function("forward".to_owned()),
-                    arg_ty: self.tenv.borrow_mut().fresh_var(span),
-                    args: vec![prev_arg],
-                    ret_ty: self.tenv.borrow_mut().fresh_var(span),
-                    span: *span,
-                }),
+                Term::Ident(ref id, ref span) => { 
+                    let arg_ty = self.tenv.borrow_mut().fresh_var(span);
+                    let ret_ty = self.tenv.borrow_mut().fresh_var(span);
+                    TyTerm::TyFnApp(box TyFnApp {
+                        mod_name: Some(
+                            self.tenv.borrow().resolve_type(&module, &Alias::Variable(id.clone()))
+                                .unwrap()
+                                .as_str()
+                                .to_owned(),
+                        ),
+                        orig_name: Some(id.to_owned()),
+                        name: Alias::Function("forward".to_owned()),
+                        arg_ty,
+                        args: vec![prev_arg],
+                        ret_ty,
+                        span: *span,
+                    })
+                }
                 Term::FnApp(ref fn_app) => {
                     let mut typed_fn_app = self.annotate_fn_app(&fn_app);
                     if typed_fn_app.mod_name.is_none() {
@@ -156,7 +160,7 @@ impl Annotator {
     }
 
     fn annotate_view_fn(&self, v_fn: &ViewFn, arg: &TyFnAppArg) -> TyFnApp {
-        let module = self.tenv.borrow_mut().module();
+        let module = self.tenv.borrow().module();
         let tsr = self.tenv.borrow_mut().create_tensor(&module, &v_fn.dims, &v_fn.span);
         TyFnApp {
             mod_name: Some("view".to_string()),
@@ -169,7 +173,7 @@ impl Annotator {
         }
     }
 
-    fn annotate_decl(&self, decl: &Decl) -> TyDecl {
+    fn annotate_decl(&self, decl: &Decl) -> Result<TyDecl, TensorScriptDiagnostic> {
         use self::Decl::*;
         let ret = match decl {
             NodeDecl(ref decl) => {
@@ -177,15 +181,25 @@ impl Annotator {
                 self.tenv.borrow_mut().set_module(module.clone());
                 let assigns = &decl.defs;
                 for a in assigns {
-                    self.tenv.borrow_mut().import_node_assign(&module, a);
+                    self.tenv.borrow_mut()
+                        .import_node_assign(&module, a)
+                        .unwrap_or_else(|e| self.emitter.borrow_mut().add(e));
                 }
 
                 self.tenv.borrow_mut().upsert_module(&module);
                 // if some dimension alias are not imported, create them
-                self.tenv.borrow_mut().import_top_level_ty_sig(&module, &decl.ty_sig.from);
-                self.tenv.borrow_mut().import_top_level_ty_sig(&module, &decl.ty_sig.to);
+                self.tenv.borrow_mut()
+                    .import_top_level_ty_sig(&module, &decl.ty_sig.from)
+                    .unwrap_or_else(|e| self.emitter.borrow_mut().add(e));
+                self.tenv.borrow_mut()
+                    .import_top_level_ty_sig(&module, &decl.ty_sig.to)
+                    .unwrap_or_else(|e| self.emitter.borrow_mut().add(e));
 
-                let ty_sig = self.annotate_fn_ty_sig(decl.name.to_owned(), "forward".to_owned(), &decl.ty_sig, &decl.span);
+                let ty_sig = self.annotate_fn_ty_sig(
+                    decl.name.to_owned(),
+                    "forward".to_owned(),
+                    &decl.ty_sig,
+                    &decl.span)?;
                 let mod_ty_sig = Type::Module(
                     decl.name.clone(),
                     Some(box ty_sig.clone()),
@@ -197,14 +211,16 @@ impl Annotator {
                     &ModName::Global,
                     &Alias::Variable(decl.name.to_string()),
                     mod_ty_sig.clone(),
-                );
+                )
+                .unwrap_or_else(|e|self.emitter.borrow_mut().add(e));
 
                 // add "self" into module scope
                 self.tenv.borrow_mut().add_type(
                     &module,
                     &Alias::Variable("self".to_owned()),
                     mod_ty_sig.clone(),
-                );
+                )
+                .unwrap_or_else(|e|self.emitter.borrow_mut().add(e));
 
                 // // add "forward" function into module scope
                 // tenv.add_type(&module, "self.forward", ty_sig.clone());
@@ -219,7 +235,7 @@ impl Annotator {
                 self.tenv.borrow_mut().set_module(ModName::Named(decl.name.to_owned()));
                 TyDecl::TyWeightsDecl(TyWeightsDecl {
                     name: decl.name.clone(),
-                    ty_sig: self.annotate_fn_ty_sig(decl.name.to_owned(), "forward".to_owned(),&decl.ty_sig, &decl.span),
+                    ty_sig: self.annotate_fn_ty_sig(decl.name.to_owned(), "forward".to_owned(),&decl.ty_sig, &decl.span)?,
                     inits: decl.inits
                         .iter()
                         .map(|t| self.annotate_weights_assign(t))
@@ -231,7 +247,7 @@ impl Annotator {
                 self.tenv.borrow_mut().set_module(ModName::Named(decl.name.to_owned()));
                 TyDecl::TyGraphDecl(TyGraphDecl {
                     name: decl.name.clone(),
-                    ty_sig: self.annotate_fn_ty_sig(decl.name.to_owned(), "forward".to_owned(),&decl.ty_sig, &decl.span),
+                    ty_sig: self.annotate_fn_ty_sig(decl.name.to_owned(), "forward".to_owned(),&decl.ty_sig, &decl.span)?,
                     fns: decl.fns.iter().map(|f| self.annotate_fn_decl(f)).collect(),
                     span: decl.span,
                 })
@@ -242,8 +258,18 @@ impl Annotator {
                 // also import module and its associated functions
                 for name in &decl.imported_names {
                     let ty = Type::Module(name.to_string(), None, decl.span);
-                    self.tenv.borrow_mut().add_type(&ModName::Global, &Alias::Variable(name.to_string()), ty);
-                    self.tenv.borrow_mut().import_module(&decl.mod_name, &name);
+                    self.tenv.borrow_mut()
+                        .add_type(
+                            &ModName::Global,
+                            &Alias::Variable(name.to_string()),
+                            ty)
+                        .unwrap_or_else(|e|self.emitter.borrow_mut().add(e));
+                    let import_result = self.tenv.borrow_mut().import_module(&decl.mod_name, &name);
+                    match import_result {
+                        Some(Ok(())) => (),
+                        Some(Err(e)) => self.emitter.borrow_mut().add(e),
+                        None => self.emitter.borrow_mut().add(TensorScriptDiagnostic::SymbolNotFound(name.to_string(), decl.span))
+                    }
                 }
 
                 TyDecl::TyUseStmt(TyUseStmt {
@@ -254,28 +280,33 @@ impl Annotator {
             }
         };
         self.tenv.borrow_mut().set_module(ModName::Global);
-        ret
+        Ok(ret)
     }
 
-    fn annotate_fn_ty_sig(&self, modname: String, name: String, sig: &FnTySig, span: &ByteSpan) -> Type {
-        Type::FUN(
+    fn annotate_fn_ty_sig(&self, modname: String, name: String, sig: &FnTySig, span: &ByteSpan) -> Result<Type, TensorScriptDiagnostic> {
+        Ok(Type::FUN(
             modname,
             name,
-            Box::new(self.annotate_tensor_ty_sig(&sig.from, span)),
-            Box::new(self.annotate_tensor_ty_sig(&sig.to, span)),
+            Box::new(self.annotate_tensor_ty_sig(&sig.from, span)?),
+            Box::new(self.annotate_tensor_ty_sig(&sig.to, span)?),
             *span,
-        )
+        ))
     }
 
-    fn annotate_tensor_ty_sig(&self, sig: &TensorTy, _span: &ByteSpan) -> Type {
+    fn annotate_tensor_ty_sig(&self, sig: &TensorTy, _span: &ByteSpan) -> Result<Type, TensorScriptDiagnostic> {
         use self::TensorTy::*;
         let module = self.tenv.borrow_mut().module();
         match sig {
-            Generic(ref dims, ref sp) => self.tenv.borrow_mut().create_tensor(&module, dims, sp),
-            Tensor(ref als, ref sp) => self.tenv.borrow_mut().resolve_type(&module, &Alias::Variable(als.clone()))
-                .unwrap()
-                .clone()
-                .with_span(sp),
+            Generic(ref dims, ref sp) => Ok(self.tenv.borrow_mut().create_tensor(&module, dims, sp)),
+            Tensor(ref als, ref sp) => {
+                let ty = self.tenv.borrow_mut()
+                    .resolve_type(&module, &Alias::Variable(als.clone()));
+                match ty {
+                    Some(t) => Ok(t.clone().with_span(sp)),
+                    None => 
+                        Err(TensorScriptDiagnostic::SymbolNotFound(als.clone(), *sp)),
+                }
+            }
         }
     }
 
@@ -284,7 +315,14 @@ impl Annotator {
         let fn_ty = w_assign
             .clone()
             .mod_sig
-            .map(|sig| Box::new(self.annotate_fn_ty_sig(w_assign.mod_name.to_owned(),"forward".to_owned(), &sig, &w_assign.span)));
+            .map(|sig|
+                box self.annotate_fn_ty_sig(
+                    w_assign.mod_name.to_owned(),
+                    "forward".to_owned(),
+                    &sig,
+                    &w_assign.span
+                ).unwrap()
+            );
 
         let module = self.tenv.borrow_mut().module();
         self.tenv.borrow_mut().add_type(
@@ -295,7 +333,8 @@ impl Annotator {
                 fn_ty.clone(),
                 w_assign.span,
             ),
-        );
+        )
+        .unwrap_or_else(|e|self.emitter.borrow_mut().add(e));
 
         let fn_args: Vec<TyFnAppArg> = w_assign
             .fn_args
@@ -431,7 +470,8 @@ impl Annotator {
             &module,
             &Alias::Function(f.name.clone()),
             decl.fn_ty.clone(),
-        );
+        )
+        .unwrap_or_else(|e|self.emitter.borrow_mut().add(e));
 
         decl
     }

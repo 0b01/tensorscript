@@ -540,7 +540,7 @@ impl ASTBuilder {
         let handle_alias = |token: Pair<Rule>| TensorTy::Tensor(token.as_str().to_owned(), sp);
         let handle = |tok: Pair<Rule>| match tok.as_rule() {
             ty_ident_list => handle_tensor_ty(tok),
-            cap_ident => handle_alias(tok),
+            ident => handle_alias(tok),
             _ => unimplemented!(),
         };
 

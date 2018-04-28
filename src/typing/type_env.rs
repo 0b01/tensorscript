@@ -13,6 +13,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt::{Debug, Error, Formatter};
 use typing::typed_term::TyFnAppArg;
 use typing::Type;
+use errors::TensorScriptDiagnostic;
 use self::ModName::*;
 
 pub type TypeId = usize;
@@ -98,7 +99,7 @@ impl TypeEnv {
             modules: BTreeMap::new(),
             to_verify: BTreeSet::new(),
         };
-        ret.import_prelude();
+        ret.import_prelude().unwrap();
         ret
     }
 
@@ -181,7 +182,7 @@ impl TypeEnv {
     }
 
     /// add type alias in current scope
-    pub fn add_type(&mut self, mod_name: &ModName, alias: &Alias, ty: Type) {
+    pub fn add_type(&mut self, mod_name: &ModName, alias: &Alias, ty: Type) -> Result<(), TensorScriptDiagnostic> {
         let stack = self.modules.entry(mod_name.clone()).or_insert({
             // if the module does not yet exist, add with an empty scope
             let mut q = VecDeque::new();
@@ -192,9 +193,19 @@ impl TypeEnv {
         let top = stack.0.len() - 1;
         let scope = &mut stack.0[top];
         if scope.types.contains_key(alias) {
-            panic!("duplicate item");
+            let orig_ty = scope.types.get(alias).unwrap();
+            return Err(
+                TensorScriptDiagnostic::
+                    DuplicateVarInScope(
+                        alias.as_str().to_string(),
+                        orig_ty.clone(),
+                        ty,
+                    )
+                )
         }
         let _ = scope.types.insert(alias.clone(), ty);
+
+        Ok(())
     }
 
     /// add type alias in current scope
@@ -225,9 +236,9 @@ impl TypeEnv {
     }
 
     /// tie an alias with a type variable dimension
-    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &Alias, span: &ByteSpan) {
+    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &Alias, span: &ByteSpan) -> Result<(), TensorScriptDiagnostic> {
         let tyvar = self.fresh_dim(span);
-        self.add_type(mod_name, alias, tyvar);
+        self.add_type(mod_name, alias, tyvar)
     }
 
     /// tie an alias with a resolved dimension
@@ -237,9 +248,9 @@ impl TypeEnv {
         alias: &Alias,
         num: i64,
         span: &ByteSpan,
-    ) {
+    ) -> Result<(), TensorScriptDiagnostic> {
         let tyvar = Type::ResolvedDim(num, *span);
-        self.add_type(mod_name, alias, tyvar);
+        self.add_type(mod_name, alias, tyvar)
     }
 
     /// tie an alias with a tensor
@@ -249,12 +260,12 @@ impl TypeEnv {
         alias: &Alias,
         tsr: &[String],
         span: &ByteSpan,
-    ) {
+    ) -> Result<(), TensorScriptDiagnostic> {
         // first insert all the dims
         for t in tsr.iter() {
             let alias = Alias::Variable(t.to_string());
             if !self.exists(mod_name, &alias) {
-                self.add_dim_alias(mod_name, &alias, span);
+                self.add_dim_alias(mod_name, &alias, span)?;
             }
         }
 
@@ -319,36 +330,38 @@ impl TypeEnv {
     }
 
     /// create aliases for an untyped AST node assign
-    pub fn import_node_assign(&mut self, mod_name: &ModName, a: &NodeAssign) {
+    pub fn import_node_assign(&mut self, mod_name: &ModName, a: &NodeAssign) -> Result<(), TensorScriptDiagnostic> {
         match a {
             NodeAssign::Tensor {
                 ident: ref id,
                 rhs: TensorTy::Generic(ref tys, ref sp),
                 ..
             } => {
-                self.add_tsr_alias(mod_name, &Alias::Variable(id.to_string()), tys, sp);
+                self.add_tsr_alias(mod_name, &Alias::Variable(id.to_string()), tys, sp)
             }
             NodeAssign::Dimension {
                 ident: ref id,
                 rhs: Term::Integer(num, _),
                 ref span,
             } => {
-                self.add_resolved_dim_alias(mod_name, &Alias::Variable(id.to_string()), *num, span);
+                self.add_resolved_dim_alias(mod_name, &Alias::Variable(id.to_string()), *num, span)
             }
             _ => unimplemented!(),
         }
     }
 
-    pub fn import_top_level_ty_sig(&mut self, mod_name: &ModName, ty_sig: &TensorTy) {
+    pub fn import_top_level_ty_sig(&mut self, mod_name: &ModName, ty_sig: &TensorTy) -> Result<(), TensorScriptDiagnostic> {
         if let TensorTy::Generic(dims, span) = ty_sig {
             // first insert all the dims
             for t in dims.iter().filter(|t| t.parse::<i64>().is_err()) {
                 let alias =  Alias::Variable(t.to_string());
                 if !self.exists(mod_name, &alias) {
-                    self.add_dim_alias(mod_name, &alias, span);
+                    self.add_dim_alias(mod_name, &alias, span)?;
                 }
             }
         }
+
+        Ok(())
     }
 
     /// get current module name
@@ -362,8 +375,8 @@ impl TypeEnv {
     }
 
     /// import module type and associated methods into type environment
-    pub fn import_module(&mut self, path_name: &str, mod_name: &str) {
-        let methods = Core::import(path_name, mod_name, self);
+    pub fn import_module(&mut self, path_name: &str, mod_name: &str) -> Option<Result<(), TensorScriptDiagnostic>> {
+        let methods = Core::import(path_name, mod_name, self)?;
         for &(ref name, ref ty) in &methods {
             self.add_type(
                 &Named(mod_name.to_owned()),
@@ -371,16 +384,18 @@ impl TypeEnv {
                 ty.clone(),
             );
         }
+        Some(Ok(()))
     }
 
-    pub fn import_prelude(&mut self) {
+    pub fn import_prelude(&mut self) -> Result<(), TensorScriptDiagnostic> {
         for fun in &vec!["view"] {
             self.add_type(&Global,
                 &Alias::Variable(fun.to_string()),
                 module!(fun.to_string())
-            );
+            )?;
             self.import_module("prelude", fun);
         }
+        Ok(())
     }
 
     pub fn resolve_unresolved(
@@ -391,7 +406,7 @@ impl TypeEnv {
         ret_ty: Type,
         args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>,
-    ) -> Option<Type> {
+    ) -> Result<Option<Type>, TensorScriptDiagnostic> {
         // let (mod_name, mod_ty) = {
         //     if let Type::Module(name, opty, _) = module {
         //         (name, opty.clone().map(|i| *i))
@@ -400,10 +415,15 @@ impl TypeEnv {
         //     }
         // };
 
-        if let Type::UnresolvedModuleFun(ref p0, ref p1, ref p2, _) = ty {
+        if let Type::UnresolvedModuleFun(ref p0, ref p1, ref p2, ref span) = ty {
             assert_eq!(fn_name.to_owned(), p2.to_owned());
-            let op = Core::find(p0, p1);
-            op.resolve(self, fn_name, arg_ty, ret_ty, args, inits)
+            let find_result = Core::find(p0, p1);
+            match find_result {
+                Some(op) =>
+                    Ok(op.resolve(self, fn_name, arg_ty, ret_ty, args, inits)),
+                None => 
+                    Err(TensorScriptDiagnostic::SymbolNotFound(p1.to_string(), *span)),
+            }
         } else {
             unimplemented!();
         }
