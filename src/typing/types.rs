@@ -129,7 +129,8 @@ impl Type {
         use self::Type::*;
         match self {
             TSR(_, s) => *s,
-            _ => unimplemented!(),
+            Module(_, _, s) => *s,
+            _ => panic!("{:?}", self),
         }
     }
 

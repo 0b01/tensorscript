@@ -1,12 +1,15 @@
+use lin::Linear;
+// use nonlin::leaky_relu;
+
 node Generator<noise -> image> {
     dim noise_dim = 100;
     dim image_dim = 28;
     tsr noise = [?, noise_dim];
-    tsr image_dim = [?, image_dim];
+    tsr image = [?, image_dim];
 }
 
 weights Generator<noise -> image> {
-
+    lin = Linear::new(in=noise_dim, out=128);
 }
 
 graph Generator<noise -> image> {

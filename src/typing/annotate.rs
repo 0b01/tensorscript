@@ -268,7 +268,7 @@ impl Annotator {
                     match import_result {
                         Some(Ok(())) => (),
                         Some(Err(e)) => self.emitter.borrow_mut().add(e),
-                        None => self.emitter.borrow_mut().add(TensorScriptDiagnostic::SymbolNotFound(name.to_string(), decl.span))
+                        None => self.emitter.borrow_mut().add(TensorScriptDiagnostic::ImportError(name.to_string(), decl.span))
                     }
                 }
 

@@ -5,6 +5,7 @@ use typing::typed_term::Ty;
 use typing::typed_term::*;
 use typing::Type;
 use std::rc::Rc;
+use std::process::exit;
 use std::cell::RefCell;
 use errors::{ EmitErr, Emitter, TensorScriptDiagnostic };
 
@@ -211,7 +212,22 @@ impl Constraints {
         let symbol_name = fn_app.mod_name.clone().unwrap();
         let symbol_mod_ty = match &fn_app.orig_name {
             Some(ref orig_name) => self.tenv.borrow_mut().resolve_type(&current_mod, &Alias::Variable(orig_name.clone())).unwrap().clone(),
-            None => self.tenv.borrow_mut().resolve_type(&current_mod, &Alias::Variable(symbol_name.clone())).unwrap().clone(),
+            None => {
+                let resolved_ty = self.tenv.borrow_mut()
+                    .resolve_type(
+                        &current_mod,
+                        &Alias::Variable(symbol_name.clone())
+                    );
+                match resolved_ty {
+                    Some(ty) => ty,
+                    None => {
+                        let e = TensorScriptDiagnostic::SymbolNotFound(symbol_name.to_owned(), fn_app.span());
+                        self.emitter.borrow_mut().add(e);
+                        self.emitter.borrow().print_errs();
+                        exit(-1);
+                    }
+                }
+            }
         };
 
         let symbol_modname = ModName::Named(symbol_mod_ty.as_str().to_owned());
@@ -293,6 +309,7 @@ impl Constraints {
         for a in &fn_app.args {
             self.collect(&a.arg);
         }
+
     }
 }
 

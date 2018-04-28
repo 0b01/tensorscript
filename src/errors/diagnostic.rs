@@ -11,6 +11,7 @@ pub enum TensorScriptDiagnostic {
     DimensionMismatch(Type, Type),
     ParseError(String, ByteSpan),
     SymbolNotFound(String, ByteSpan),
+    ImportError(String, ByteSpan),
     DuplicateVarInScope(String, Type, Type),
 }
 
@@ -56,6 +57,14 @@ impl TensorScriptDiagnostic {
                 Diagnostic::new(
                     Severity::Error,
                     format!("Cannot find symbol `{}` in scope", msg),
+                )
+                .with_label(Label::new_primary(*sp))
+            }
+
+            ImportError(msg, sp) => {
+                Diagnostic::new(
+                    Severity::Error,
+                    format!("Cannot import symbol `{}`", msg),
                 )
                 .with_label(Label::new_primary(*sp))
             }
