@@ -2,12 +2,12 @@ use lin::Linear;
 use reg::{BatchNorm1d};
 use nonlin::{leaky_relu, tanh};
 
-node Generator<noise -> image> {
-    dim noise_dim = 100;
-    dim image_dim = 28;
-    tsr noise = [?, noise_dim];
-    tsr image = [?, image_dim];
-}
+dim noise_dim = 100;
+dim image_dim = 28;
+tsr noise = [?, noise_dim];
+tsr image = [?, image_dim];
+
+node Generator<noise -> image> {}
 
 weights Generator<noise -> image> {
     lin1 = Linear::new(in=noise_dim, out=128);

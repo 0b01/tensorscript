@@ -194,7 +194,7 @@ impl TypeEnv {
         let top = stack.0.len() - 1;
         let scope = &mut stack.0[top];
         if scope.types.contains_key(alias) {
-            let orig_ty = scope.types.get(alias).unwrap();
+            let orig_ty = &scope.types[alias];
             return Err(
                 Diag::
                     DuplicateVarInScope(

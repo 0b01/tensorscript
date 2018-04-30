@@ -55,6 +55,8 @@
 /// 9. [*] better errors in parser
 /// 10. [ ] code gen
 /// 11. [ ] add more examples
+/// 12. [ ] lift dim and tsr to top level
+/// 13. [ ] add dim level computation dim1 * dim1
 
 extern crate pest;
 #[macro_use]

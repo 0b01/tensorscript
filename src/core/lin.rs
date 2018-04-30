@@ -53,41 +53,50 @@ impl Op for Linear {
                     } else if !hm.contains_key("out") {
                         panic!("Initatialize Linear with parameter out=");
                     }
-                    // let arg_dim = arg_ty
-                    //     .first_arg_ty()?
-                    //     .last_dim()?
-                    //     .as_num().unwrap();
-                    // let ret_dim = ret_ty
-                    //     .last_dim()?
-                    //     .as_num().unwrap();
 
                     let in_dim = hm.get("in").and_then(|t| unwrap_dim(t))?;
                     let out_dim = hm.get("out").and_then(|t| unwrap_dim(t))?;
 
                     let span = arg_ty.span();
 
-                    let mut arg_dim = arg_ty.first_arg_ty()?.as_vec()?;
-                    let mut ret_dim = ret_ty.as_vec()?;
-                    if arg_dim.len() != ret_dim.len() {
-                        // return dimension mismatch
-                        return Some(Err(Diag::TypeError(arg_ty, ret_ty)));
-                    }
-                    // modify the last dimension
-                    {
-                        let mut last_arg_dim = arg_dim.last_mut().unwrap();
-                        let mut last_ret_dim = ret_dim.last_mut().unwrap();
-                        *last_arg_dim = Type::ResolvedDim(in_dim, CSpan::fresh_span());
-                        *last_ret_dim = Type::ResolvedDim(out_dim, CSpan::fresh_span());
+                    let (a, b) = match (arg_ty.first_arg_ty()?.as_vec(), ret_ty.as_vec()) {
+                        (None, None) => return None,
+                        (Some(ref mut a), None) |
+                        (None, Some(ref mut a)) => {
+                            // modify the last dimension
+                            let mut b = a.clone();
+                            {
+                                let mut last_arg_dim = a.last_mut().unwrap();
+                                let mut last_ret_dim = b.last_mut().unwrap();
+                                *last_arg_dim = Type::ResolvedDim(in_dim, CSpan::fresh_span());
+                                *last_ret_dim = Type::ResolvedDim(out_dim, CSpan::fresh_span());
+                            };
+
+                            (a.clone(), b)
+                        }
+                        (Some(ref mut a), Some(ref mut b)) => {
+                            if a.len() != b.len() {
+                                // return dimension mismatch
+                                return Some(Err(Diag::TypeError(arg_ty, ret_ty)));
+                            }
+                            // modify the last dimension
+                            {
+                                let mut last_arg_dim = a.last_mut().unwrap();
+                                let mut last_ret_dim = b.last_mut().unwrap();
+                                *last_arg_dim = Type::ResolvedDim(in_dim, CSpan::fresh_span());
+                                *last_ret_dim = Type::ResolvedDim(out_dim, CSpan::fresh_span());
+                            };
+
+                            (a.clone(), b.clone())
+                        }
                     };
 
-                    Some(Ok(
-                        fun!(
-                            self.get_name(),
-                            "forward",
-                            args!(arg!("x",Type::TSR(arg_dim, span))),
-                            Type::TSR(ret_dim, span)
-                        )
-                    ))
+                    Some(Ok(fun!(
+                        self.get_name(),
+                        "forward",
+                        args!(arg!("x",Type::TSR(a, span))),
+                        Type::TSR(b, span)
+                    )))
                 } else {
                     None
                 }
