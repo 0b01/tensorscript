@@ -12,6 +12,7 @@ pub enum Diag {
     ImportError(String, ByteSpan),
     DuplicateVarInScope(String, Type, Type),
     TypeError(Type, Type),
+    EllisionError(String, ByteSpan),
 }
 
 impl Diag {
@@ -84,6 +85,14 @@ impl Diag {
                 )
                 .with_label(Label::new_primary(ty1.span()))
                 .with_label(Label::new_primary(ty2.span()))
+            }
+
+            EllisionError(msg, span) => {
+                Diagnostic::new(
+                    Severity::Error,
+                    msg.to_owned(),
+                )
+                .with_label(Label::new_primary(*span))
             }
 
             _ => unimplemented!(),

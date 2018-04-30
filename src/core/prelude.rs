@@ -47,7 +47,9 @@ impl Op for view {
                 //         ret_ty = ['100, 2, 5]
                 // replace '100 with !1
                 if ret_tsr.len() - resolved_ret_tsr.len() > 1 {
-                    panic!("Cannot elide more than 1 tensor dimension");
+                    return Some(Err(
+                        Diag::EllisionError("Cannot elide more than 1 tensor dimension in view function".to_owned(), ret_tsr[0].span())
+                    ));
                 }
 
                 let ret_prod: i64 = resolved_ret_tsr.iter().product();

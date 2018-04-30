@@ -237,10 +237,10 @@ impl Constraints {
             }
         };
 
-        // println!(
-        //     "{:?} | {:?} | {} | {:?} | {:?} | {:?} ",
-        //     ty, fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name
-        // );
+        println!(
+            "{:?} | {:?} | {} | {:?} | {:?} | {:?} ",
+            ty, fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name
+        );
 
         if let Type::UnresolvedModuleFun(..) = ty {
             let resolution = if fn_app.orig_name.is_none() { // this is in a weight assign fn
@@ -266,7 +266,7 @@ impl Constraints {
             };
 
             match resolution {
-                Ok(Some(resolved_fn_ty)) =>
+                Ok(Some(resolved_fn_ty)) => {
                     self.add(
                         resolved_fn_ty,
                         fun!(
@@ -275,7 +275,10 @@ impl Constraints {
                             fn_app.arg_ty.clone(),
                             fn_app.ret_ty.clone()
                         )
-                    ),
+                    );
+                    // TODO: set alias for symbol if is stateful!!!
+                    // ...
+                }
                 Ok(None) =>
                     self.tenv.borrow_mut().add_unverified(ty.clone()),
                 Err(e) => {
