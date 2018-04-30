@@ -10,12 +10,13 @@ pub struct relu;
 pub struct log_softmax;
 #[allow(non_camel_case_types)]
 pub struct sigmoid;
+#[allow(non_camel_case_types)]
+pub struct leaky_relu;
 
 impl Op for sigmoid {
     fn get_name(&self) -> &'static str {
         "sigmoid"
     }
-
     fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
@@ -24,7 +25,6 @@ impl Op for sigmoid {
             )
         ]
     }
-
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
@@ -37,17 +37,17 @@ impl Op for sigmoid {
         match fn_name {
             "forward" => {
                 let ty = tenv.fresh_var(&CSpan::fresh_span());
-                Some(fun!("sigmoid", "forward", args!(arg!("x", ty.clone())), ty))
+                Some(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty))
             }
             _ => unimplemented!(),
         }
     }
 }
+
 impl Op for relu {
     fn get_name(&self) -> &'static str {
         "relu"
     }
-
     fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
@@ -56,7 +56,6 @@ impl Op for relu {
             )
         ]
     }
-
     fn resolve(&self,
         tenv: &mut TypeEnv,
         fn_name: &str,
@@ -68,7 +67,7 @@ impl Op for relu {
         match fn_name {
             "forward" => {
                 let ty = tenv.fresh_var(&CSpan::fresh_span());
-                Some(fun!("relu", "forward", args!(arg!("x", ty.clone())), ty))
+                Some(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty))
             },
             _ => unimplemented!(),
         }
@@ -79,12 +78,43 @@ impl Op for log_softmax {
     fn get_name(&self) -> &'static str {
         "log_softmax"
     }
-
     fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![(
             "forward",
             UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
         )]
+    }
+    fn resolve(
+        &self,
+        tenv: &mut TypeEnv,
+        fn_name: &str,
+        _arg_ty: Type,
+        _ret_ty: Type,
+        _args: Vec<TyFnAppArg>,
+        _inits: Option<Vec<TyFnAppArg>>,
+    ) -> Option<Type> {
+        match fn_name {
+            "forward" => {
+                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                Some(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone()), arg!("dim", int!())), ty))
+            }
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl Op for leaky_relu {
+    fn get_name(&self) -> &'static str {
+        "leaky_relu"
+    }
+
+    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+        vec![
+            (
+                "forward",
+                UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
+            )
+        ]
     }
 
     fn resolve(
@@ -99,7 +129,7 @@ impl Op for log_softmax {
         match fn_name {
             "forward" => {
                 let ty = tenv.fresh_var(&CSpan::fresh_span());
-                Some(fun!("log_softmax", "forward", args!(arg!("x", ty.clone()), arg!("dim", int!())), ty))
+                Some(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty))
             }
             _ => unimplemented!(),
         }

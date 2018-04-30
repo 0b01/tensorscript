@@ -13,6 +13,7 @@ pub enum TensorScriptDiagnostic {
     SymbolNotFound(String, ByteSpan),
     ImportError(String, ByteSpan),
     DuplicateVarInScope(String, Type, Type),
+    TypeError(Type, Type),
 }
 
 impl TensorScriptDiagnostic {
@@ -73,6 +74,15 @@ impl TensorScriptDiagnostic {
                 Diagnostic::new(
                     Severity::Error,
                     format!("Duplicate symbol in scope: {}: {:?}, {:?}", name, ty1, ty2),
+                )
+                .with_label(Label::new_primary(ty1.span()))
+                .with_label(Label::new_primary(ty2.span()))
+            }
+
+            TypeError(ty1, ty2) => {
+                Diagnostic::new(
+                    Severity::Error,
+                    format!("Type mistmatch: {:?}, {:?}", ty1, ty2),
                 )
                 .with_label(Label::new_primary(ty1.span()))
                 .with_label(Label::new_primary(ty2.span()))

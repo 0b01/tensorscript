@@ -103,10 +103,9 @@ fn get_matches<'a>() -> ArgMatches<'a> {
             .help("Sets a custom input file")
             .takes_value(true)
             .required(true))
-        .arg(Arg::with_name("v")
-            .short("v")
-            .multiple(true)
-            .help("Sets the level of verbosity"))
+        .arg(Arg::with_name("print_ast")
+            .long("print-ast")
+            .help("Prints AST"))
         .get_matches()
 }
 
@@ -131,6 +130,7 @@ fn main() {
     let tenv = Rc::new(RefCell::new(TypeEnv::new()));
     let annotator = Annotator::new(Rc::clone(&emitter), Rc::clone(&tenv));
     let ast = annotator.annotate(&program);
+    annotator.emit_err();
     // println!("{}", ast);
     // println!("initial tenv: {:#?}", tenv);
     // ------------ first unitfication pass ---------------
@@ -159,8 +159,11 @@ fn main() {
             }
             return (new_cs, last_ast);
         };
-    let (final_cs, final_ast) = resolve_modules();
-    // println!("{:#?}", final_ast);
+    let (_final_cs, final_ast) = resolve_modules();
+    if matches.is_present("print_ast") {
+        println!("{:#?}", final_ast);
+        exit(0);
+    }
     // println!("{:#?}", tenv);
     // println!("{:#?}", final_cs);
     println!("OK");

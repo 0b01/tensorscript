@@ -10,11 +10,18 @@ use typing::typed_term::{TyDecl, TyFieldAccess, TyFnApp, TyFnAppArg, TyFnDecl, T
 use typing::Type;
 use std::rc::Rc;
 use std::cell::RefCell;
-use errors::{TensorScriptDiagnostic, Emitter};
+use std::process::exit;
+use errors::{TensorScriptDiagnostic, Emitter, EmitErr};
 
 pub struct Annotator {
     pub emitter: Rc<RefCell<Emitter>>,
     pub tenv: Rc<RefCell<TypeEnv>>,
+}
+
+impl EmitErr for Annotator {
+    fn emit_err(&self) {
+        self.emitter.borrow().print_errs();
+    }
 }
 
 impl Annotator {
@@ -32,8 +39,15 @@ impl Annotator {
         let module = self.tenv.borrow().module();
         match term {
             Ident(ref id, ref span) => {
-                let ty = self.tenv.borrow_mut().resolve_type(&module, &Alias::Variable(id.clone()))
-                    .unwrap().with_span(&span);
+                let ty = self.tenv.borrow_mut()
+                    .resolve_type(&module, &Alias::Variable(id.clone()))
+                    .unwrap_or_else(|| {
+                        let mut em = self.emitter.borrow_mut();
+                        em.add(TensorScriptDiagnostic::SymbolNotFound(id.to_string(), *span));
+                        em.print_errs();
+                        exit(-1);
+                    })
+                    .with_span(&span);
                 let alias = Alias::Variable(id.to_owned());
                 TyTerm::TyIdent(ty, alias, *span)
             }
@@ -106,7 +120,7 @@ impl Annotator {
             };
             let t = match t {
                 // this may be `fc1`
-                Term::Ident(ref id, ref span) => { 
+                Term::Ident(ref id, ref span) => {
                     let arg_ty = self.tenv.borrow_mut().fresh_var(span);
                     let ret_ty = self.tenv.borrow_mut().fresh_var(span);
                     TyTerm::TyFnApp(box TyFnApp {
@@ -268,7 +282,8 @@ impl Annotator {
                     match import_result {
                         Some(Ok(())) => (),
                         Some(Err(e)) => self.emitter.borrow_mut().add(e),
-                        None => self.emitter.borrow_mut().add(TensorScriptDiagnostic::ImportError(name.to_string(), decl.span))
+                        None => self.emitter.borrow_mut()
+                            .add(TensorScriptDiagnostic::ImportError(name.to_string(), decl.span))
                     }
                 }
 
@@ -303,7 +318,7 @@ impl Annotator {
                     .resolve_type(&module, &Alias::Variable(als.clone()));
                 match ty {
                     Some(t) => Ok(t.clone().with_span(sp)),
-                    None => 
+                    None =>
                         Err(TensorScriptDiagnostic::SymbolNotFound(als.clone(), *sp)),
                 }
             }
@@ -480,7 +495,12 @@ impl Annotator {
         let module = self.tenv.borrow_mut().module();
         let name = p.name.clone();
         let ty = self.tenv.borrow_mut().resolve_tensor(&module, &p.ty_sig, &p.span);
-        self.tenv.borrow_mut().add_type(&module, &Alias::Variable(name.clone()), ty.clone());
+        self.tenv.borrow_mut()
+            .add_type(&module, &Alias::Variable(name.clone()), ty.clone())
+            .unwrap_or_else(|e| {
+                let mut em = self.emitter.borrow_mut();
+                em.add(e);
+            });
         TyFnDeclParam {
             name,
             ty,

@@ -114,7 +114,7 @@ lower = _{ 'a'..'z' }
 upper = _{ 'A'..'Z' }
 alpha = _{ lower | upper }
 ident = @{ (!digit ~ (alpha | digit | "_")+ ) | "?" }
-ident_list = { ident ~ ("," ~ ident)+ ~ ","? }
+ident_list = { ident ~ ("," ~ ident)* ~ ","? }
 cap_ident = @{ upper ~ (alpha|digit| "_")* }
 upper_ident = @{ (upper|digit|"_")* }
 

@@ -128,9 +128,24 @@ impl Type {
     pub fn span(&self) -> ByteSpan {
         use self::Type::*;
         match self {
-            TSR(_, s) => *s,
+            // literals
+            Unit(s) => *s,
+            INT(s) => *s,
+            FLOAT(s) => *s,
+            BOOL(s) => *s,
+            UnresolvedModuleFun(_, _, _, s) => *s,
+            // type variables that need to be resolved
+            VAR(_, s) => *s,
+            DIM(_, s) => *s,
+            Tuple(_, s) => *s,
+
+            // recursive types
             Module(_, _, s) => *s,
-            _ => panic!("{:?}", self),
+            FnArgs(_, s) => *s,
+            FnArg(_, _, s) => *s,
+            ResolvedDim(_, s) => *s,
+            FUN(_, _, _, _, s) => *s,
+            TSR(_, s) => *s,
         }
     }
 

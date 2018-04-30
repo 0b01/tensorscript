@@ -158,7 +158,8 @@ impl TypeEnv {
 
     /// iterate over scopes and find the alias in each
     fn get_scoped_types(&self, mod_name: &ModName, alias: &Alias) -> Vec<Type> {
-        let stack = self.modules.get(mod_name).expect(&format!("BUG: Unable to find {:?} in {:?}. TypeEnv: {:#?}", alias, mod_name, self));
+        let stack = self.modules.get(mod_name)
+            .expect(&format!("BUG: Unable to find {:?} in {:?}.", alias, mod_name));
         stack
             .0
             .iter()
@@ -421,7 +422,7 @@ impl TypeEnv {
             match find_result {
                 Some(op) =>
                     Ok(op.resolve(self, fn_name, arg_ty, ret_ty, args, inits)),
-                None => 
+                None =>
                     Err(TensorScriptDiagnostic::SymbolNotFound(p1.to_string(), *span)),
             }
         } else {

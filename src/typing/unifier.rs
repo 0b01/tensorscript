@@ -4,6 +4,7 @@ use span::CSpan;
 use errors::{Emitter, TensorScriptDiagnostic, EmitErr};
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::process::exit;
 
 use typing::constraint::{Constraints, Equals};
 use typing::substitution::Substitution;
@@ -162,7 +163,11 @@ impl Unifier {
             }
 
             _ => {
-                panic!("{:#?}", eq);
+                let Equals(a, b) = eq;
+                let mut em = self.emitter.borrow_mut();
+                em.add(TensorScriptDiagnostic::TypeError(a, b));
+                em.print_errs();
+                exit(-1);
             }
         }
     }

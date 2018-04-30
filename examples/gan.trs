@@ -1,5 +1,6 @@
 use lin::Linear;
-// use nonlin::leaky_relu;
+use reg::{BatchNorm1d};
+use nonlin::leaky_relu;
 
 node Generator<noise -> image> {
     dim noise_dim = 100;
@@ -9,7 +10,14 @@ node Generator<noise -> image> {
 }
 
 weights Generator<noise -> image> {
-    lin = Linear::new(in=noise_dim, out=128);
+    lin1 = Linear::new(in=noise_dim, out=128);
+    lin2 = Linear::new(in=128, out=256);
+    bn1 = BatchNorm1d::new(num_features=256);
+    lin3 = Linear::new(in=256, out=512);
+    bn2 = BatchNorm1d::new(num_features=512);
+    lin4 = Linear::new(in=512, out=1024);
+    bn3 = BatchNorm1d::new(num_features=1024);
+    lin5 = Linear::new(in=1024, out=image_dim);
 }
 
 graph Generator<noise -> image> {
@@ -19,7 +27,7 @@ graph Generator<noise -> image> {
 // class Generator(nn.Module):
 //     def __init__(self):
 //         super(Generator, self).__init__()
-// 
+//
 //         self.model = nn.Sequential(
 //             nn.Linear(opt.latent_dim, 128),
 //             nn.LeakyReLU(0.2, inplace=True),
@@ -35,7 +43,7 @@ graph Generator<noise -> image> {
 //             nn.Linear(1024, opt.img_size**2),
 //             nn.Tanh()
 //         )
-// 
+//
 //     def forward(self, noise):
 //         img = self.model(noise)
 //         img = img.view(img.shape[0], opt.channels, opt.img_size, opt.img_size)

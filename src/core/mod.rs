@@ -4,6 +4,7 @@ use typing::{Type, TypeEnv};
 mod prelude;
 mod conv;
 mod lin;
+mod reg;
 mod nonlin;
 
 pub trait Op {
@@ -36,12 +37,12 @@ impl Core {
         match path_name {
             "conv" => match mod_name {
                 "Conv2d" => Some(box self::conv::Conv2d),
-                "Dropout2d" => Some(box self::conv::Dropout2d),
                 "maxpool2d" => Some(box self::conv::maxpool2d),
                 _ => None,
             },
             "nonlin" => match mod_name {
                 "relu" => Some(box self::nonlin::relu),
+                "leaky_relu" => Some(box self::nonlin::leaky_relu),
                 "log_softmax" => Some(box self::nonlin::log_softmax),
                 "sigmoid" => Some(box self::nonlin::sigmoid),
                 _ => None,
@@ -52,6 +53,11 @@ impl Core {
             },
             "prelude" => match mod_name {
                 "view" => Some(box self::prelude::view),
+                _ => None,
+            }
+            "reg" => match mod_name {
+                "Dropout2d" => Some(box self::reg::Dropout2d),
+                "BatchNorm1d" => Some(box self::reg::BatchNorm1d),
                 _ => None,
             }
             _ => {

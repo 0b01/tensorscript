@@ -5,7 +5,6 @@ use typing::{Type, TypeEnv};
 
 use self::TyTerm::*;
 pub struct Conv2d;
-pub struct Dropout2d;
 #[allow(non_camel_case_types)]
 pub struct maxpool2d;
 
@@ -119,43 +118,6 @@ impl Op for Conv2d {
                     ),
                     module!(self.get_name())
                 ))
-            }
-            _ => unimplemented!(),
-        }
-    }
-}
-
-impl Op for Dropout2d {
-    fn get_name(&self) -> &'static str {
-        "Dropout2d"
-    }
-
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "new",
-                fun!("Dropout2d", "new", args!(arg!("p", float!())), module!(self.get_name())),
-            ),
-            (
-                "forward",
-                Type::UnresolvedModuleFun("conv", self.get_name(), "forward", CSpan::fresh_span()),
-            ),
-        ]
-    }
-
-    fn resolve(
-        &self,
-        tenv: &mut TypeEnv,
-        fn_name: &str,
-        _arg_ty: Type,
-        _ret_ty: Type,
-        _args: Vec<TyFnAppArg>,
-        _inits: Option<Vec<TyFnAppArg>>,
-    ) -> Option<Type> {
-        match fn_name {
-            "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
-                Some(fun!("log_softmax", "forward", args!(arg!("x", ty.clone())), ty))
             }
             _ => unimplemented!(),
         }
