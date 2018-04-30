@@ -4,7 +4,7 @@ use codespan::{ByteSpan, Span, ByteIndex};
 use parsing::grammar::Rule::*;
 use parsing::grammar::{Rule, TensorScriptParser};
 use parsing::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, GraphDecl,
-                   NodeAssign, NodeDecl, TensorTy, Term, UseStmt, ViewFn, WeightsAssign,
+                   AliasAssign, NodeDecl, TensorTy, Term, UseStmt, ViewFn, WeightsAssign,
                    WeightsDecl};
 use pest::iterators::Pair;
 use pest::Parser;
@@ -52,12 +52,17 @@ impl ASTBuilder {
         } else {
             let decls = parser.unwrap();
             let terms = decls
-                .map(|pair| match pair.as_rule() {
-                    use_stmt => self.build_use_stmt(pair),
-                    weights_decl => self.build_weights_decl(pair),
-                    graph_decl => self.build_graph_decl(pair),
-                    node_decl => self.build_node_decl(pair),
-                    _ => panic!("Only node, graph, weights, use supported at top level"),
+                .map(|pair| {
+                    // println!("{}", pair);
+                    match pair.as_rule() {
+                        use_stmt => self.build_use_stmt(pair),
+                        weights_decl => self.build_weights_decl(pair),
+                        graph_decl => self.build_graph_decl(pair),
+                        node_decl => self.build_node_decl(pair),
+                        dim_assign => self.build_dim_tsr_assign(pair).map(Decl::AliasAssign),
+                        tsr_assign => self.build_dim_tsr_assign(pair).map(Decl::AliasAssign),
+                        _ => panic!("Only node, graph, weights, use supported at top level. Got: {}", pair.as_str()),
+                    }
                 })
                 .collect::<Result<_,_>>();
             match terms {
@@ -474,7 +479,14 @@ impl ASTBuilder {
         let ty_signature = self.build_fn_ty_sig(ty_decl)?;
 
         let macros = node_body.into_inner();
-        let macros = macros.map(|p| self.build_node_assign(p).unwrap()).collect();
+        let macros = macros
+            .map(|p|
+                p.into_inner().map(
+                    |p| self.build_dim_tsr_assign(p).unwrap()
+                )
+            )
+            .flatten()
+            .collect();
 
         Ok(Decl::NodeDecl(NodeDecl {
             name: node_name.to_owned(),
@@ -486,16 +498,16 @@ impl ASTBuilder {
 
     // fn build_node_decl_body(body: Pair<Rule>) -> Result<Term, Diag> {
     //     let tokens = body.into_inner();
-    //     let vals = tokens.map(|p| build_node_assign(p).unwrap()).collect();
+    //     let vals = tokens.map(|p| build_dim_tsr_assign(p).unwrap()).collect();
 
     //     Ok(Term::List(vals))
     // }
 
-    fn build_node_assign(&self, pair: Pair<Rule>) -> Result<NodeAssign, Diag> {
-        if pair.as_rule() != node_assign {
-            let errmsg = format!("ty mismatch: {:?}", node_assign);
-            return Err(err!(errmsg, self.cspan.convert_span(&pair.clone().into_span())));
-        }
+    fn build_dim_tsr_assign(&self, pair: Pair<Rule>) -> Result<AliasAssign, Diag> {
+        // if pair.as_rule() != node_assign {
+        //     let errmsg = format!("ty mismatch: {:?}", node_assign);
+        //     return Err(err!(errmsg, self.cspan.convert_span(&pair.clone().into_span())));
+        // }
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let identifier = eat!(tokens, ident, "Failed to parse `ident`", sp)?;
@@ -505,7 +517,7 @@ impl ASTBuilder {
 
         let handle_lit = move |token: Pair<Rule>, id: String, sp: ByteSpan| {
             let lit = self.consume(token)?;
-            Ok(NodeAssign::Dimension {
+            Ok(AliasAssign::Dimension {
                 ident: id,
                 rhs: lit,
                 span: sp,
@@ -514,7 +526,7 @@ impl ASTBuilder {
 
         let handle_ty = move |ty: Pair<Rule>, id: String, sp: ByteSpan| {
             let ty = to_idents!(ty);
-            Ok(NodeAssign::Tensor {
+            Ok(AliasAssign::Tensor {
                 ident: id,
                 rhs: TensorTy::Generic(ty, sp),
                 span: sp,

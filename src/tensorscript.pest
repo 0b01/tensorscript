@@ -130,8 +130,8 @@ tensor_ty_sig = _{ "[" ~ ty_ident_list ~ "]" }
 tensor_ty = _{ tensor_alias_ty | tensor_ty_sig }
 tensor_alias_ty = _{ ident }
 
-dim_assign = _{ dim_lit ~ ( ident | batch_lit ) ~ op_assign ~ int_lit ~ semicolon }
-tsr_assign = _{ tsr_lit ~ ident ~ op_assign ~ tensor_ty ~ semicolon }
+dim_assign = { dim_lit ~ ( ident | batch_lit ) ~ op_assign ~ int_lit ~ semicolon }
+tsr_assign = { tsr_lit ~ ident ~ op_assign ~ tensor_ty ~ semicolon }
 node_assign = { dim_assign | tsr_assign }
 node_decl_body = { "{" ~ node_assign* ~ "}" }
 node_decl_head = { node_lit ~ cap_ident ~ fn_ty_sig }
@@ -177,7 +177,8 @@ pipes = { expr_item  ~ ("|>" ~ expr)+ }
 
 field_access = { ident ~ "." ~ ident ~ fn_app_param? }
 
-view_fn = { view_lit ~ "(" ~ ( unspecified_dim_lit | cap_ident)? ~ ("," ~ ( batch_lit |cap_ident))* ~ ","? ~ ")" }
+view_fn = { view_lit ~ "(" ~ view_fn_args ~ ")" }
+view_fn_args = _{ ( unspecified_dim_lit | num_lit | ident)? ~ ("," ~ ( unspecified_dim_lit | num_lit |ident))* ~ ","? }
 
 tuple = { "(" ~ (expr ~ ",")* ~ expr? ~ ","? ~ ")" }
 expr_item = _{ view_fn | field_access | literal | bool_not | fn_app | ident | conditional | tuple }
@@ -197,5 +198,5 @@ assignment = { ident ~ op_assign ~ expr ~ semicolon }
 
 input = _{ soi ~ items ~ eoi }
 items = _{ item* }
-item = _{ use_stmt | graph_decl | weights_decl | node_decl }
+item = _{ use_stmt | graph_decl | weights_decl | node_decl | dim_assign | tsr_assign }
 

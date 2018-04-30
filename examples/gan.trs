@@ -1,14 +1,15 @@
 use lin::Linear;
 use reg::{BatchNorm1d};
-use nonlin::{leaky_relu, tanh};
+use nonlin::{leaky_relu, tanh, sigmoid};
 
 dim noise_dim = 100;
 dim image_dim = 28;
+dim flattened_image_dim = 784;
 tsr noise = [?, noise_dim];
-tsr image = [?, image_dim];
+tsr flattened_image = [?, flattened_image_dim];
+tsr image = [?, 1, image_dim, image_dim];
 
 node Generator<noise -> image> {}
-
 weights Generator<noise -> image> {
     lin1 = Linear::new(in=noise_dim, out=128);
     lin2 = Linear::new(in=128, out=256);
@@ -17,14 +18,12 @@ weights Generator<noise -> image> {
     bn2 = BatchNorm1d::new(num_features=512);
     lin4 = Linear::new(in=512, out=1024);
     bn3 = BatchNorm1d::new(num_features=1024);
-    lin5 = Linear::new(in=1024, out=image_dim);
+    lin5 = Linear::new(in=1024, out=flattened_image_dim);
 }
-
 graph Generator<noise -> image> {
     def new() -> Self {
         self
     }
-
     def forward {
         x
         |> lin1 |> leaky_relu(p=0.2)
@@ -32,34 +31,24 @@ graph Generator<noise -> image> {
         |> lin3 |> bn2 |> leaky_relu(p=0.2)
         |> lin4 |> bn3 |> leaky_relu(p=0.2)
         |> lin5 |> tanh
+        |> view(_, 1, image_dim, image_dim)
     }
 }
 
-// class Generator(nn.Module):
-//     def __init__(self):
-//         super(Generator, self).__init__()
-//
-//         self.model = nn.Sequential(
-//             nn.Linear(opt.latent_dim, 128),
-//             nn.LeakyReLU(0.2, inplace=True),
-
-//             nn.Linear(128, 256),
-//             nn.BatchNorm1d(256),
-//             nn.LeakyReLU(0.2, inplace=True),
-
-//             nn.Linear(256, 512),
-//             nn.BatchNorm1d(512),
-//             nn.LeakyReLU(0.2, inplace=True),
-
-//             nn.Linear(512, 1024),
-//             nn.BatchNorm1d(1024),
-//             nn.LeakyReLU(0.2, inplace=True),
-
-//             nn.Linear(1024, opt.img_size**2),
-//             nn.Tanh()
-//         )
-//
-//     def forward(self, noise):
-//         img = self.model(noise)
-//         img = img.view(img.shape[0], opt.channels, opt.img_size, opt.img_size)
-//         return img
+node Discriminator<image -> [?, 1]> {}
+weights Discriminator<image -> [?,1]> {
+    lin1 = Linear::new(in=flattened_image_dim, out=512);
+    lin2 = Linear::new(in=512, out=256);
+    lin3 = Linear::new(in=256, out=1);
+}
+graph Discriminator<image -> [?,1]> {
+    def new() -> Self {
+        self
+    }
+    def forward {
+        x |> view(?, flattened_image_dim)
+        |> lin1 |> leaky_relu(p=0.2)
+        |> lin2 |> leaky_relu(p=0.2)
+        |> lin3 |> sigmoid
+    }
+}

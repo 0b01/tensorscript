@@ -68,6 +68,7 @@ pub enum Decl {
     WeightsDecl(WeightsDecl),
     GraphDecl(GraphDecl),
     UseStmt(UseStmt),
+    AliasAssign(AliasAssign),
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -81,7 +82,7 @@ pub struct UseStmt {
 pub struct NodeDecl {
     pub name: String,
     pub ty_sig: FnTySig,
-    pub defs: Vec<NodeAssign>,
+    pub defs: Vec<AliasAssign>,
     pub span: ByteSpan,
 }
 
@@ -156,7 +157,7 @@ pub struct FnDecl {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum NodeAssign {
+pub enum AliasAssign {
     Dimension {
         ident: String,
         rhs: Term,

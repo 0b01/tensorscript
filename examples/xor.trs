@@ -14,8 +14,8 @@ graph Xor<[?,2] -> [?,1]> {
         self
     }
 
-    def forward(x) {
-        x |> fc1 |> fc2 |> sigmoid
+    def forward(z) {
+        z |> fc1 |> fc2 |> sigmoid
     }
 }
 

@@ -113,6 +113,20 @@ pub enum TyDecl {
     TyWeightsDecl(TyWeightsDecl),
     TyGraphDecl(TyGraphDecl),
     TyUseStmt(TyUseStmt),
+    TyAliasAssign(TyAliasAssign),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum TyAliasAssign {
+    Placeholder,
+    Dimension {
+        ident: String,
+        span: ByteSpan,
+    },
+    Tensor {
+        ident: String,
+        span: ByteSpan,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]

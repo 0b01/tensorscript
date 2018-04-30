@@ -8,7 +8,7 @@ use span::CSpan;
 /// 1. Type Aliasing during the first pass (annotate)
 /// 2. pushing and popping scopes (during `annotate` and `collect`)
 /// 3. module type and method type reconstruction
-use parsing::term::{NodeAssign, TensorTy, Term};
+use parsing::term::{AliasAssign, TensorTy, Term};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt::{Debug, Error, Formatter};
 use typing::typed_term::TyFnAppArg;
@@ -171,6 +171,7 @@ impl TypeEnv {
             .collect()
     }
 
+    /// if current module does not exist, create and insert it, nop otherwise
     pub fn upsert_module(&mut self, mod_name: &ModName) {
         if !self.modules.contains_key(mod_name) {
             self.modules.insert(mod_name.clone(), {
@@ -331,16 +332,16 @@ impl TypeEnv {
     }
 
     /// create aliases for an untyped AST node assign
-    pub fn import_node_assign(&mut self, mod_name: &ModName, a: &NodeAssign) -> Result<(), Diag> {
+    pub fn import_node_assign(&mut self, mod_name: &ModName, a: &AliasAssign) -> Result<(), Diag> {
         match a {
-            NodeAssign::Tensor {
+            AliasAssign::Tensor {
                 ident: ref id,
                 rhs: TensorTy::Generic(ref tys, ref sp),
                 ..
             } => {
                 self.add_tsr_alias(mod_name, &Alias::Variable(id.to_string()), tys, sp)
             }
-            NodeAssign::Dimension {
+            AliasAssign::Dimension {
                 ident: ref id,
                 rhs: Term::Integer(num, _),
                 ref span,

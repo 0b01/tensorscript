@@ -6,7 +6,7 @@ use typing::type_env::{Alias, ModName, TypeEnv};
 use typing::typed_term::{ArgsVecInto, Ty};
 use typing::typed_term::{TyDecl, TyFieldAccess, TyFnApp, TyFnAppArg, TyFnDecl, TyFnDeclParam,
                             TyGraphDecl, TyNodeDecl, TyTerm, TyUseStmt, TyWeightsAssign,
-                            TyWeightsDecl};
+                            TyWeightsDecl, TyAliasAssign};
 use typing::Type;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -287,6 +287,14 @@ impl Annotator {
                     span: decl.span,
                 })
             }
+            AliasAssign(ref assign) => {
+                let module = ModName::Global;
+                self.tenv.borrow_mut().set_module(module.clone());
+                self.tenv.borrow_mut()
+                    .import_node_assign(&module, assign)
+                    .unwrap_or_else(|e| self.emitter.borrow_mut().add(e));
+                TyDecl::TyAliasAssign(TyAliasAssign::Placeholder)
+            }
         };
         self.tenv.borrow_mut().set_module(ModName::Global);
         Ok(ret)
@@ -434,7 +442,10 @@ impl Annotator {
                 );
             }
             "forward" => {
-                let name0 = "x".to_string();
+                let name0 = match decl.fn_params.get(0) {
+                    Some(e) => e.name.clone(),
+                    None => "x".to_string(),
+                };
                 if let Type::Module(ref modn, Some(box Type::FUN(_,_,ref p, ref r, _)), _) = mod_ty.clone() {
                     let ty_sig = *p.clone();
 

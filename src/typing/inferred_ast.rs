@@ -50,6 +50,7 @@ fn subs_decl(decl: &TyDecl, s: &mut Substitution) -> TyDecl {
         TyNodeDecl(d) => TyNodeDecl(subs_node_decl(d, s)),
         TyUseStmt(d) => TyUseStmt(subs_use_stmt(d, s)),
         TyWeightsDecl(d) => TyWeightsDecl(subs_weights_decl(d, s)),
+        TyAliasAssign(d) => TyAliasAssign(d.clone()),
     }
 }
 

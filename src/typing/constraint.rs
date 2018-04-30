@@ -87,6 +87,7 @@ impl Constraints {
             TyNodeDecl(d) => self.collect_node_decl(d),
             TyUseStmt(d) => self.collect_use_stmt(d),
             TyWeightsDecl(d) => self.collect_weights_decl(d),
+            TyAliasAssign(_) => (),
         }
         self.tenv.borrow_mut().set_module(ModName::Global);
     }

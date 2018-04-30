@@ -25,7 +25,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.tensorscript",
-				"match": "\\b(if|while|for|return|use|node|weights|graph|def)\\b"
+				"match": "\\b(if|while|for|return|use|node|weights|graph|def|dim|tsr|forward)\\b"
 			}]
 		},
 		"strings": {

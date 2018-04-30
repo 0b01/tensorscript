@@ -55,8 +55,12 @@
 /// 9. [*] better errors in parser
 /// 10. [ ] code gen
 /// 11. [ ] add more examples
-/// 12. [ ] lift dim and tsr to top level
+/// 12. [*] lift dim and tsr to top level
 /// 13. [ ] add dim level computation dim1 * dim1
+/// 14. [ ] use Linear as L; aliasing
+/// 15. [ ] add binary ops (+, -, *, /, %)
+/// 16. [ ] add if else expression
+/// 17. [ ] add let binding
 
 extern crate pest;
 #[macro_use]

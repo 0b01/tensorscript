@@ -110,6 +110,6 @@ fn unwrap_dim(in_dim: &TyTerm) -> Option<i64> {
     match in_dim.ty() {
         Type::INT(_) => in_dim.int(),
         Type::ResolvedDim(num, _) => Some(num),
-        _ => panic!("not a numeric value!"),
+        _ => panic!("{:?} is not a numeric value!", in_dim),
     }
 }

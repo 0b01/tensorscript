@@ -34,7 +34,7 @@ impl Op for view {
     ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
-                // println!("ret_ty: {:#?}\n arg_ty: {:#?}", ret_ty, arg_ty);
+                // println!("ret_ty: {:#?}\n, arg_ty: {:#?}", ret_ty, arg_ty);
                 if !arg_ty.is_resolved() { return None; }
                 let args_map = arg_ty.as_args_map()?;
                 let arg_tsr = args_map.get("x")?.as_vec()?;
