@@ -149,13 +149,11 @@ impl Type {
         }
     }
 
-    pub fn as_vec(&self) -> Vec<Type> {
+    pub fn as_vec(&self) -> Option<Vec<Type>> {
         use self::Type::TSR;
         match self {
-            TSR(ts, _) => ts.to_owned(),
-            _ => {
-                panic!("{:#?}", self);
-            }
+            TSR(ts, _) => Some(ts.to_owned()),
+            _ => None,
         }
     }
 

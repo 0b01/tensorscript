@@ -149,8 +149,8 @@ pub struct FnTySig {
 #[derive(Debug, PartialEq, Clone)]
 pub struct FnDecl {
     pub name: String,
-    pub fn_params: Vec<FnDeclParam>,
-    pub return_ty: TensorTy,
+    pub fn_params: Option<Vec<FnDeclParam>>,
+    pub return_ty: Option<TensorTy>,
     pub func_block: Box<Term>,
     pub span: ByteSpan,
 }

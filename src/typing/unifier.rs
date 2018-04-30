@@ -1,7 +1,7 @@
 use typing::{Type, TypeEnv};
 use typing::type_env::TypeId;
 use span::CSpan;
-use errors::{Emitter, TensorScriptDiagnostic, EmitErr};
+use errors::{Emitter, Diag };
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::process::exit;
@@ -12,12 +12,6 @@ use typing::substitution::Substitution;
 pub struct Unifier {
     pub emitter: Rc<RefCell<Emitter>>,
     pub tenv: Rc<RefCell<TypeEnv>>,
-}
-
-impl EmitErr for Unifier {
-    fn emit_err(&self) {
-        self.emitter.borrow().print_errs();
-    }
 }
 
 impl Unifier {
@@ -61,7 +55,7 @@ impl Unifier {
                 if a.as_num() == b.as_num() {
                     Substitution::empty()
                 } else {
-                    self.add_err(TensorScriptDiagnostic::DimensionMismatch(a.clone(), b.clone()));
+                    self.add_err(Diag::DimensionMismatch(a.clone(), b.clone()));
                     Substitution::empty()
                 }
             }
@@ -122,22 +116,29 @@ impl Unifier {
 
             Equals(ts1 @ TSR(_, _), ts2 @ TSR(_, _)) => {
                 if ts1.as_rank() == ts2.as_rank() {
-                    match (ts1, ts2) {
-                        (TSR(dims1, s1), TSR(dims2, s2)) => self.unify(
-                            Constraints {
-                                set: dims1
-                                    .into_iter()
-                                    .zip(dims2)
-                                    .map(|(i, j)| Equals(i.with_span(&s1), j.with_span(&s2)))
-                                    .collect(),
-                                emitter,
-                                tenv,
-                            },
-                        ),
-                        _ => unimplemented!(),
+                    if let (TSR(dims1, s1), TSR(dims2, s2)) = (ts1.clone(), ts2.clone()) {
+                        let cons = Constraints {
+                            set: dims1
+                                .into_iter()
+                                .zip(dims2)
+                                .filter_map(|(i, j)| {
+                                    if let (Type::ResolvedDim(a,_), Type::ResolvedDim(b,_)) = (i.clone(),j.clone()) {
+                                        if a != b { self.add_err(Diag::TypeError(ts1.clone(),ts2.clone())) }
+                                        None
+                                    } else {
+                                        Some(Equals(i.with_span(&s1), j.with_span(&s2)))
+                                    }
+                                })
+                                .collect(),
+                            emitter,
+                            tenv,
+                        };
+                        self.unify(cons)
+                    } else {
+                        unimplemented!();
                     }
                 } else {
-                    self.add_err(TensorScriptDiagnostic::RankMismatch(ts1, ts2));
+                    self.add_err(Diag::RankMismatch(ts1, ts2));
                     Substitution::empty()
                 }
             }
@@ -165,7 +166,7 @@ impl Unifier {
             _ => {
                 let Equals(a, b) = eq;
                 let mut em = self.emitter.borrow_mut();
-                em.add(TensorScriptDiagnostic::TypeError(a, b));
+                em.add(Diag::TypeError(a, b));
                 em.print_errs();
                 exit(-1);
             }
@@ -200,7 +201,7 @@ impl Unifier {
     }
 
 
-    pub fn add_err(&mut self, err: TensorScriptDiagnostic) {
+    pub fn add_err(&mut self, err: Diag) {
         self.emitter.borrow_mut().add(err);
     }
 }

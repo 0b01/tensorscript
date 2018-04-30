@@ -1,4 +1,5 @@
 use core::{MethodName, Op};
+use errors::Diag;
 use span::CSpan;
 use typing::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
 use typing::{Type, TypeEnv};
@@ -59,7 +60,7 @@ impl Op for Conv2d {
         _ret_ty: Type,
         _args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>
-    ) -> Option<Type> {
+    ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
                 let forward_args = arg_ty.as_args_map()?;
@@ -77,7 +78,7 @@ impl Op for Conv2d {
                     let in_ch = init_map.get("in_ch").map(|t|t.int().unwrap()).expect("does not have in_ch");
                     let out_ch = init_map.get("out_ch").map(|t|t.int().unwrap()).expect("does not have in_ch");
 
-                    let dims = x_ty.as_vec();
+                    let dims = x_ty.as_vec()?;
                     let (n, c_in, h_in, w_in) = (
                         dims[0].to_owned(),
                         dims[1].to_owned().as_num().unwrap(),
@@ -92,7 +93,7 @@ impl Op for Conv2d {
 
                     let span = x_ty.span();
 
-                    Some( // returns a function
+                    Some(Ok( // returns a function
                         fun!(
                             "Conv2d",
                             "forward",
@@ -104,11 +105,11 @@ impl Op for Conv2d {
                                 Type::ResolvedDim(w_out, span),
                             ], span)
                         )
-                    )
+                    ))
                 }
             },
             "new" => {
-                Some(fun!(
+                Some(Ok(fun!(
                     "Conv2d",
                     "new",
                     args!(
@@ -117,7 +118,7 @@ impl Op for Conv2d {
                         arg!("kernel_size", tenv.fresh_var(&CSpan::fresh_span()))
                     ),
                     module!(self.get_name())
-                ))
+                )))
             }
             _ => unimplemented!(),
         }
@@ -146,7 +147,7 @@ impl Op for maxpool2d {
         _ret_ty: Type,
         args: Vec<TyFnAppArg>,
         _inits: Option<Vec<TyFnAppArg>>,
-    ) -> Option<Type> {
+    ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
                 let args_ty_map = arg_ty.as_args_map()?;
@@ -161,7 +162,7 @@ impl Op for maxpool2d {
                     let (d0, d1) = read_from_init!(args_map.get("dilation"), (1, 1));
                     let (s0, s1) = read_from_init!(args_map.get("stride"), (k0, k1));
 
-                    let dims = x_ty.as_vec();
+                    let dims = x_ty.as_vec()?;
                     let (n, c_in, h_in, w_in) = (
                         dims[0].to_owned(),
                         dims[1].to_owned(),
@@ -174,7 +175,7 @@ impl Op for maxpool2d {
 
                     let span = x_ty.span();
 
-                    Some( // returns a function
+                    Some(Ok( // returns a function
                         fun!(
                             "maxpool2d",
                             "forward",
@@ -186,7 +187,7 @@ impl Op for maxpool2d {
                                 Type::ResolvedDim(w_out, span),
                             ], span)
                         )
-                    )
+                    ))
                 }
             },
             _ => None,

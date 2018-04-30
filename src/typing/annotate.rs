@@ -11,17 +11,11 @@ use typing::Type;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::process::exit;
-use errors::{TensorScriptDiagnostic, Emitter, EmitErr};
+use errors::{Diag, Emitter};
 
 pub struct Annotator {
     pub emitter: Rc<RefCell<Emitter>>,
     pub tenv: Rc<RefCell<TypeEnv>>,
-}
-
-impl EmitErr for Annotator {
-    fn emit_err(&self) {
-        self.emitter.borrow().print_errs();
-    }
 }
 
 impl Annotator {
@@ -43,7 +37,7 @@ impl Annotator {
                     .resolve_type(&module, &Alias::Variable(id.clone()))
                     .unwrap_or_else(|| {
                         let mut em = self.emitter.borrow_mut();
-                        em.add(TensorScriptDiagnostic::SymbolNotFound(id.to_string(), *span));
+                        em.add(Diag::SymbolNotFound(id.to_string(), *span));
                         em.print_errs();
                         exit(-1);
                     })
@@ -187,7 +181,7 @@ impl Annotator {
         }
     }
 
-    fn annotate_decl(&self, decl: &Decl) -> Result<TyDecl, TensorScriptDiagnostic> {
+    fn annotate_decl(&self, decl: &Decl) -> Result<TyDecl, Diag> {
         use self::Decl::*;
         let ret = match decl {
             NodeDecl(ref decl) => {
@@ -283,7 +277,7 @@ impl Annotator {
                         Some(Ok(())) => (),
                         Some(Err(e)) => self.emitter.borrow_mut().add(e),
                         None => self.emitter.borrow_mut()
-                            .add(TensorScriptDiagnostic::ImportError(name.to_string(), decl.span))
+                            .add(Diag::ImportError(name.to_string(), decl.span))
                     }
                 }
 
@@ -298,7 +292,7 @@ impl Annotator {
         Ok(ret)
     }
 
-    fn annotate_fn_ty_sig(&self, modname: String, name: String, sig: &FnTySig, span: &ByteSpan) -> Result<Type, TensorScriptDiagnostic> {
+    fn annotate_fn_ty_sig(&self, modname: String, name: String, sig: &FnTySig, span: &ByteSpan) -> Result<Type, Diag> {
         Ok(Type::FUN(
             modname,
             name,
@@ -308,7 +302,7 @@ impl Annotator {
         ))
     }
 
-    fn annotate_tensor_ty_sig(&self, sig: &TensorTy, _span: &ByteSpan) -> Result<Type, TensorScriptDiagnostic> {
+    fn annotate_tensor_ty_sig(&self, sig: &TensorTy, _span: &ByteSpan) -> Result<Type, Diag> {
         use self::TensorTy::*;
         let module = self.tenv.borrow_mut().module();
         match sig {
@@ -319,7 +313,7 @@ impl Annotator {
                 match ty {
                     Some(t) => Ok(t.clone().with_span(sp)),
                     None =>
-                        Err(TensorScriptDiagnostic::SymbolNotFound(als.clone(), *sp)),
+                        Err(Diag::SymbolNotFound(als.clone(), *sp)),
                 }
             }
         }
@@ -408,10 +402,20 @@ impl Annotator {
 
         let mut decl = TyFnDecl {
             name: Alias::Function(f.name.clone()),
-            fn_params: f.fn_params
-                .iter()
-                .map(|p| self.annotate_fn_decl_param(p))
-                .collect(),
+            fn_params: {
+                match (&f.fn_params, f.name.as_str()) {
+                    (None, "forward") =>
+                        vec![],
+                    (None, _) =>
+                        panic!("function parameter ellided for a function other than forward!"),
+                    (Some(params), _)=> {
+                        params
+                        .iter()
+                        .map(|p| self.annotate_fn_decl_param(p))
+                        .collect()
+                    }
+                }
+            },
             // fn_ty: tenv.fresh_var(),
             fn_ty: self.tenv.borrow_mut().fresh_var(&f.span),
             func_block: Box::new(TyTerm::TyNone),  // same here
@@ -430,10 +434,7 @@ impl Annotator {
                 );
             }
             "forward" => {
-                if decl.fn_params.is_empty() {
-                    panic!("forward(x) must have at least 1 param");
-                }
-                let name0 = decl.fn_params[0].name.clone();
+                let name0 = "x".to_string();
                 if let Type::Module(ref modn, Some(box Type::FUN(_,_,ref p, ref r, _)), _) = mod_ty.clone() {
                     let ty_sig = *p.clone();
 

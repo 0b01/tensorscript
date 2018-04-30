@@ -6,7 +6,7 @@ use codespan_reporting::termcolor::StandardStream;
 use codespan::{ByteSpan, LineIndex};
 
 #[derive(Debug, Clone)]
-pub enum TensorScriptDiagnostic {
+pub enum Diag {
     RankMismatch(Type, Type),
     DimensionMismatch(Type, Type),
     ParseError(String, ByteSpan),
@@ -16,9 +16,9 @@ pub enum TensorScriptDiagnostic {
     TypeError(Type, Type),
 }
 
-impl TensorScriptDiagnostic {
+impl Diag {
     pub fn as_diagnostic(&self, code_map: &CodeMap) -> Diagnostic {
-        use self::TensorScriptDiagnostic::*;
+        use self::Diag::*;
         match self {
             DimensionMismatch(Type::ResolvedDim(v1, s1), Type::ResolvedDim(v2,s2)) => {
                 Diagnostic::new(

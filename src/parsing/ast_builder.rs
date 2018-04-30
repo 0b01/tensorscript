@@ -10,19 +10,14 @@ use pest::iterators::Pair;
 use pest::Parser;
 use pest::Error as PestError;
 use span::CSpan;
-use errors::{TensorScriptDiagnostic, EmitErr, Emitter};
+use errors::{Diag, Emitter};
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::process::exit;
 
 pub struct ASTBuilder {
     emitter: Rc<RefCell<Emitter>>,
     cspan: CSpan,
-}
-
-impl EmitErr for ASTBuilder {
-    fn emit_err(&self) {
-        self.emitter.borrow().print_errs();
-    }
 }
 
 impl ASTBuilder {
@@ -45,7 +40,7 @@ impl ASTBuilder {
                 let e0 = &positives[0];
                 let err = match e0 {
                     semicolon => {
-                        TensorScriptDiagnostic::ParseError("Missing semicolon".to_owned(),
+                        Diag::ParseError("Missing semicolon".to_owned(),
                             Span::new(ByteIndex(pos.pos() as u32 - 1) , ByteIndex(pos.pos() as u32 - 1 ))
                         )
                     }
@@ -58,20 +53,27 @@ impl ASTBuilder {
             let decls = parser.unwrap();
             let terms = decls
                 .map(|pair| match pair.as_rule() {
-                    use_stmt => self.build_use_stmt(pair).unwrap(),
-                    weights_decl => self.build_weights_decl(pair).unwrap(),
-                    graph_decl => self.build_graph_decl(pair).unwrap(),
-                    node_decl => self.build_node_decl(pair).unwrap(),
+                    use_stmt => self.build_use_stmt(pair),
+                    weights_decl => self.build_weights_decl(pair),
+                    graph_decl => self.build_graph_decl(pair),
+                    node_decl => self.build_node_decl(pair),
                     _ => panic!("Only node, graph, weights, use supported at top level"),
                 })
-                .collect();
-
-            Some(Term::Program(terms))
+                .collect::<Result<_,_>>();
+            match terms {
+                Ok(t) => Some(Term::Program(t)),
+                Err(e) => {
+                    let mut em = self.emitter.borrow_mut();
+                    em.add(e);
+                    em.print_errs();
+                    exit(-1);
+                    None
+                }
+            }
         }
-
     }
 
-    fn consume(&self, pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    fn consume(&self, pair: Pair<Rule>) -> Result<Term, Diag> {
         // println!("{}", pair);
         match pair.as_rule() {
             // node_decl_body => build_node_decl_body(pair),
@@ -92,7 +94,7 @@ impl ASTBuilder {
         }
     }
 
-    fn build_tuple(&self, pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    fn build_tuple(&self, pair: Pair<Rule>) -> Result<Term, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let tokens = pair.into_inner();
         let res = tokens
@@ -102,7 +104,7 @@ impl ASTBuilder {
         Ok(Term::Tuple(res, sp))
     }
 
-    fn build_block(&self, pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    fn build_block(&self, pair: Pair<Rule>) -> Result<Term, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let statements = eat!(tokens, stmts, "Cannot parse statements", sp);
@@ -120,7 +122,7 @@ impl ASTBuilder {
         })
     }
 
-    fn build_fn_app_param(&self, pair: Pair<Rule>) -> Result<Vec<FnAppArg>, TensorScriptDiagnostic> {
+    fn build_fn_app_param(&self, pair: Pair<Rule>) -> Result<Vec<FnAppArg>, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let args = eat!(tokens, fn_app_args, "Does not have args", sp);
@@ -131,7 +133,7 @@ impl ASTBuilder {
         }
     }
 
-    fn build_field_access(&self, pair: Pair<Rule>) -> Result<FieldAccess, TensorScriptDiagnostic> {
+    fn build_field_access(&self, pair: Pair<Rule>) -> Result<FieldAccess, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let var_name = eat!(tokens, ident, "Failed to parse variable name", sp)?;
@@ -151,7 +153,7 @@ impl ASTBuilder {
         })
     }
 
-    fn build_expr(&self, pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    fn build_expr(&self, pair: Pair<Rule>) -> Result<Term, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let p = tokens.next().unwrap();
@@ -168,69 +170,77 @@ impl ASTBuilder {
         Ok(Term::Expr(Box::new(val), sp))
     }
 
-    fn build_stmt(&self, pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    fn build_stmt(&self, pair: Pair<Rule>) -> Result<Term, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let tokens = pair.into_inner();
         let vals = tokens.map(|p| self.consume(p).unwrap()).collect();
         Ok(Term::Stmt(Box::new(Term::List(vals)), sp))
     }
 
-    fn build_fn_decl(&self, pair: Pair<Rule>) -> Result<FnDecl, TensorScriptDiagnostic> {
+    fn build_fn_decl(&self, pair: Pair<Rule>) -> Result<FnDecl, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let mut head = eat!(tokens, fn_decl_head, "Failed to parse fn_decl_head", sp)?.into_inner();
         let name = eat!(head, ident, "Failed to parse fn_decl_head ident", sp)?;
-        let fn_sig = eat!(head, fn_decl_sig, "Failed to parse fn decl signature", sp)?;
+        let fn_sig = head.next();
         let func_block = eat!(tokens, block, "Failed to parse function block", sp)?;
 
-        let mut tokens = fn_sig.into_inner();
-        let param = eat!(tokens, fn_decl_param, "Failed to parse fn_decl_param", sp)?;
-        let return_ty = {
-            let temp = eat!(tokens, ty_sig, "Function does not have a type signature", sp);
-            if temp.is_err() {
-                TensorTy::Generic(vec![], sp)
-            } else {
-                let temp = temp?.into_inner().next().unwrap();
-                if temp.as_rule() == cap_ident {
-                    TensorTy::Tensor(temp.as_str().to_owned(), sp)
-                } else {
-                    TensorTy::Generic(to_idents!(temp), sp)
-                }
-            }
-        };
+        let (fn_params, return_ty) = match fn_sig {
+            Some(fn_sig) => {
+                let mut fn_sig_tokens = fn_sig.into_inner();
+                let param = eat!(fn_sig_tokens, fn_decl_param, "Failed to parse fn_decl_param", sp)?;
+                let return_ty = {
+                    let temp = eat!(fn_sig_tokens, ty_sig, "Function does not have a type signature", sp);
+                    if temp.is_err() {
+                        TensorTy::Generic(vec![], sp)
+                    } else {
+                        let temp = temp?.into_inner().next().unwrap();
+                        if temp.as_rule() == cap_ident {
+                            TensorTy::Tensor(temp.as_str().to_owned(), sp)
+                        } else {
+                            TensorTy::Generic(to_idents!(temp), sp)
+                        }
+                    }
+                };
 
-        let params = if let Some(args) = param.into_inner().next() {
-            self.build_fn_decl_params(args)?
-        } else {
-            vec![]
+                let params = if let Some(args) = param.into_inner().next() {
+                    self.build_fn_decl_params(args)?
+                } else {
+                    vec![]
+                };
+                (Some(params), Some(return_ty))
+            }
+            None => {
+                (None, None)
+            }
         };
 
         Ok(FnDecl {
             name: name.as_str().to_owned(),
-            fn_params: params,
+            fn_params,
             return_ty,
             func_block: Box::new(self.consume(func_block)?),
             span: sp,
         })
     }
 
-    // fn build_fn_decl_sig(pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    // fn build_fn_decl_sig(pair: Pair<Rule>) -> Result<Term, Diag> {
     //     unimplemented!()
     // }
 
-    fn build_stmts(&self, pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    fn build_stmts(&self, pair: Pair<Rule>) -> Result<Term, Diag> {
         let tokens = pair.into_inner();
         let vals = tokens.map(|p| self.consume(p).unwrap()).collect();
         Ok(Term::List(vals))
     }
 
-    fn build_fn_decls(&self, pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    fn build_fn_decls(&self, pair: Pair<Rule>) -> Result<Term, Diag> {
         let tokens = pair.into_inner();
         let vals = tokens.map(|p| self.consume(p).unwrap()).collect();
         Ok(Term::List(vals))
     }
 
-    fn build_fn_decl_param(&self, pair: Pair<Rule>) -> Result<FnDeclParam, TensorScriptDiagnostic> {
+    fn build_fn_decl_param(&self, pair: Pair<Rule>) -> Result<FnDeclParam, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let param = eat!(tokens, ident, "Failed to parse function parameter", sp)?;
@@ -248,13 +258,13 @@ impl ASTBuilder {
         })
     }
 
-    fn build_fn_decl_params(&self, pair: Pair<Rule>) -> Result<Vec<FnDeclParam>, TensorScriptDiagnostic> {
+    fn build_fn_decl_params(&self, pair: Pair<Rule>) -> Result<Vec<FnDeclParam>, Diag> {
         let tokens = pair.into_inner();
         let vals = tokens.map(|p| self.build_fn_decl_param(p).unwrap()).collect();
         Ok(vals)
     }
 
-    fn build_view_fn(&self, pair: Pair<Rule>) -> Result<ViewFn, TensorScriptDiagnostic> {
+    fn build_view_fn(&self, pair: Pair<Rule>) -> Result<ViewFn, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let tokens = pair.into_inner();
         let dims = tokens.map(|p| String::from(p.as_str())).collect();
@@ -262,7 +272,7 @@ impl ASTBuilder {
         Ok(ViewFn { dims, span })
     }
 
-    fn build_fn_app(&self, pair: Pair<Rule>) -> Result<FnApp, TensorScriptDiagnostic> {
+    fn build_fn_app(&self, pair: Pair<Rule>) -> Result<FnApp, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let name = eat!(tokens, ident, "Cannot parse function call identifier", sp)?;
@@ -279,7 +289,7 @@ impl ASTBuilder {
         })
     }
 
-    fn build_fn_app_arg(&self, pair: Pair<Rule>) -> Result<FnAppArg, TensorScriptDiagnostic> {
+    fn build_fn_app_arg(&self, pair: Pair<Rule>) -> Result<FnAppArg, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let param = eat!(tokens, ident, "Failed to parse function call argument", sp)?;
@@ -292,13 +302,13 @@ impl ASTBuilder {
         })
     }
 
-    fn build_fn_app_args(&self, pair: Pair<Rule>) -> Result<Vec<FnAppArg>, TensorScriptDiagnostic> {
+    fn build_fn_app_args(&self, pair: Pair<Rule>) -> Result<Vec<FnAppArg>, Diag> {
         let tokens = pair.into_inner();
         let vals = tokens.map(|p| self.build_fn_app_arg(p).unwrap()).collect();
         Ok(vals)
     }
 
-    fn build_weights_decl(&self, pair: Pair<Rule>) -> Result<Decl, TensorScriptDiagnostic> {
+    fn build_weights_decl(&self, pair: Pair<Rule>) -> Result<Decl, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let mut head = eat!(tokens, weights_decl_head, "Parsing `weight_head` error", sp)?.into_inner();
@@ -320,7 +330,7 @@ impl ASTBuilder {
         }))
     }
 
-    fn build_weights_assign(&self, body: Pair<Rule>) -> Result<WeightsAssign, TensorScriptDiagnostic> {
+    fn build_weights_assign(&self, body: Pair<Rule>) -> Result<WeightsAssign, Diag> {
         let sp = self.cspan.convert_span(&body.clone().into_span());
         let mut tokens = body.into_inner();
         let name = eat!(tokens, ident, "Failed to parse ident", sp)?;
@@ -366,7 +376,7 @@ impl ASTBuilder {
         }
     }
 
-    fn build_pipes(&self, pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    fn build_pipes(&self, pair: Pair<Rule>) -> Result<Term, Diag> {
         // linearizes from tree
         let mut exprs = vec![];
         let mut tokens = pair.into_inner(); // [ident, expr]
@@ -422,7 +432,7 @@ impl ASTBuilder {
         Ok(Term::Pipes(exprs))
     }
 
-    fn build_graph_decl(&self, pair: Pair<Rule>) -> Result<Decl, TensorScriptDiagnostic> {
+    fn build_graph_decl(&self, pair: Pair<Rule>) -> Result<Decl, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let mut head = eat!(tokens, graph_decl_head, "Parsing `graph_head` error", sp)?.into_inner();
@@ -434,8 +444,8 @@ impl ASTBuilder {
             .next()
             .unwrap()
             .into_inner()
-            .map(|f| self.build_fn_decl(f).unwrap())
-            .collect();
+            .map(|f| self.build_fn_decl(f))
+            .collect::<Result<_,_>>()?;
 
         Ok(Decl::GraphDecl(GraphDecl {
             name: node_name.to_owned(),
@@ -445,7 +455,7 @@ impl ASTBuilder {
         }))
     }
 
-    fn build_graph_decl_body(&self, pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    fn build_graph_decl_body(&self, pair: Pair<Rule>) -> Result<Term, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let fns = eat!(tokens, fn_decls, "Failed to parse `fn_decls`", sp)?;
@@ -453,7 +463,7 @@ impl ASTBuilder {
         Ok(Term::List(vals))
     }
 
-    fn build_node_decl(&self, pair: Pair<Rule>) -> Result<Decl, TensorScriptDiagnostic> {
+    fn build_node_decl(&self, pair: Pair<Rule>) -> Result<Decl, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let mut head = eat!(tokens, node_decl_head, "Parsing `node_head` error", sp)?.into_inner();
@@ -474,14 +484,14 @@ impl ASTBuilder {
         }))
     }
 
-    // fn build_node_decl_body(body: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    // fn build_node_decl_body(body: Pair<Rule>) -> Result<Term, Diag> {
     //     let tokens = body.into_inner();
     //     let vals = tokens.map(|p| build_node_assign(p).unwrap()).collect();
 
     //     Ok(Term::List(vals))
     // }
 
-    fn build_node_assign(&self, pair: Pair<Rule>) -> Result<NodeAssign, TensorScriptDiagnostic> {
+    fn build_node_assign(&self, pair: Pair<Rule>) -> Result<NodeAssign, Diag> {
         if pair.as_rule() != node_assign {
             let errmsg = format!("ty mismatch: {:?}", node_assign);
             return Err(err!(errmsg, self.cspan.convert_span(&pair.clone().into_span())));
@@ -520,19 +530,19 @@ impl ASTBuilder {
         }
     }
 
-    fn build_float_lit(&self, pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    fn build_float_lit(&self, pair: Pair<Rule>) -> Result<Term, Diag> {
         let ret = pair.as_str().parse().unwrap();
         let span = self.cspan.convert_span(&pair.into_span());
         Ok(Term::Float(ret, span))
     }
 
-    fn build_int_lit(&self, pair: Pair<Rule>) -> Result<Term, TensorScriptDiagnostic> {
+    fn build_int_lit(&self, pair: Pair<Rule>) -> Result<Term, Diag> {
         let ret = pair.as_str().parse().unwrap();
         let span = self.cspan.convert_span(&pair.into_span());
         Ok(Term::Integer(ret, span))
     }
 
-    fn build_fn_ty_sig(&self, pair: Pair<Rule>) -> Result<FnTySig, TensorScriptDiagnostic> {
+    fn build_fn_ty_sig(&self, pair: Pair<Rule>) -> Result<FnTySig, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
 
@@ -556,7 +566,7 @@ impl ASTBuilder {
         })
     }
 
-    fn build_use_stmt(&self, pair: Pair<Rule>) -> Result<Decl, TensorScriptDiagnostic> {
+    fn build_use_stmt(&self, pair: Pair<Rule>) -> Result<Decl, Diag> {
         let sp = self.cspan.convert_span(&pair.clone().into_span());
         let mut tokens = pair.into_inner();
         let _use_lit = eat!(tokens, use_lit, "Parsing `use` error", sp)?;

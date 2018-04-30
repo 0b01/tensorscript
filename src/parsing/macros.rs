@@ -1,6 +1,6 @@
 macro_rules! err {
     ($msg:expr, $span:expr) => {
-        TensorScriptDiagnostic::ParseError(
+        Diag::ParseError(
             $msg.to_owned(),
             $span,
         )

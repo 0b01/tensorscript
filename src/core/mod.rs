@@ -1,5 +1,9 @@
 use typing::typed_term::TyFnAppArg;
+use errors::Diag;
 use typing::{Type, TypeEnv};
+
+#[macro_use]
+mod macros;
 
 mod prelude;
 mod conv;
@@ -18,7 +22,7 @@ pub trait Op {
         _ret_ty: Type,
         _args: Vec<TyFnAppArg>,
         _inits: Option<Vec<TyFnAppArg>>,
-    ) -> Option<Type> {
+    ) -> Option<Result<Type, Diag>> {
         unimplemented!();
     }
 }
@@ -42,6 +46,7 @@ impl Core {
             },
             "nonlin" => match mod_name {
                 "relu" => Some(box self::nonlin::relu),
+                "tanh" => Some(box self::nonlin::tanh),
                 "leaky_relu" => Some(box self::nonlin::leaky_relu),
                 "log_softmax" => Some(box self::nonlin::log_softmax),
                 "sigmoid" => Some(box self::nonlin::sigmoid),

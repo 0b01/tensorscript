@@ -3,135 +3,21 @@ use core::{MethodName, Op};
 use span::CSpan;
 use typing::typed_term::TyFnAppArg;
 use typing::{Type, TypeEnv};
+use errors::Diag;
 
-#[allow(non_camel_case_types)]
-pub struct relu;
-#[allow(non_camel_case_types)]
-pub struct log_softmax;
-#[allow(non_camel_case_types)]
-pub struct sigmoid;
-#[allow(non_camel_case_types)]
-pub struct leaky_relu;
+impl_same_shape_op!(nonlin, sigmoid, {
+});
 
-impl Op for sigmoid {
-    fn get_name(&self) -> &'static str {
-        "sigmoid"
-    }
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "forward",
-                UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
-            )
-        ]
-    }
-    fn resolve(
-        &self,
-        tenv: &mut TypeEnv,
-        fn_name: &str,
-        _arg_ty: Type,
-        _ret_ty: Type,
-        _args: Vec<TyFnAppArg>,
-        _inits: Option<Vec<TyFnAppArg>>,
-    ) -> Option<Type> {
-        match fn_name {
-            "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
-                Some(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty))
-            }
-            _ => unimplemented!(),
-        }
-    }
-}
+impl_same_shape_op!(nonlin, tanh, {
+});
 
-impl Op for relu {
-    fn get_name(&self) -> &'static str {
-        "relu"
-    }
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "forward",
-                UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
-            )
-        ]
-    }
-    fn resolve(&self,
-        tenv: &mut TypeEnv,
-        fn_name: &str,
-        _arg_ty: Type,
-        _ret_ty: Type,
-        _args: Vec<TyFnAppArg>,
-        _inits: Option<Vec<TyFnAppArg>>
-    ) -> Option<Type> {
-        match fn_name {
-            "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
-                Some(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty))
-            },
-            _ => unimplemented!(),
-        }
-    }
-}
+impl_same_shape_op!(nonlin, relu, {
+});
 
-impl Op for log_softmax {
-    fn get_name(&self) -> &'static str {
-        "log_softmax"
-    }
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![(
-            "forward",
-            UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
-        )]
-    }
-    fn resolve(
-        &self,
-        tenv: &mut TypeEnv,
-        fn_name: &str,
-        _arg_ty: Type,
-        _ret_ty: Type,
-        _args: Vec<TyFnAppArg>,
-        _inits: Option<Vec<TyFnAppArg>>,
-    ) -> Option<Type> {
-        match fn_name {
-            "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
-                Some(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone()), arg!("dim", int!())), ty))
-            }
-            _ => unimplemented!(),
-        }
-    }
-}
+impl_same_shape_op!(nonlin, log_softmax, {
+}, (arg!("dim", int!())));
 
-impl Op for leaky_relu {
-    fn get_name(&self) -> &'static str {
-        "leaky_relu"
-    }
+impl_same_shape_op!(nonlin, leaky_relu, {
 
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "forward",
-                UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
-            )
-        ]
-    }
-
-    fn resolve(
-        &self,
-        tenv: &mut TypeEnv,
-        fn_name: &str,
-        _arg_ty: Type,
-        _ret_ty: Type,
-        _args: Vec<TyFnAppArg>,
-        _inits: Option<Vec<TyFnAppArg>>,
-    ) -> Option<Type> {
-        match fn_name {
-            "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
-                Some(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty))
-            }
-            _ => unimplemented!(),
-        }
-    }
-}
+});
+// }, (arg!("p", float!())));

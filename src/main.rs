@@ -1,4 +1,5 @@
 #![feature(iterator_flatten)]
+#![feature(transpose_result)]
 #![feature(box_syntax)]
 #![feature(box_patterns)]
 
@@ -78,7 +79,7 @@ use typing::unifier::Unifier;
 use typing::annotate::Annotator;
 use typing::type_env::TypeEnv;
 use typing::inferred_ast::subs;
-use errors::{EmitErr, Emitter};
+use errors::{Emitter};
 use parsing::ast_builder::ASTBuilder;
 use span::CSpan;
 
@@ -125,12 +126,12 @@ fn main() {
     let builder = ASTBuilder::new(Rc::clone(&emitter), cspan);
     let parsed_terms = builder.parse_str(&src);
     let program = parsed_terms
-        .unwrap_or_else(||{ builder.emit_err(); exit(-1); });
+        .unwrap_or_else(||{ emitter.borrow().print_errs(); exit(-1); });
     // ------------- annotate ast with type vars --------------
     let tenv = Rc::new(RefCell::new(TypeEnv::new()));
     let annotator = Annotator::new(Rc::clone(&emitter), Rc::clone(&tenv));
     let ast = annotator.annotate(&program);
-    annotator.emit_err();
+    emitter.borrow().print_errs();
     // println!("{}", ast);
     // println!("initial tenv: {:#?}", tenv);
     // ------------ first unitfication pass ---------------
@@ -138,7 +139,7 @@ fn main() {
     cs.collect(&ast);
     let mut unifier = Unifier::new(Rc::clone(&emitter), Rc::clone(&tenv));
     let mut last_sub = unifier.unify(cs.clone());
-    unifier.emit_err();
+    emitter.borrow().print_errs();
     // println!("{:#?}", last_sub);
 
     // ------------ resolve module constraints until it stabilizes ----------
@@ -151,7 +152,7 @@ fn main() {
             // unify constraints
             let mut new_unifier = Unifier::new(Rc::clone(&emitter), Rc::clone(&tenv));
             let mut new_sub = new_unifier.unify(new_cs.clone());
-            new_unifier.emit_err();
+            emitter.borrow().print_errs();
             let temp_ast = subs(&last_ast, &mut new_sub);
             if temp_ast != last_ast {
                 last_ast = temp_ast;

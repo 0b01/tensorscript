@@ -1,4 +1,5 @@
 use core::{MethodName, Op};
+use errors::Diag;
 use span::CSpan;
 use typing::typed_term::TyFnAppArg;
 use typing::{Type, TypeEnv};
@@ -32,11 +33,11 @@ impl Op for Dropout2d {
         _ret_ty: Type,
         _args: Vec<TyFnAppArg>,
         _inits: Option<Vec<TyFnAppArg>>,
-    ) -> Option<Type> {
+    ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
                 let ty = tenv.fresh_var(&CSpan::fresh_span());
-                Some(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty))
+                Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty)))
             }
             _ => unimplemented!(),
         }
@@ -69,11 +70,11 @@ impl Op for BatchNorm1d {
         _ret_ty: Type,
         _args: Vec<TyFnAppArg>,
         _inits: Option<Vec<TyFnAppArg>>,
-    ) -> Option<Type> {
+    ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
                 let ty = tenv.fresh_var(&CSpan::fresh_span());
-                Some(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty))
+                Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty)))
             }
             _ => unimplemented!(),
         }

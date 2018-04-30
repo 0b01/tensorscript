@@ -1,4 +1,5 @@
 use core::{MethodName, Op};
+use errors::Diag;
 use span::CSpan;
 use typing::typed_term::TyFnAppArg;
 use typing::{Type, TypeEnv};
@@ -30,14 +31,14 @@ impl Op for view {
         ret_ty: Type,
         _args: Vec<TyFnAppArg>,
         _inits: Option<Vec<TyFnAppArg>>, // ... refactor into span error
-    ) -> Option<Type> {
+    ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
                 // println!("ret_ty: {:#?}\n arg_ty: {:#?}", ret_ty, arg_ty);
                 if !arg_ty.is_resolved() { return None; }
                 let args_map = arg_ty.as_args_map()?;
-                let arg_tsr = args_map.get("x")?.as_vec();
-                let ret_tsr = ret_ty.as_vec();
+                let arg_tsr = args_map.get("x")?.as_vec()?;
+                let ret_tsr = ret_ty.as_vec()?;
 
                 let resolved_arg_tsr: Vec<i64> = arg_tsr.iter().filter_map(|i| i.as_num()).collect();
                 let resolved_ret_tsr: Vec<i64> = ret_tsr.iter().filter_map(|i| i.as_num()).collect();
@@ -66,9 +67,9 @@ impl Op for view {
                             } )
                         .cloned()
                         .collect();
-                    Some(
+                    Some(Ok(
                         fun!("view", "forward", arg_ty, tsr!(modified_ret_ty))
-                    )
+                    ))
                 } else {
                     panic!("{} {}", ret_prod, arg_prod);// ...
                 }

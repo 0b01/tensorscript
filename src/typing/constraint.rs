@@ -7,7 +7,7 @@ use typing::Type;
 use std::rc::Rc;
 use std::process::exit;
 use std::cell::RefCell;
-use errors::{ EmitErr, Emitter, TensorScriptDiagnostic };
+use errors::{ Emitter, Diag };
 
 use span::CSpan;
 
@@ -19,12 +19,6 @@ pub struct Constraints {
     pub set: BTreeSet<Equals>,
     pub emitter: Rc<RefCell<Emitter>>,
     pub tenv: Rc<RefCell<TypeEnv>>,
-}
-
-impl EmitErr for Constraints {
-    fn emit_err(&self) {
-        self.emitter.borrow().print_errs();
-    }
 }
 
 impl Constraints {
@@ -221,7 +215,7 @@ impl Constraints {
                 match resolved_ty {
                     Some(ty) => ty,
                     None => {
-                        let e = TensorScriptDiagnostic::SymbolNotFound(symbol_name.to_owned(), fn_app.span());
+                        let e = Diag::SymbolNotFound(symbol_name.to_owned(), fn_app.span());
                         self.emitter.borrow_mut().add(e);
                         self.emitter.borrow().print_errs();
                         exit(-1);
@@ -236,7 +230,7 @@ impl Constraints {
         let ty = match ty {
             Some(ty) => ty,
             None => {
-                let e = TensorScriptDiagnostic::SymbolNotFound(fn_name.as_str().to_owned(), fn_app.span);
+                let e = Diag::SymbolNotFound(fn_name.as_str().to_owned(), fn_app.span);
                 self.emitter.borrow_mut().add(e); // ...
                 return;
             }
@@ -281,7 +275,7 @@ impl Constraints {
                             fn_app.ret_ty.clone()
                         )
                     ),
-                Ok(None) => 
+                Ok(None) =>
                     self.tenv.borrow_mut().add_unverified(ty.clone()),
                 Err(e) => {
                     self.emitter.borrow_mut().add(e);

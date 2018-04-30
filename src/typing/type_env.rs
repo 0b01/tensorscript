@@ -13,7 +13,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt::{Debug, Error, Formatter};
 use typing::typed_term::TyFnAppArg;
 use typing::Type;
-use errors::TensorScriptDiagnostic;
+use errors::Diag;
 use self::ModName::*;
 
 pub type TypeId = usize;
@@ -183,7 +183,7 @@ impl TypeEnv {
     }
 
     /// add type alias in current scope
-    pub fn add_type(&mut self, mod_name: &ModName, alias: &Alias, ty: Type) -> Result<(), TensorScriptDiagnostic> {
+    pub fn add_type(&mut self, mod_name: &ModName, alias: &Alias, ty: Type) -> Result<(), Diag> {
         let stack = self.modules.entry(mod_name.clone()).or_insert({
             // if the module does not yet exist, add with an empty scope
             let mut q = VecDeque::new();
@@ -196,7 +196,7 @@ impl TypeEnv {
         if scope.types.contains_key(alias) {
             let orig_ty = scope.types.get(alias).unwrap();
             return Err(
-                TensorScriptDiagnostic::
+                Diag::
                     DuplicateVarInScope(
                         alias.as_str().to_string(),
                         orig_ty.clone(),
@@ -237,7 +237,7 @@ impl TypeEnv {
     }
 
     /// tie an alias with a type variable dimension
-    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &Alias, span: &ByteSpan) -> Result<(), TensorScriptDiagnostic> {
+    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &Alias, span: &ByteSpan) -> Result<(), Diag> {
         let tyvar = self.fresh_dim(span);
         self.add_type(mod_name, alias, tyvar)
     }
@@ -249,7 +249,7 @@ impl TypeEnv {
         alias: &Alias,
         num: i64,
         span: &ByteSpan,
-    ) -> Result<(), TensorScriptDiagnostic> {
+    ) -> Result<(), Diag> {
         let tyvar = Type::ResolvedDim(num, *span);
         self.add_type(mod_name, alias, tyvar)
     }
@@ -261,7 +261,7 @@ impl TypeEnv {
         alias: &Alias,
         tsr: &[String],
         span: &ByteSpan,
-    ) -> Result<(), TensorScriptDiagnostic> {
+    ) -> Result<(), Diag> {
         // first insert all the dims
         for t in tsr.iter() {
             let alias = Alias::Variable(t.to_string());
@@ -331,7 +331,7 @@ impl TypeEnv {
     }
 
     /// create aliases for an untyped AST node assign
-    pub fn import_node_assign(&mut self, mod_name: &ModName, a: &NodeAssign) -> Result<(), TensorScriptDiagnostic> {
+    pub fn import_node_assign(&mut self, mod_name: &ModName, a: &NodeAssign) -> Result<(), Diag> {
         match a {
             NodeAssign::Tensor {
                 ident: ref id,
@@ -351,7 +351,7 @@ impl TypeEnv {
         }
     }
 
-    pub fn import_top_level_ty_sig(&mut self, mod_name: &ModName, ty_sig: &TensorTy) -> Result<(), TensorScriptDiagnostic> {
+    pub fn import_top_level_ty_sig(&mut self, mod_name: &ModName, ty_sig: &TensorTy) -> Result<(), Diag> {
         if let TensorTy::Generic(dims, span) = ty_sig {
             // first insert all the dims
             for t in dims.iter().filter(|t| t.parse::<i64>().is_err()) {
@@ -376,7 +376,7 @@ impl TypeEnv {
     }
 
     /// import module type and associated methods into type environment
-    pub fn import_module(&mut self, path_name: &str, mod_name: &str) -> Option<Result<(), TensorScriptDiagnostic>> {
+    pub fn import_module(&mut self, path_name: &str, mod_name: &str) -> Option<Result<(), Diag>> {
         let methods = Core::import(path_name, mod_name, self)?;
         for &(ref name, ref ty) in &methods {
             self.add_type(
@@ -388,7 +388,7 @@ impl TypeEnv {
         Some(Ok(()))
     }
 
-    pub fn import_prelude(&mut self) -> Result<(), TensorScriptDiagnostic> {
+    pub fn import_prelude(&mut self) -> Result<(), Diag> {
         for fun in &vec!["view"] {
             self.add_type(&Global,
                 &Alias::Variable(fun.to_string()),
@@ -407,7 +407,7 @@ impl TypeEnv {
         ret_ty: Type,
         args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>,
-    ) -> Result<Option<Type>, TensorScriptDiagnostic> {
+    ) -> Result<Option<Type>, Diag> {
         // let (mod_name, mod_ty) = {
         //     if let Type::Module(name, opty, _) = module {
         //         (name, opty.clone().map(|i| *i))
@@ -421,9 +421,9 @@ impl TypeEnv {
             let find_result = Core::find(p0, p1);
             match find_result {
                 Some(op) =>
-                    Ok(op.resolve(self, fn_name, arg_ty, ret_ty, args, inits)),
+                    op.resolve(self, fn_name, arg_ty, ret_ty, args, inits).transpose(),
                 None =>
-                    Err(TensorScriptDiagnostic::SymbolNotFound(p1.to_string(), *span)),
+                    Err(Diag::SymbolNotFound(p1.to_string(), *span)),
             }
         } else {
             unimplemented!();
