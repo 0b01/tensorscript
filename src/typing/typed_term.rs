@@ -1,13 +1,12 @@
+/// Data structures for Typed AST
+///
 use codespan::ByteSpan;
 use span::CSpan;
 use std::collections::BTreeMap;
-/// Data structures for Typed AST
-///
-///
-use std::fmt::{Display, Error, Formatter};
 use typing::type_env::Alias;
 use typing::Type;
 
+/// typed AST nodes
 #[derive(Debug, PartialEq, Clone)]
 pub enum TyTerm {
     TyNone,
@@ -28,9 +27,13 @@ pub enum TyTerm {
     TyStmt(Box<TyTerm>, ByteSpan),
 }
 
+/// convenience functions and getters for a bunch of attributes
 pub trait Ty {
+    /// get the type of AST node
     fn ty(&self) -> Type;
+    /// get the span of AST node
     fn span(&self) -> ByteSpan;
+    /// get integer value of Integer node
     fn int(&self) -> Option<i64> {
         None
     }
@@ -101,12 +104,6 @@ impl Ty for TyFnApp {
     }
 }
 
-impl Display for TyTerm {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{:#?}", self)
-    }
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum TyDecl {
     TyNodeDecl(TyNodeDecl),
@@ -119,14 +116,14 @@ pub enum TyDecl {
 #[derive(Debug, PartialEq, Clone)]
 pub enum TyAliasAssign {
     Placeholder,
-    Dimension {
-        ident: String,
-        span: ByteSpan,
-    },
-    Tensor {
-        ident: String,
-        span: ByteSpan,
-    },
+    // Dimension {
+    //     ident: String,
+    //     span: ByteSpan,
+    // },
+    // Tensor {
+    //     ident: String,
+    //     span: ByteSpan,
+    // },
 }
 
 #[derive(Debug, PartialEq, Clone)]

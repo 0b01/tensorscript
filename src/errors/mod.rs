@@ -1,5 +1,3 @@
-use codespan::CodeMap;
-
 pub mod diagnostic;
 pub mod emitter;
 

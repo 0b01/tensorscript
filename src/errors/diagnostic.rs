@@ -1,8 +1,6 @@
 use codespan_reporting::{Diagnostic, Label, Severity};
 use typing::Type;
-use std::str::FromStr;
 use codespan::CodeMap;
-use codespan_reporting::termcolor::StandardStream;
 use codespan::{ByteSpan, LineIndex};
 
 #[derive(Debug, Clone)]
@@ -82,7 +80,7 @@ impl Diag {
             TypeError(ty1, ty2) => {
                 Diagnostic::new(
                     Severity::Error,
-                    format!("Type mistmatch: {:?}, {:?}", ty1, ty2),
+                    format!("Type mismatch: {:?}, {:?}", ty1, ty2),
                 )
                 .with_label(Label::new_primary(ty1.span()))
                 .with_label(Label::new_primary(ty2.span()))

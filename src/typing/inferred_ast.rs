@@ -1,3 +1,4 @@
+/// Substitute inferred types back into AST
 use self::TyTerm::*;
 use typing::substitution::Substitution;
 use typing::typed_term;

@@ -125,7 +125,7 @@ fn main() {
     file.read_to_string(&mut src).expect("Unable to read the file");
     // -------------------- create emitter --------------------
     let mut code_map = CodeMap::new();
-    let file_map = code_map.add_filemap("test".into(), src.clone());
+    let file_map = code_map.add_filemap(fname.to_owned().into(), src.clone());
     let emitter = Rc::new(RefCell::new(Emitter::new(code_map)));
     // --------------- parse into untyped ast   -----------------
     let cspan = CSpan::new(file_map.span());

@@ -46,7 +46,17 @@ impl Annotator {
                 TyTerm::TyIdent(ty, alias, *span)
             }
 
-            Program(ref decls) => TyProgram(decls.iter().map(|d|self.annotate_decl(d).unwrap()).collect()),
+            Program(ref decls) => TyProgram({
+                decls.iter()
+                    .map(|d|self.annotate_decl(d))
+                    .collect::<Result<_,_>>()
+                    .unwrap_or_else(|e| {
+                        let mut em = self.emitter.borrow_mut();
+                        em.add(e);
+                        em.print_errs();
+                        exit(-1);
+                    })
+            }),
 
             Expr(ref items, ref span) => {
                 let ret = self.annotate(&items);
@@ -103,7 +113,7 @@ impl Annotator {
         let module = self.tenv.borrow().module();
         let mut it = pipes.iter();
 
-        let p0 = it.next().unwrap();
+        let p0 = it.next().expect("Does not have the first item. Parser is broken.");
         let mut term0 = self.annotate(p0);
 
         for t in it {

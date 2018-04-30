@@ -179,14 +179,14 @@ impl Type {
         }
     }
 
-    pub fn last_dim(&self) -> Option<Type> {
-        match self {
-            Type::TSR(vs, _) => {
-                Some(vs[vs.len()-1].clone())
-            }
-            _ => None
-        }
-    }
+    // pub fn last_dim(&self) -> Option<Type> {
+    //     match self {
+    //         Type::TSR(vs, _) => {
+    //             Some(vs[vs.len()-1].clone())
+    //         }
+    //         _ => None
+    //     }
+    // }
 
     pub fn first_arg_ty(&self) -> Option<Type> {
         match self {

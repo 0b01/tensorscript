@@ -72,7 +72,6 @@ impl ASTBuilder {
                     em.add(e);
                     em.print_errs();
                     exit(-1);
-                    None
                 }
             }
         }

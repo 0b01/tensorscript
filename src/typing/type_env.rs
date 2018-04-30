@@ -379,14 +379,15 @@ impl TypeEnv {
     /// import module type and associated methods into type environment
     pub fn import_module(&mut self, path_name: &str, mod_name: &str) -> Option<Result<(), Diag>> {
         let methods = Core::import(path_name, mod_name, self)?;
-        for &(ref name, ref ty) in &methods {
+
+        Some(methods.iter().map(|(name, ty)| {
             self.add_type(
                 &Named(mod_name.to_owned()),
                 &Alias::Function(name.to_string()),
                 ty.clone(),
-            );
-        }
-        Some(Ok(()))
+            )
+        })
+        .collect())
     }
 
     pub fn import_prelude(&mut self) -> Result<(), Diag> {
