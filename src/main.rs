@@ -1,3 +1,4 @@
+#![feature(const_fn)]
 #![feature(iterator_flatten)]
 #![feature(transpose_result)]
 #![feature(box_syntax)]
@@ -59,11 +60,13 @@ mod core;
 mod parsing;
 mod span;
 mod errors;
+mod codegen;
 
 
 use typing::constraint::Constraints;
 use typing::unifier::Unifier;
 use typing::annotate::Annotator;
+use codegen::generator::Generator;
 use typing::type_env::TypeEnv;
 use typing::inferred_ast::subs;
 use errors::{Emitter};
@@ -119,7 +122,7 @@ fn main() {
     let annotator = Annotator::new(Rc::clone(&emitter), Rc::clone(&tenv));
     let ast = annotator.annotate(&program);
     emitter.borrow().print_errs();
-    // println!("{}", ast);
+    // println!("{:#?}", ast);
     // println!("initial tenv: {:#?}", tenv);
     // ------------ first unitfication pass ---------------
     let mut cs = Constraints::new(Rc::clone(&emitter), Rc::clone(&tenv));
@@ -131,27 +134,33 @@ fn main() {
 
     // ------------ resolve module constraints until it stabilizes ----------
     let mut last_ast = subs(&ast, &mut last_sub);;
-    let iter_resolve = move ||
+    let em_clone = emitter.clone();
+    let tenv_clone = tenv.clone();
+    let resolve_ast = move || {
         loop {
             // collect constraints
-            let mut new_cs = Constraints::new(Rc::clone(&emitter), Rc::clone(&tenv));
+            let mut new_cs = Constraints::new(Rc::clone(&em_clone), Rc::clone(&tenv_clone));
             new_cs.collect(&last_ast);
+            em_clone.borrow().print_errs();
             // unify constraints
-            let mut new_unifier = Unifier::new(Rc::clone(&emitter), Rc::clone(&tenv));
+            let mut new_unifier = Unifier::new(Rc::clone(&em_clone), Rc::clone(&tenv_clone));
             let mut new_sub = new_unifier.unify(new_cs.clone());
-            emitter.borrow().print_errs();
+            em_clone.borrow().print_errs();
             let temp_ast = subs(&last_ast, &mut new_sub);
             if temp_ast != last_ast {
                 last_ast = temp_ast;
                 continue;
             }
-            return (new_cs, last_ast);
-        };
-    let (_final_cs, final_ast) = iter_resolve();
-    // TODO: check if all types are resolved...
+            return last_ast;
+        }
+    };
+    let final_ast = resolve_ast();
     if matches.is_present("print_ast") {
         println!("{:#?}", final_ast);
         exit(0);
     }
-    println!("OK");
+    // ---------------------------- code gen -----------------------------------
+    let mut generator = Generator::new(emitter.clone(), tenv.clone());
+    let out = generator.generate(&final_ast);
+    println!("{}", generator.buf);
 }

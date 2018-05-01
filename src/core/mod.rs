@@ -14,6 +14,9 @@ mod nonlin;
 pub trait Op {
     fn get_name(&self) -> &'static str;
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)>;
+    fn gen_import(&self) -> String {
+        format!("nn.{}", self.get_name())
+    }
     fn is_stateful(&self) -> bool;
     fn resolve(
         &self,
@@ -36,6 +39,11 @@ impl Core {
     pub fn import(path_name: &str, mod_name: &str, tenv: &mut TypeEnv) -> Option<Vec<(MethodName, Type)>> {
         let op = Core::find(path_name, mod_name)?;
         Some(op.get_module_sig(tenv))
+    }
+
+    pub fn gen_import(path_name: &str, mod_name: &str) -> Option<String> {
+        let op = Core::find(path_name, mod_name)?;
+        Some(op.gen_import())
     }
 
     pub fn find(path_name: &str, mod_name: &str) -> Option<Box<Op>> {

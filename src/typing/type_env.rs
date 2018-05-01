@@ -9,7 +9,7 @@ use span::CSpan;
 /// 2. pushing and popping scopes (during `annotate` and `collect`)
 /// 3. module type and method type reconstruction
 use parsing::term::{AliasAssign, TensorTy, Term};
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use std::fmt::{Debug, Error, Formatter};
 use typing::typed_term::TyFnAppArg;
 use typing::Type;
@@ -61,10 +61,10 @@ type InitMap = BTreeMap<String, Vec<TyFnAppArg>>;
 
 #[derive(Debug)]
 pub struct TypeEnv {
-    counter: TypeId,
+    dim_counter: TypeId,
+    var_counter: TypeId,
     current_mod: ModName,
     modules: BTreeMap<ModName, (VecDeque<Scope>, VecDeque<Scope>, InitMap)>,
-    to_verify: BTreeSet<Type>,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
@@ -94,26 +94,29 @@ impl Alias {
 impl TypeEnv {
     pub fn new() -> Self {
         let mut ret = Self {
-            counter: 0,
+            dim_counter: 0,
+            var_counter: 0,
             current_mod: Global,
             modules: BTreeMap::new(),
-            to_verify: BTreeSet::new(),
         };
+
+        // import basic functions such as view
         ret.import_prelude().unwrap();
+
         ret
     }
 
     /// create new dimension type variable
     pub fn fresh_dim(&mut self, span: &ByteSpan) -> Type {
-        self.counter += 1;
-        Type::DIM(self.counter, *span)
+        self.dim_counter += 1;
+        Type::DIM(self.dim_counter, *span)
     }
 
     /// create new type variable
     pub fn fresh_var(&mut self, span: &ByteSpan) -> Type {
-        self.counter += 1;
+        self.var_counter += 1;
         // println!("new_var: {}", self.counter);
-        Type::VAR(self.counter, *span)
+        Type::VAR(self.var_counter, *span)
     }
 
     /// push scope onto stack during tree traversal
@@ -452,9 +455,5 @@ impl TypeEnv {
         } else {
             unimplemented!();
         }
-    }
-
-    pub fn add_unverified(&mut self, v: Type) {
-        self.to_verify.insert(v);
     }
 }

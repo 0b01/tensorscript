@@ -12,6 +12,10 @@ impl Op for view {
         "view"
     }
 
+    fn gen_import(&self) -> String {
+        unimplemented!()
+    }
+
     fn is_stateful(&self) -> bool { false }
 
     fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
