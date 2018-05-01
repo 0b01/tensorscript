@@ -297,7 +297,7 @@ impl Constraints {
                     }
                 }
                 Ok(None) =>
-                    self.tenv.borrow_mut().add_unverified(ty.clone()),
+                    (),
                 Err(e) => {
                     self.emitter.borrow_mut().add(e);
                 }
