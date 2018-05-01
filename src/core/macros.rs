@@ -1,5 +1,5 @@
 macro_rules! impl_same_shape_op {
-    ($path:ident, $name:ident, $test:block) => {
+    ($path:ident, $name:ident, $statefulness:expr, $test:block) => {
         #[allow(non_camel_case_types)]
         pub struct $name;
 
@@ -7,6 +7,9 @@ macro_rules! impl_same_shape_op {
             fn get_name(&self) -> &'static str {
                 stringify!($name)
             }
+
+            fn is_stateful(&self) -> bool { $statefulness }
+
             fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
                 vec![
                     (
@@ -36,7 +39,7 @@ macro_rules! impl_same_shape_op {
         }
     };
 
-    ($path:ident, $name:ident, $test:block, $($additional_args:expr),* ) => {
+    ($path:ident, $name:ident, $statefulness:expr, $test:block, $($additional_args:expr),* ) => {
         #[allow(non_camel_case_types)]
         pub struct $name;
 
@@ -44,6 +47,9 @@ macro_rules! impl_same_shape_op {
             fn get_name(&self) -> &'static str {
                 stringify!($name)
             }
+
+            fn is_stateful(&self) -> bool { $statefulness }
+
             fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
                 vec![
                     (

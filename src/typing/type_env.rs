@@ -210,8 +210,8 @@ impl TypeEnv {
         Ok(())
     }
 
-    /// add type alias in current scope
-    pub unsafe fn add_type_allow_dup(&mut self, mod_name: &ModName, alias: &Alias, ty: Type) {
+    /// add type alias in current scope(allows replacement)
+    pub unsafe fn add_type_allow_replace(&mut self, mod_name: &ModName, alias: &Alias, ty: Type) {
         let stack = self.modules.entry(mod_name.clone()).or_insert({
             // if the module does not yet exist, add with an empty scope
             let mut q = VecDeque::new();
@@ -225,6 +225,22 @@ impl TypeEnv {
         //     panic!("duplicate item");
         // }
         let _ = scope.types.insert(alias.clone(), ty);
+    }
+
+    /// replace an alias in scope
+    pub unsafe fn replace_type(&mut self, mod_name: &ModName, alias: &Alias, ty: Type) {
+        let stack = self.modules.entry(mod_name.clone()).or_insert({
+            // if the module does not yet exist, add with an empty scope
+            let mut q = VecDeque::new();
+            q.push_back(Scope::new());
+            (q, VecDeque::new(), BTreeMap::new())
+        });
+
+        for scope in &mut stack.0 {
+            if scope.types.contains_key(alias) {
+                let _ = scope.types.insert(alias.clone(), ty.clone());
+            }
+        }
     }
 
     /// add stateful initialization in current scope
@@ -409,7 +425,7 @@ impl TypeEnv {
         ret_ty: Type,
         args: Vec<TyFnAppArg>,
         inits: Option<Vec<TyFnAppArg>>,
-    ) -> Result<Option<Type>, Diag> {
+    ) -> Result<Option<(Type, bool)>, Diag> {
         // let (mod_name, mod_ty) = {
         //     if let Type::Module(name, opty, _) = module {
         //         (name, opty.clone().map(|i| *i))
@@ -422,8 +438,14 @@ impl TypeEnv {
             assert_eq!(fn_name.to_owned(), p2.to_owned());
             let find_result = Core::find(p0, p1);
             match find_result {
-                Some(op) =>
-                    op.resolve(self, fn_name, arg_ty, ret_ty, args, inits).transpose(),
+                Some(op) => {
+                    let is_stateful = op.is_stateful();
+                    op.resolve(self, fn_name, arg_ty, ret_ty, args, inits)
+                        .transpose()
+                        .map(|t|
+                            t.map(|i| (i, is_stateful))
+                        )
+                }
                 None =>
                     Err(Diag::SymbolNotFound(p1.to_string(), *span)),
             }

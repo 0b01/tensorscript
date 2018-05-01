@@ -28,7 +28,7 @@ graph Generator<noise -> image> {
         x
         |> lin1 |> leaky_relu(p=0.2)
         |> lin2 |> bn1 |> leaky_relu(p=0.2)
-        |> lin3 |> bn1 |> leaky_relu(p=0.2)
+        |> lin3 |> bn2 |> leaky_relu(p=0.2)
         |> lin4 |> bn3 |> leaky_relu(p=0.2)
         |> lin5 |> tanh
         |> view(_, 1, image_dim, image_dim)

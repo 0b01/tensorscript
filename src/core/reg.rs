@@ -12,6 +12,8 @@ impl Op for Dropout2d {
         "Dropout2d"
     }
 
+    fn is_stateful(&self) -> bool { false }
+
     fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
@@ -48,6 +50,8 @@ impl Op for BatchNorm1d {
     fn get_name(&self) -> &'static str {
         "BatchNorm1d"
     }
+
+    fn is_stateful(&self) -> bool { true }
 
     fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![

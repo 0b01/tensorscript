@@ -188,6 +188,7 @@ impl Type {
     //     }
     // }
 
+    /// returns the first argument type of a function argument
     pub fn first_arg_ty(&self) -> Option<Type> {
         match self {
             Type::FnArgs(vs, _) => {
@@ -195,7 +196,15 @@ impl Type {
                     Some(ty.clone())
                 } else { None }
             }
+            Type::FUN(_,_,arg,_,_) => arg.first_arg_ty(),
             _ => None
+        }
+    }
+
+    pub fn ret_ty(&self) -> Option<Type> {
+        match self {
+            Type::FUN(_,_,_,box ty,_) => Some(ty.clone()),
+            _ => None,
         }
     }
 

@@ -14,6 +14,7 @@ mod nonlin;
 pub trait Op {
     fn get_name(&self) -> &'static str;
     fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)>;
+    fn is_stateful(&self) -> bool;
     fn resolve(
         &self,
         _tenv: &mut TypeEnv,

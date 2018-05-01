@@ -40,6 +40,8 @@ impl Op for Conv2d {
         "Conv2d"
     }
 
+    fn is_stateful(&self) -> bool { true }
+
     fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
@@ -129,6 +131,8 @@ impl Op for maxpool2d {
     fn get_name(&self) -> &'static str {
         "maxpool2d"
     }
+
+    fn is_stateful(&self) -> bool { false }
 
     fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![

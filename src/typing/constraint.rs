@@ -225,10 +225,10 @@ impl Constraints {
             }
         };
 
-        let symbol_modname = ModName::Named(symbol_mod_ty.as_str().to_owned());
-        let fn_name = &fn_app.name;
-        let ty = self.tenv.borrow_mut().resolve_type(&symbol_modname, &fn_name);
-        let ty = match ty {
+        let symbol_modname = ModName::Named(symbol_mod_ty.as_str().to_owned()); // Linear
+        let fn_name = &fn_app.name; // F(forward)
+        let resolved_ty = self.tenv.borrow_mut().resolve_type(&symbol_modname, &fn_name); // function / Unresolved
+        let ty = match resolved_ty {
             Some(ty) => ty,
             None => {
                 let e = Diag::SymbolNotFound(fn_name.as_str().to_owned(), fn_app.span);
@@ -237,13 +237,13 @@ impl Constraints {
             }
         };
 
-        println!(
-            "{:?} | {:?} | {} | {:?} | {:?} | {:?} ",
-            ty, fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name
-        );
+        // println!(
+        //     "{:?} | {:?} | {} | {:?} | {:?} | {:?} ",
+        //     ty, fn_app.orig_name, symbol_name, symbol_mod_ty, symbol_modname, fn_name
+        // );
 
         if let Type::UnresolvedModuleFun(..) = ty {
-            let resolution = if fn_app.orig_name.is_none() { // this is in a weight assign fn
+            let resolution = if fn_app.orig_name.is_none() { // this is a weight assign fn
                 // println!("{:?}, {:?}", &fn_app.mod_name.clone().unwrap().as_str(), fn_app.name);
                 self.tenv.borrow_mut().resolve_unresolved(
                     &ty,
@@ -266,9 +266,9 @@ impl Constraints {
             };
 
             match resolution {
-                Ok(Some(resolved_fn_ty)) => {
+                Ok(Some((resolved_fn_ty, is_stateful))) => {
                     self.add(
-                        resolved_fn_ty,
+                        resolved_fn_ty.clone(),
                         fun!(
                             symbol_name,
                             fn_app.name.as_str(),
@@ -276,8 +276,25 @@ impl Constraints {
                             fn_app.ret_ty.clone()
                         )
                     );
-                    // TODO: set alias for symbol if is stateful!!!
-                    // ...
+                    // set alias for symbol if stateful
+                    if is_stateful {
+                        unsafe {
+                            // println!("{:#?}", self.tenv);
+                            let ty = match resolved_fn_ty {
+                                Type::FUN(m,n,a,r,s) => Type::FUN(m,n, box a.first_arg_ty().unwrap(),r,s),
+                                _ => unimplemented!(),
+                            };
+                            let sp = ty.span();
+
+                            self.tenv.borrow_mut().replace_type(
+                                &current_mod,
+                                &Alias::Variable(fn_app.orig_name.clone().unwrap().to_owned()),
+                                Type::Module(symbol_name.to_owned(), Some(box ty), sp),
+                            );
+                            // println!("{:#?}", self.tenv);
+                            // panic!();
+                        }
+                    }
                 }
                 Ok(None) =>
                     self.tenv.borrow_mut().add_unverified(ty.clone()),

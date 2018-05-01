@@ -42,25 +42,6 @@
 /// error reporting. Think of it as a lightweight tag that can be associated with
 /// data structures such as AST nodes, types, etc...
 ///
-/// TODO:
-/// 1. [*] implement module pattern matching
-/// 2. [*] type level computation (resolved tensor dimension)
-/// 3. [*] BUG: dimension mismatch for mnist example
-///             need to create fresh type variables for different static forward functions
-/// 4. [*] BUG: non-determinism
-/// 5. [*] BUG: impl Hash, Eq for Type
-/// 6. [*] set up examples and tests
-/// 7. [*] set up commandline
-/// 8. [*] more examples
-/// 9. [*] better errors in parser
-/// 10. [ ] code gen
-/// 11. [ ] add more examples
-/// 12. [*] lift dim and tsr to top level
-/// 13. [ ] add dim level computation dim1 * dim1
-/// 14. [ ] use Linear as L; aliasing
-/// 15. [ ] add binary ops (+, -, *, /, %)
-/// 16. [ ] add if else expression
-/// 17. [ ] add let binding
 
 extern crate pest;
 #[macro_use]
@@ -150,7 +131,7 @@ fn main() {
 
     // ------------ resolve module constraints until it stabilizes ----------
     let mut last_ast = subs(&ast, &mut last_sub);;
-    let resolve_modules = move ||
+    let iter_resolve = move ||
         loop {
             // collect constraints
             let mut new_cs = Constraints::new(Rc::clone(&emitter), Rc::clone(&tenv));
@@ -166,12 +147,11 @@ fn main() {
             }
             return (new_cs, last_ast);
         };
-    let (_final_cs, final_ast) = resolve_modules();
+    let (_final_cs, final_ast) = iter_resolve();
+    // TODO: check if all types are resolved...
     if matches.is_present("print_ast") {
         println!("{:#?}", final_ast);
         exit(0);
     }
-    // println!("{:#?}", tenv);
-    // println!("{:#?}", final_cs);
     println!("OK");
 }

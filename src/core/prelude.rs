@@ -12,6 +12,8 @@ impl Op for view {
         "view"
     }
 
+    fn is_stateful(&self) -> bool { false }
+
     fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         use self::Type::*;
         vec![

@@ -468,7 +468,7 @@ impl Annotator {
 
                     // override the old first argument which is []
                     unsafe {
-                        self.tenv.borrow_mut().add_type_allow_dup(&module, &Alias::Variable(name0.clone()), ty_sig);
+                        self.tenv.borrow_mut().add_type_allow_replace(&module, &Alias::Variable(name0.clone()), ty_sig);
                     }
 
                     // // type the function return parameter

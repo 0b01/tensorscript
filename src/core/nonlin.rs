@@ -5,19 +5,19 @@ use typing::typed_term::TyFnAppArg;
 use typing::{Type, TypeEnv};
 use errors::Diag;
 
-impl_same_shape_op!(nonlin, sigmoid, {
+impl_same_shape_op!(nonlin, sigmoid, false, {
 });
 
-impl_same_shape_op!(nonlin, tanh, {
+impl_same_shape_op!(nonlin, tanh, false, {
 });
 
-impl_same_shape_op!(nonlin, relu, {
+impl_same_shape_op!(nonlin, relu, false, {
 });
 
-impl_same_shape_op!(nonlin, log_softmax, {
+impl_same_shape_op!(nonlin, log_softmax, false, {
 }, (arg!("dim", int!())));
 
-impl_same_shape_op!(nonlin, leaky_relu, {
-
+impl_same_shape_op!(nonlin, leaky_relu, false, {
+    // todo... check supplied params
 });
 // }, (arg!("p", float!())));
