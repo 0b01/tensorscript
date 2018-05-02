@@ -5,6 +5,7 @@ use codespan::{ByteSpan, LineIndex};
 
 #[derive(Debug, Clone)]
 pub enum Diag {
+    UnknownError,
     RankMismatch(Type, Type),
     DimensionMismatch(Type, Type),
     ParseError(String, ByteSpan),

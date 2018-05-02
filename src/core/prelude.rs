@@ -5,6 +5,7 @@ use typing::typed_term::TyFnAppArg;
 use typing::{Type, TypeEnv};
 
 #[allow(non_camel_case_types)]
+#[derive(Debug, Clone)]
 pub struct view;
 
 impl Op for view {

@@ -5,6 +5,7 @@ use typing::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
 use typing::{Type, TypeEnv};
 
 // #[allow(non_camel_case_types)]
+#[derive(Debug, Clone)]
 pub struct Linear;
 
 impl Op for Linear {

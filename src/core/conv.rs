@@ -5,8 +5,10 @@ use typing::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
 use typing::{Type, TypeEnv};
 
 use self::TyTerm::*;
+#[derive(Debug, Clone)]
 pub struct Conv2d;
 #[allow(non_camel_case_types)]
+#[derive(Debug, Clone)]
 pub struct maxpool2d;
 
 

@@ -1,6 +1,7 @@
 macro_rules! impl_same_shape_op {
     ($path:ident, $name:ident, $statefulness:expr, $test:block) => {
         #[allow(non_camel_case_types)]
+        #[derive(Debug, Clone)]
         pub struct $name;
 
         impl Op for $name {
@@ -41,6 +42,7 @@ macro_rules! impl_same_shape_op {
 
     ($path:ident, $name:ident, $statefulness:expr, $test:block, $($additional_args:expr),* ) => {
         #[allow(non_camel_case_types)]
+        #[derive(Debug, Clone)]
         pub struct $name;
 
         impl Op for $name {
