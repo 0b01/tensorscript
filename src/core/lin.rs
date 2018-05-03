@@ -109,13 +109,23 @@ impl Op for Linear {
         }
     }
 
-    fn generate_fn_call(&self, args: &[TyFnAppArg]) -> Result<String, Diag> {
+    fn generate_fn_call_params(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
-        write!(buf, "{}(", self.get_name());
-        let map = args.to_btreemap().unwrap();
-        write!(buf, "{:?}, ", map["in"].int().unwrap());
-        write!(buf, "{:?})", map["out"].int().unwrap());
-        Ok(buf)
+        match name {
+            "new" => {
+                write!(buf, "{}(", self.get_name());
+                let map = args.to_btreemap().unwrap();
+                write!(buf, "{:?}, ", map["in"].int().unwrap());
+                write!(buf, "{:?})", map["out"].int().unwrap());
+                Ok(buf)
+            }
+            "forward" => {
+                let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
+                write!(buf, "{}", args.join(", "));
+                Ok(buf)
+            }
+            _ => panic!("{} is not implemented", name),
+        }
     }
 }
 

@@ -55,7 +55,7 @@ impl Unifier {
                 if a.as_num() == b.as_num() {
                     Substitution::empty()
                 } else {
-                    self.add_err(Diag::DimensionMismatch(a.clone(), b.clone()));
+                    self.emitter.borrow_mut().add(Diag::DimensionMismatch(a.clone(), b.clone()));
                     Substitution::empty()
                 }
             }
@@ -123,7 +123,7 @@ impl Unifier {
                                 .zip(dims2)
                                 .filter_map(|(i, j)| {
                                     if let (Type::ResolvedDim(a,_), Type::ResolvedDim(b,_)) = (i.clone(),j.clone()) {
-                                        if a != b { self.add_err(Diag::TypeError(ts1.clone(),ts2.clone())) }
+                                        if a != b { self.emitter.borrow_mut().add(Diag::TypeError(ts1.clone(),ts2.clone())) }
                                         None
                                     } else {
                                         Some(Equals(i.with_span(&s1), j.with_span(&s2)))
@@ -138,7 +138,7 @@ impl Unifier {
                         unimplemented!();
                     }
                 } else {
-                    self.add_err(Diag::RankMismatch(ts1, ts2));
+                    self.emitter.borrow_mut().add(Diag::RankMismatch(ts1, ts2));
                     Substitution::empty()
                 }
             }
@@ -198,11 +198,6 @@ impl Unifier {
                 Substitution(btreemap!{ VAR(tvar, span) => ty })
             },
         }
-    }
-
-
-    pub fn add_err(&mut self, err: Diag) {
-        self.emitter.borrow_mut().add(err);
     }
 }
 

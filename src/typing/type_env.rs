@@ -153,7 +153,6 @@ impl TypeEnv {
     /// then check in the global scope
     pub fn resolve_type(&self, mod_name: &ModName, alias: &Alias) -> Option<Type> {
         self.resolve_type_inner(mod_name, alias)
-            .or_else(|| self.resolve_type_inner(&Global, alias))
     }
 
     /// inside the module or global scope, iterate over block scope and find
@@ -314,6 +313,7 @@ impl TypeEnv {
                     Err(_e) => {
                         let alias = Alias::Variable(t.to_string());
                         let ty = self.resolve_type(mod_name, &alias)
+                            .or_else(|| self.resolve_type(&Global, &alias))
                             .unwrap_or_else(|| self.fresh_dim(span))
                             .clone();
                         if let Type::TSR(vs, _) = ty {
@@ -343,7 +343,9 @@ impl TypeEnv {
             }
             TensorTy::Tensor(ref alias, ref sp) => {
                 self.resolve_type(mod_name, &Alias::Variable(alias.to_string()))
-                    .unwrap().with_span(sp)
+                    .or_else(|| self.resolve_type(&Global, &Alias::Variable(alias.to_string())))
+                    .unwrap()
+                    .with_span(sp)
             }
         }
     }

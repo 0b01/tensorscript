@@ -37,6 +37,18 @@ macro_rules! impl_same_shape_op {
                     _ => unimplemented!(),
                 }
             }
+
+            fn generate_fn_call_params(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+                let mut buf = String::new();
+                match name {
+                    "forward" => {
+                        let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
+                        write!(buf, "{}", args.join(", "));
+                        Ok(buf)
+                    }
+                    _ => panic!("{} is not implemented", name),
+                }
+            }
         }
     };
 

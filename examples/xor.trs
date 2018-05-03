@@ -14,6 +14,10 @@ graph Xor<[?,2] -> [?,1]> {
         self
     }
 
+    def a(x: [1]) -> [1]{
+        x
+    }
+
     def forward(z) {
         z |> fc1 |> fc2 |> sigmoid
     }

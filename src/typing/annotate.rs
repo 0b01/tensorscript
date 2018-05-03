@@ -33,8 +33,11 @@ impl Annotator {
         let module = self.tenv.borrow().module();
         match term {
             Ident(ref id, ref span) => {
-                let ty = self.tenv.borrow_mut()
+                let ty = self.tenv.borrow()
                     .resolve_type(&module, &Alias::Variable(id.clone()))
+                    .or_else(|| self.tenv.borrow()
+                        .resolve_type(&ModName::Global, &Alias::Variable(id.clone()))
+                    )
                     .unwrap_or_else(|| {
                         let mut em = self.emitter.borrow_mut();
                         em.add(Diag::SymbolNotFound(id.to_string(), *span));
@@ -75,7 +78,7 @@ impl Annotator {
                 ref ret,
                 ref span,
             } => {
-                let module = self.tenv.borrow_mut().module();
+                let module = self.tenv.borrow().module();
                 self.tenv.borrow_mut().push_scope(&module);
                 let ret = TyBlock {
                     stmts: Box::new(self.annotate(&stmts)),
@@ -130,6 +133,9 @@ impl Annotator {
                     TyTerm::TyFnApp(box TyFnApp {
                         mod_name: Some(
                             self.tenv.borrow().resolve_type(&module, &Alias::Variable(id.clone()))
+                                .or_else(|| {
+                                    self.tenv.borrow().resolve_type(&ModName::Global, &Alias::Variable(id.clone()))
+                                })
                                 .unwrap()
                                 .as_str()
                                 .to_owned(),
@@ -147,7 +153,8 @@ impl Annotator {
                     if typed_fn_app.mod_name.is_none() {
                         // log_softmax(dim=1)
                         typed_fn_app.mod_name = Some(
-                            self.tenv.borrow_mut().resolve_type(&module, &typed_fn_app.name)
+                            self.tenv.borrow().resolve_type(&module, &typed_fn_app.name)
+                                .or_else(||self.tenv.borrow().resolve_type(&ModName::Global, &typed_fn_app.name))
                                 .unwrap()
                                 .as_str()
                                 .to_owned(),
@@ -322,12 +329,15 @@ impl Annotator {
 
     fn annotate_tensor_ty_sig(&self, sig: &TensorTy, _span: &ByteSpan) -> Result<Type, Diag> {
         use self::TensorTy::*;
-        let module = self.tenv.borrow_mut().module();
+        let module = self.tenv.borrow().module();
         match sig {
             Generic(ref dims, ref sp) => Ok(self.tenv.borrow_mut().create_tensor(&module, dims, sp)),
             Tensor(ref als, ref sp) => {
-                let ty = self.tenv.borrow_mut()
-                    .resolve_type(&module, &Alias::Variable(als.clone()));
+                let ty = self.tenv.borrow()
+                    .resolve_type(&module, &Alias::Variable(als.clone()))
+                    .or_else(|| self.tenv.borrow()
+                        .resolve_type(&ModName::Global, &Alias::Variable(als.clone()))
+                    );
                 match ty {
                     Some(t) => Ok(t.clone().with_span(sp)),
                     None =>
@@ -351,7 +361,7 @@ impl Annotator {
                 ).unwrap()
             );
 
-        let module = self.tenv.borrow_mut().module();
+        let module = self.tenv.borrow().module();
         self.tenv.borrow_mut().add_type(
             &module,
             &Alias::Variable(name.to_owned()),
@@ -411,9 +421,9 @@ impl Annotator {
     }
 
     fn annotate_fn_decl(&self, f: &FnDecl) -> TyFnDecl {
-        let module = self.tenv.borrow_mut().module();
+        let module = self.tenv.borrow().module();
         self.tenv.borrow_mut().push_scope(&module);
-        let mod_ty = self.tenv.borrow_mut().resolve_type(
+        let mod_ty = self.tenv.borrow().resolve_type(
             &ModName::Global,
             &Alias::Variable(module.as_str().to_owned()),
         ).unwrap().clone().with_span(&f.span);
@@ -514,7 +524,7 @@ impl Annotator {
     }
 
     fn annotate_fn_decl_param(&self, p: &FnDeclParam) -> TyFnDeclParam {
-        let module = self.tenv.borrow_mut().module();
+        let module = self.tenv.borrow().module();
         let name = p.name.clone();
         let ty = self.tenv.borrow_mut().resolve_tensor(&module, &p.ty_sig, &p.span);
         self.tenv.borrow_mut()
@@ -531,7 +541,7 @@ impl Annotator {
     }
 
     fn annotate_field_access(&self, f_a: &FieldAccess) -> TyTerm {
-        let module = self.tenv.borrow_mut().module();
+        let module = self.tenv.borrow().module();
         match module {
             ModName::Global => panic!("Cannot use field access in global scope"),
             ModName::Named(ref _mod_name) => match f_a.func_call {

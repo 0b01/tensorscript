@@ -36,8 +36,8 @@ pub trait Op: Debug {
         unimplemented!();
     }
 
-    fn generate_fn_call(&self, args: &[TyFnAppArg]) -> Result<String, Diag> {
-        panic!("{:?}", self);
+    fn generate_fn_call_params(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+        panic!("{:?}::{} function call is not yet implemented", self, name);
         // unimplemented!()
     }
 }

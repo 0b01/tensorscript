@@ -1,9 +1,6 @@
 #[allow(unused_imports)]
 use codespan::ByteSpan;
 #[allow(unused_imports)]
-use parsing::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnTySig, TensorTy,
-                   Term, ViewFn, WeightsAssign};
-#[allow(unused_imports)]
 use span::CSpan;
 use typing::type_env::{Alias, ModName, TypeEnv};
 #[allow(unused_imports)]
@@ -16,9 +13,17 @@ use typing::Type;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt::Write;
-use std::collections::{ BTreeSet, BTreeMap };
+use std::collections::{ BTreeSet, BTreeMap, VecDeque };
 use errors::{Diag, Emitter};
 use core::{Core, Op};
+
+type VarName = String;
+type FnName = String;
+
+enum Item {
+    FnApp(Option<VarName>, FnName, Vec<TyFnAppArg>),
+    Ident(String),
+}
 
 pub struct Module {
     core: Rc<RefCell<Core>>,
@@ -29,6 +34,7 @@ pub struct Module {
     pub inits: Rc<RefCell<Vec<TyWeightsAssign>>>,
     pub buf: String,
     pub indent: usize,
+    fn_call_stack: VecDeque<Item>,
 }
 
 impl Module {
@@ -42,7 +48,22 @@ impl Module {
             fns: Rc::new(RefCell::new(BTreeMap::new())),
             inits: Rc::new(RefCell::new(vec![])),
             indent: 0,
+            fn_call_stack: VecDeque::new(),
         }
+    }
+
+    #[inline(always)]
+    fn indent(&mut self) -> Result<(), Diag> {
+        write!(self.buf, "{}", " ".repeat(self.indent*4))?;
+        Ok(())
+    }
+    #[inline(always)]
+    fn tab(&mut self) {
+        self.indent += 1;
+    }
+    #[inline(always)]
+    fn shift_tab(&mut self) {
+        self.indent -= 1;
     }
 
     pub fn set_fns(&mut self, fns: &Vec<TyFnDecl>) -> Result<(), Diag> {
@@ -56,9 +77,9 @@ impl Module {
     }
 
     pub fn generate(&mut self) -> Result<(), Diag> {
-        self.generate_class()?;
+        self.generate_class_head()?;
         let fns_clone = self.fns.clone();
-        for (fn_name, f) in fns_clone.borrow().iter() {
+        for (fn_name, f) in fns_clone.borrow().iter().rev() {
             if fn_name == "new" {
                 self.tab();
                 self.generate_init_fn(f)?;
@@ -78,13 +99,108 @@ impl Module {
         Ok(())
     }
 
-    pub fn generate_class(&mut self) -> Result<(), Diag> {
+    fn collect_term(&mut self, term: &TyTerm, var: Option<String>) -> Result<(), Diag> {
+        use self::TyTerm::*;
+        match term {
+            TyBlock{stmts, ret, ..} => {
+                self.collect_term(&stmts, var.clone())?;
+                self.collect_term(&ret, var)?;
+            }
+            TyList(terms) => terms
+                .iter()
+                .map(|t| self.collect_term(t, var.clone()))
+                .collect::<Result<_,_>>()?,
+            TyExpr(t,ty,_) => {
+                self.collect_term(t, var)?;
+            }
+            TyFnApp(box fn_app) => {
+                self.collect_fn_app(fn_app, var)?;
+            },
+            TyIdent(_t,i,..) => self.fn_call_stack.push_back(Item::Ident(i.as_str().to_owned())),
+            _ => panic!("{:#?}", term),
+        }
+        Ok(())
+    }
+
+    fn generate_fn(&mut self) -> Result<(), Diag> {
+        while let Some(item) = self.fn_call_stack.pop_back() {
+            match item {
+                Item::FnApp(var_name, fn_name, args) => {
+                    self.indent()?;
+                    let mut is_global = false;
+                    let module_name = self.tenv.borrow()
+                        .resolve_type(
+                            &ModName::Named(self.name.to_owned()),
+                            &Alias::Variable(fn_name.to_owned()),
+                        )
+                        .unwrap_or_else(|| {
+                            is_global = true;
+                            self.tenv.borrow()
+                                .resolve_type(
+                                    &ModName::Global,
+                                    &Alias::Variable(fn_name.to_owned()),
+                                ).unwrap()
+                        })
+                        .as_str().to_owned();
+
+                    match var_name {
+                        Some(v) => write!(self.buf, "{} = ", v)?,
+                        None => write!(self.buf, "return ")?,
+                    };
+
+                    if is_global {
+                        write!(self.buf, "{}(",  fn_name)?;
+                    } else {
+                        write!(self.buf, "self.{}(",  fn_name)?;
+                    }
+
+                    let core_cloned = self.core.clone();
+                    let core = core_cloned.borrow();
+                    let op = core.find_mod(&module_name).unwrap();
+
+                    let out = op.generate_fn_call_params("forward", args.as_slice())?;
+                    write!(self.buf, "{}", out)?;
+                    writeln!(self.buf, ")")?;
+                }
+                Item::Ident(name) => {
+                    self.indent()?;
+                    writeln!(self.buf, "return {}", name)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn collect_fn_app(&mut self, fn_app: &TyFnApp, var_name: Option<String>) -> Result<(), Diag> {
+        self.fn_call_stack.push_back(Item::FnApp(
+            var_name,
+            fn_app.orig_name.clone().unwrap().to_owned(),
+            fn_app.args.clone()
+        ));
+
+        for arg in fn_app.args.iter() {
+            self.collect_term(&arg.arg, arg.name.clone())?;
+        }
+        Ok(())
+    }
+
+    pub fn generate_class_head(&mut self) -> Result<(), Diag> {
         writeln!(self.buf, "class {}(nn.Module):", self.name)?;
+        self.tab();
+        self.indent()?;
+        writeln!(self.buf, "'''{:?}'''", self.ty)?;
+        self.shift_tab();
         Ok(())
     }
 
     fn generate_fn_decl(&mut self, func: &TyFnDecl) -> Result<(), Diag> {
         self.generate_fn_decl_head(func.name.as_str(), func)?;
+        self.tab();
+        self.indent()?;
+        writeln!(self.buf, "'''{:?}'''", func.fn_ty)?;
+        self.collect_term(&func.func_block, None)?;
+        self.generate_fn()?;
+        self.shift_tab();
         Ok(())
     }
 
@@ -92,10 +208,13 @@ impl Module {
         let params = func.fn_params
             .iter()
             .map(|p| format!("{}", p.name))
-            .collect::<Vec<_>>()
-            .join(", ");
+            .collect::<Vec<_>>();
         self.indent()?;
-        writeln!(self.buf, "def {}(self, {}):", name, params)?;
+        if !params.is_empty() {
+            writeln!(self.buf, "def {}(self, {}):", name, params.join(", "))?;
+        } else {
+            writeln!(self.buf, "def {}(self):", name)?;
+        }
         Ok(())
     }
 
@@ -116,34 +235,12 @@ impl Module {
                 .as_str().to_owned();
             let core_cloned = self.core.clone();
             let core = core_cloned.borrow();
-            let module = core.find_mod(&module_name).unwrap();
-            self.generate_fn_call(&module, init.fn_args.as_slice())?;
+            let op = core.find_mod(&module_name).unwrap();
+            write!(self.buf, "{}", op.generate_fn_call_params(&init.fn_name, init.fn_args.as_slice())?)?;
             writeln!(self.buf, "")?;
         }
         self.shift_tab();
         Ok(())
-    }
-
-    fn generate_fn_call(&mut self, op: &Box<Op>, args: &[TyFnAppArg]) -> Result<(), Diag> {
-        let out = op.generate_fn_call(args)?;
-        write!(self.buf, "{}", out)?;
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn indent(&mut self) -> Result<(), Diag> {
-        write!(self.buf, "{}", " ".repeat(self.indent*4))?;
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn tab(&mut self) {
-        self.indent += 1;
-    }
-
-    #[inline(always)]
-    fn shift_tab(&mut self) {
-        self.indent -= 1;
     }
 }
 
@@ -154,6 +251,7 @@ pub struct Generator {
     pub imports: BTreeSet<(String, String)>,
     pub modules: BTreeMap<String, Module>,
     core: Rc<RefCell<Core>>,
+    pub indent: usize,
 }
 
 impl Generator {
@@ -165,6 +263,7 @@ impl Generator {
             imports: BTreeSet::new(),
             modules: BTreeMap::new(),
             core,
+            indent: 0,
         }
     }
 
@@ -178,7 +277,6 @@ impl Generator {
     fn generate_modules(&mut self) -> Result<(), Diag> {
         for (_name, module) in self.modules.iter_mut() {
             writeln!(self.buf, "")?;
-            writeln!(self.buf, "# {:?}", module.ty)?;
             module.generate()?;
             writeln!(self.buf, "{}", module.buf)?;
         }
@@ -238,10 +336,26 @@ impl Generator {
                 let mut m = self.modules.get_mut(&decl.name).unwrap();
                 m.set_fns(&decl.fns)?;
             }
-            _ => panic!("{:#?}", decl)
+            // _ => unimplemented!(),
+            _ => (),
         }
         Ok(())
     }
+
+    #[inline(always)]
+    fn indent(&mut self) -> Result<(), Diag> {
+        write!(self.buf, "{}", " ".repeat(self.indent*4))?;
+        Ok(())
+    }
+    #[inline(always)]
+    fn tab(&mut self) {
+        self.indent += 1;
+    }
+    #[inline(always)]
+    fn shift_tab(&mut self) {
+        self.indent -= 1;
+    }
+
 }
 
 impl From<::std::fmt::Error> for Diag {

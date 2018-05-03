@@ -1,5 +1,6 @@
 use self::Type::*;
 use core::{MethodName, Op};
+use std::fmt::Write;
 use span::CSpan;
 use typing::typed_term::TyFnAppArg;
 use typing::{Type, TypeEnv};

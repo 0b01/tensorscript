@@ -42,7 +42,7 @@ impl Constraints {
 
     pub fn collect(&mut self, typed_term: &TyTerm) {
         use self::TyTerm::*;
-        let module = { self.tenv.borrow_mut().module().clone() };
+        let module = { self.tenv.borrow().module().clone() };
         // println!("{}", typed_term);
         match typed_term {
             TyProgram(ref decls) => decls
@@ -54,8 +54,9 @@ impl Constraints {
             TyList(ref terms) => terms.iter().map(|t| self.collect(&t)).collect(),
             TyTuple(_, ref terms, _) => terms.iter().map(|t| self.collect(&t)).collect(),
             TyIdent(ref t, ref name, ref sp) => {
-                let ty =  self.tenv.borrow_mut()
+                let ty =  self.tenv.borrow()
                     .resolve_type(&module, &name)
+                    .or_else(|| self.tenv.borrow().resolve_type(&ModName::Global, &name))
                     .unwrap() // ... todo:
                     .clone()
                     .with_span(&sp);
@@ -95,7 +96,7 @@ impl Constraints {
     fn collect_graph_decl(&mut self, decl: &TyGraphDecl) {
         // type decl should be the same
         self.tenv.borrow_mut().set_module(ModName::Named(decl.name.clone()));
-        let graph_ty_sig = self.tenv.borrow_mut()
+        let graph_ty_sig = self.tenv.borrow()
             .resolve_type(&ModName::Global, &Alias::Variable(decl.name.clone()))
             .unwrap()
             .clone();
@@ -116,7 +117,7 @@ impl Constraints {
     }
 
     fn collect_fn_decl(&mut self, decl: &TyFnDecl) {
-        let module = self.tenv.borrow_mut().module();
+        let module = self.tenv.borrow().module();
         self.tenv.borrow_mut().push_scope_collection(&module);
 
         self.collect(&decl.func_block);
@@ -142,7 +143,7 @@ impl Constraints {
     fn collect_node_decl(&mut self, decl: &TyNodeDecl) {
         self.tenv.borrow_mut().set_module(ModName::Named(decl.name.clone()));
         // type decl should be the same
-        let graph_ty_sig = self.tenv.borrow_mut().resolve_type(&ModName::Global, &Alias::Variable(decl.name.clone()))
+        let graph_ty_sig = self.tenv.borrow().resolve_type(&ModName::Global, &Alias::Variable(decl.name.clone()))
             .unwrap()
             .clone();
         self.add(
@@ -158,7 +159,7 @@ impl Constraints {
     fn collect_weights_decl(&mut self, decl: &TyWeightsDecl) {
         self.tenv.borrow_mut().set_module(ModName::Named(decl.name.clone()));
         // type decl should be the same
-        let graph_ty_sig = self.tenv.borrow_mut().resolve_type(&ModName::Global, &Alias::Variable(decl.name.clone()))
+        let graph_ty_sig = self.tenv.borrow().resolve_type(&ModName::Global, &Alias::Variable(decl.name.clone()))
             .unwrap()
             .clone();
         self.add(
@@ -199,19 +200,31 @@ impl Constraints {
     }
 
     fn collect_fn_app(&mut self, fn_app: &TyFnApp) {
-        let current_mod = self.tenv.borrow_mut().module();
+        let current_mod = self.tenv.borrow().module();
         // println!("{:#?}", fn_app);
         // println!("{}", fn_app.name);
         // println!("{:#?}", cs);
 
         let symbol_name = fn_app.mod_name.clone().unwrap();
         let symbol_mod_ty = match &fn_app.orig_name {
-            Some(ref orig_name) => self.tenv.borrow_mut().resolve_type(&current_mod, &Alias::Variable(orig_name.clone())).unwrap().clone(),
+            Some(ref orig_name) => self.tenv.borrow()
+                .resolve_type(
+                    &current_mod,
+                    &Alias::Variable(orig_name.clone())
+                )
+                .or_else(|| self.tenv.borrow()
+                    .resolve_type(&ModName::Global, &Alias::Variable(orig_name.clone()))
+                )
+                .unwrap()
+                .clone(),
             None => {
-                let resolved_ty = self.tenv.borrow_mut()
+                let resolved_ty = self.tenv.borrow()
                     .resolve_type(
                         &current_mod,
                         &Alias::Variable(symbol_name.clone())
+                    )
+                    .or_else(|| self.tenv.borrow()
+                        .resolve_type(&ModName::Global, &Alias::Variable(symbol_name.clone()))
                     );
                 match resolved_ty {
                     Some(ty) => ty,
@@ -227,7 +240,8 @@ impl Constraints {
 
         let symbol_modname = ModName::Named(symbol_mod_ty.as_str().to_owned()); // Linear
         let fn_name = &fn_app.name; // F(forward)
-        let resolved_ty = self.tenv.borrow_mut().resolve_type(&symbol_modname, &fn_name); // function / Unresolved
+        let resolved_ty = self.tenv.borrow().resolve_type(&symbol_modname, &fn_name) // function / Unresolved
+                    .or_else(|| self.tenv.borrow().resolve_type(&ModName::Global, &fn_name));
         let ty = match resolved_ty {
             Some(ty) => ty,
             None => {
@@ -254,7 +268,7 @@ impl Constraints {
                     None
                 )
             } else {
-                let inits = self.tenv.borrow_mut().resolve_init(&current_mod, &fn_app.orig_name.clone().unwrap());
+                let inits = self.tenv.borrow().resolve_init(&current_mod, &fn_app.orig_name.clone().unwrap());
                 self.tenv.borrow_mut().resolve_unresolved(
                     &ty,
                     fn_name.as_str(),
