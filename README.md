@@ -4,7 +4,7 @@ Dependently-typed tensor computation.
 
 ## Features
 
-* Static type inference
+* Parametric polymorphism
 * Compile time type checking
 * Dependently typed tensors
 * Multiple targets(Tensorflow, PyTorch, more to come!)
@@ -31,23 +31,23 @@ x = sigmoid(x)
 
 [![Build Status](https://travis-ci.org/rickyhan/tensorscript-compiler.svg?branch=master)](https://travis-ci.org/rickyhan/tensorscript-compiler)
 
-The language is currently being actively worked on, and not useable in production or development.
+The language is not usable in production or development.
 
 ### Todo
 
-1. [*] implement module pattern matching
-2. [*] type level computation (resolved tensor dimension)
-3. [*] BUG: dimension mismatch for mnist example
+1. [x] implement module pattern matching
+2. [x] type level computation (resolved tensor dimension)
+3. [x] BUG: dimension mismatch for mnist example
             need to create fresh type variables for different static forward functions
-4. [*] BUG: non-determinism
-5. [*] BUG: impl Hash, Eq for Type
-6. [*] set up examples and tests
-7. [*] set up commandline
-8. [*] more examples
-9. [*] better errors in parser
+4. [x] BUG: non-determinism
+5. [x] BUG: impl Hash, Eq for Type
+6. [x] set up examples and tests
+7. [x] set up commandline
+8. [x] more examples
+9. [x] better errors in parser
 10. [ ] code gen: PyTorch
 11. [ ] add more examples
-12. [*] lift dim and tsr to top level
+12. [x] lift dim and tsr to top level
 13. [ ] add dim level computation dim1 * dim1
 14. [ ] use Linear as L; aliasing
 15. [ ] add binary ops (+, -, *, /, %)

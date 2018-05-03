@@ -3,8 +3,10 @@ use errors::Diag;
 use span::CSpan;
 use typing::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
 use typing::{Type, TypeEnv};
+use std::fmt::Write;
 
 // #[allow(non_camel_case_types)]
+#[derive(Debug, Clone)]
 pub struct Linear;
 
 impl Op for Linear {
@@ -105,6 +107,15 @@ impl Op for Linear {
             }
             _ => unimplemented!(),
         }
+    }
+
+    fn generate_fn_call(&self, args: &[TyFnAppArg]) -> Result<String, Diag> {
+        let mut buf = String::new();
+        write!(buf, "{}(", self.get_name());
+        let map = args.to_btreemap().unwrap();
+        write!(buf, "{:?}, ", map["in"].int().unwrap());
+        write!(buf, "{:?})", map["out"].int().unwrap());
+        Ok(buf)
     }
 }
 

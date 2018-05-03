@@ -118,7 +118,8 @@ fn main() {
     let program = parsed_terms
         .unwrap_or_else(||{ emitter.borrow().print_errs(); exit(-1); });
     // ------------- annotate ast with type vars --------------
-    let tenv = Rc::new(RefCell::new(TypeEnv::new()));
+    let core = Rc::new(RefCell::new(core::Core::new()));
+    let tenv = Rc::new(RefCell::new(TypeEnv::new(core.clone())));
     let annotator = Annotator::new(Rc::clone(&emitter), Rc::clone(&tenv));
     let ast = annotator.annotate(&program);
     emitter.borrow().print_errs();
@@ -160,7 +161,7 @@ fn main() {
         exit(0);
     }
     // ---------------------------- code gen -----------------------------------
-    let mut generator = Generator::new(emitter.clone(), tenv.clone());
-    let out = generator.generate(&final_ast);
+    let mut generator = Generator::new(emitter.clone(), tenv.clone(), core.clone());
+    generator.generate(&final_ast).unwrap();
     println!("{}", generator.buf);
 }

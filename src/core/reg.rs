@@ -4,7 +4,9 @@ use span::CSpan;
 use typing::typed_term::TyFnAppArg;
 use typing::{Type, TypeEnv};
 
+#[derive(Debug, Clone)]
 pub struct Dropout2d;
+#[derive(Debug, Clone)]
 pub struct BatchNorm1d;
 
 impl Op for Dropout2d {

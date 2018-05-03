@@ -1,6 +1,8 @@
 use codespan::ByteSpan;
 use core::Core;
 use span::CSpan;
+use std::rc::Rc;
+use std::cell::RefCell;
 /// Type Environment holds the state during type reconstruction
 /// which is really just a few tree traversals.
 ///
@@ -61,6 +63,7 @@ type InitMap = BTreeMap<String, Vec<TyFnAppArg>>;
 
 #[derive(Debug)]
 pub struct TypeEnv {
+    core: Rc<RefCell<Core>>,
     dim_counter: TypeId,
     var_counter: TypeId,
     current_mod: ModName,
@@ -92,8 +95,9 @@ impl Alias {
 }
 
 impl TypeEnv {
-    pub fn new() -> Self {
+    pub fn new(core: Rc<RefCell<Core>>) -> Self {
         let mut ret = Self {
+            core,
             dim_counter: 0,
             var_counter: 0,
             current_mod: Global,
@@ -397,7 +401,8 @@ impl TypeEnv {
 
     /// import module type and associated methods into type environment
     pub fn import_module(&mut self, path_name: &str, mod_name: &str) -> Option<Result<(), Diag>> {
-        let methods = Core::import(path_name, mod_name, self)?;
+        let core = self.core.clone();
+        let methods = core.borrow().import(path_name, mod_name, self)?;
 
         Some(methods.iter().map(|(name, ty)| {
             self.add_type(
@@ -439,7 +444,9 @@ impl TypeEnv {
 
         if let Type::UnresolvedModuleFun(ref p0, ref p1, ref p2, ref span) = ty {
             assert_eq!(fn_name.to_owned(), p2.to_owned());
-            let find_result = Core::find(p0, p1);
+            let core_clone = self.core.clone();
+            let core = core_clone.borrow();
+            let find_result = core.find(p0, p1);
             match find_result {
                 Some(op) => {
                     let is_stateful = op.is_stateful();
