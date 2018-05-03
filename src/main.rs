@@ -126,9 +126,10 @@ fn main() {
     // println!("{:#?}", ast);
     // println!("initial tenv: {:#?}", tenv);
     // ------------ first unitfication pass ---------------
-    let mut cs = Constraints::new(Rc::clone(&emitter), Rc::clone(&tenv));
+    let unresolved = Rc::new(RefCell::new(Vec::new()));
+    let mut cs = Constraints::new(Rc::clone(&emitter), Rc::clone(&tenv), Rc::clone(&unresolved));
     cs.collect(&ast);
-    let mut unifier = Unifier::new(Rc::clone(&emitter), Rc::clone(&tenv));
+    let mut unifier = Unifier::new(Rc::clone(&emitter), Rc::clone(&tenv), Rc::clone(&unresolved));
     let mut last_sub = unifier.unify(cs.clone());
     emitter.borrow().print_errs();
     // println!("{:#?}", last_sub);
@@ -140,11 +141,11 @@ fn main() {
     let resolve_ast = move || {
         loop {
             // collect constraints
-            let mut new_cs = Constraints::new(Rc::clone(&em_clone), Rc::clone(&tenv_clone));
+            let mut new_cs = Constraints::new(Rc::clone(&em_clone), Rc::clone(&tenv_clone), unresolved.clone());
             new_cs.collect(&last_ast);
             em_clone.borrow().print_errs();
             // unify constraints
-            let mut new_unifier = Unifier::new(Rc::clone(&em_clone), Rc::clone(&tenv_clone));
+            let mut new_unifier = Unifier::new(Rc::clone(&em_clone), Rc::clone(&tenv_clone), unresolved.clone());
             let mut new_sub = new_unifier.unify(new_cs.clone());
             em_clone.borrow().print_errs();
             let temp_ast = subs(&last_ast, &mut new_sub);

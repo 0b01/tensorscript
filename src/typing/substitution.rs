@@ -17,6 +17,7 @@ impl Substitution {
                 .collect(),
             tenv: cs.tenv.clone(),
             emitter: cs.emitter.clone(),
+            unresolved: cs.unresolved.clone(),
         }
     }
 
