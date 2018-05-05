@@ -229,10 +229,13 @@ impl Type {
         }
     }
 
-    pub fn as_str(&self) -> &str {
+    pub fn as_string(&self) -> String {
         use self::Type::*;
         match self {
-            Module(ref n, _, _) => n,
+            Module(ref n, _, _) => n.to_owned(),
+            TSR(tys, _) => tys.iter().map(|t| t.as_string()).collect::<Vec<_>>().join(", "),
+            DIM(_, _) => "-1".to_owned(),
+            ResolvedDim(i, _) => format!("{}", i),
             _ => unimplemented!(),
         }
     }

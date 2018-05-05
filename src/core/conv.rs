@@ -1,8 +1,10 @@
 use core::{MethodName, Op};
 use errors::Diag;
 use span::CSpan;
-use typing::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
+use typing::typed_term::{ArgsVecInto, Conversion, TyFnAppArg, TyTerm};
 use typing::{Type, TypeEnv};
+
+use std::fmt::Write;
 
 use self::TyTerm::*;
 #[derive(Debug, Clone)]
@@ -15,7 +17,7 @@ pub struct maxpool2d;
 macro_rules! read_2_tuple {
     ($var:expr) => {
         if let box TyExpr(box TyTuple(_,vs,_),_,_) = $var { // TyExpr
-            (vs[0].clone().int()?, vs[1].clone().int()?)
+            (vs[0].clone().as_num()?, vs[1].clone().as_num()?)
         } else {
             panic!("{:#?}", $var);
         }
@@ -30,7 +32,7 @@ macro_rules! read_from_init {
                 if let Type::Tuple(..) = ty {
                     Some(read_2_tuple!(t))
                 } else {
-                    let p0 = t.int()?;
+                    let p0 = t.as_num()?;
                     Some((p0, p0))
                 }
             ).unwrap_or($default)
@@ -79,8 +81,8 @@ impl Op for Conv2d {
                     let (s0, s1) = read_from_init!(init_map.get("stride"), (1, 1));
 
 
-                    let in_ch = init_map.get("in_ch").map(|t|t.int().unwrap()).expect("does not have in_ch");
-                    let out_ch = init_map.get("out_ch").map(|t|t.int().unwrap()).expect("does not have in_ch");
+                    let in_ch = init_map.get("in_ch").map(|t|t.as_num().unwrap()).expect("does not have in_ch");
+                    let out_ch = init_map.get("out_ch").map(|t|t.as_num().unwrap()).expect("does not have in_ch");
 
                     let dims = x_ty.as_vec()?;
                     let (n, c_in, h_in, w_in) = (
@@ -127,6 +129,27 @@ impl Op for Conv2d {
             _ => unimplemented!(),
         }
     }
+
+    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+        let mut buf = String::new();
+        match name {
+            "new" => {
+                write!(buf, "{}(", self.get_name());
+                let map = args.to_btreemap().unwrap();
+                write!(buf, "in_channels={}, ", map["in_ch"].as_str().unwrap());
+                write!(buf, "out_channels={}, ", map["out_ch"].as_str().unwrap());
+                write!(buf, "kernel_size={})", map["kernel_size"].as_str().unwrap());
+                Ok(buf)
+            }
+            "forward" => {
+                let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
+                write!(buf, "{}", args.join(", "));
+                Ok(buf)
+            }
+            _ => panic!("{} is not implemented", name),
+        }
+    }
+
 }
 
 impl Op for maxpool2d {
@@ -197,6 +220,29 @@ impl Op for maxpool2d {
                 }
             },
             _ => None,
+        }
+    }
+
+    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+        let mut buf = String::new();
+        match name {
+            "new" => {
+                write!(buf, "{}(", self.get_name());
+                let map = args.to_btreemap().unwrap();
+                write!(buf, "in_channels={}, ", map["in_ch"].as_str().unwrap());
+                write!(buf, "out_channels={}, ", map["out_ch"].as_str().unwrap());
+                write!(buf, "kernel_size={})", map["kernel_size"].as_str().unwrap());
+                Ok(buf)
+            }
+            "forward" => {
+                let args: Vec<_> = args
+                    .iter()
+                    .map(|i| i.name.clone().unwrap())
+                    .collect();
+                write!(buf, "{}", args.join(", "));
+                Ok(buf)
+            }
+            _ => panic!("{} is not implemented", name),
         }
     }
 }

@@ -4,7 +4,7 @@ use codespan::ByteSpan;
 use span::CSpan;
 use typing::type_env::{Alias, ModName, TypeEnv};
 #[allow(unused_imports)]
-use typing::typed_term::{ArgsVecInto, Ty};
+use typing::typed_term::{ArgsVecInto, Conversion};
 #[allow(unused_imports)]
 use typing::typed_term::{TyDecl, TyFieldAccess, TyFnApp, TyFnAppArg, TyFnDecl, TyFnDeclParam,
                             TyGraphDecl, TyNodeDecl, TyTerm, TyUseStmt, TyWeightsAssign,
@@ -22,7 +22,9 @@ type FnName = String;
 
 enum Item {
     FnApp(Option<VarName>, FnName, Vec<TyFnAppArg>),
-    Ident(String),
+    SelfFnApp(Option<VarName>, FnName, Vec<TyFnAppArg>),
+    Ident(bool, String),
+    ViewFn(Option<VarName>, Type),
 }
 
 pub struct Module {
@@ -34,7 +36,7 @@ pub struct Module {
     pub inits: Rc<RefCell<Vec<TyWeightsAssign>>>,
     pub buf: String,
     pub indent: usize,
-    fn_call_stack: VecDeque<Item>,
+    codegen_stack: VecDeque<Item>,
 }
 
 impl Module {
@@ -48,7 +50,7 @@ impl Module {
             fns: Rc::new(RefCell::new(BTreeMap::new())),
             inits: Rc::new(RefCell::new(vec![])),
             indent: 0,
-            fn_call_stack: VecDeque::new(),
+            codegen_stack: VecDeque::new(),
         }
     }
 
@@ -116,14 +118,17 @@ impl Module {
             TyFnApp(box fn_app) => {
                 self.collect_fn_app(fn_app, var)?;
             },
-            TyIdent(_t,i,..) => self.fn_call_stack.push_back(Item::Ident(i.as_str().to_owned())),
+            TyIdent(_t,i,..) => self.codegen_stack
+                .push_back(Item::Ident(var.is_none(), i.as_str().to_owned())),
+            TyInteger(..) => (),
+            TyFloat(..) => (),
             _ => panic!("{:#?}", term),
         }
         Ok(())
     }
 
     fn generate_fn(&mut self) -> Result<(), Diag> {
-        while let Some(item) = self.fn_call_stack.pop_back() {
+        while let Some(item) = self.codegen_stack.pop_back() {
             match item {
                 Item::FnApp(var_name, fn_name, args) => {
                     self.indent()?;
@@ -141,7 +146,7 @@ impl Module {
                                     &Alias::Variable(fn_name.to_owned()),
                                 ).unwrap()
                         })
-                        .as_str().to_owned();
+                        .as_string();
 
                     match var_name {
                         Some(v) => write!(self.buf, "{} = ", v)?,
@@ -151,20 +156,44 @@ impl Module {
                     if is_global {
                         write!(self.buf, "{}(",  fn_name)?;
                     } else {
-                        write!(self.buf, "self.{}(",  fn_name)?;
+                        write!(self.buf, "self.{}(", fn_name)?;
                     }
 
                     let core_cloned = self.core.clone();
                     let core = core_cloned.borrow();
                     let op = core.find_mod(&module_name).unwrap();
-
-                    let out = op.generate_fn_call_params("forward", args.as_slice())?;
+                    let out = op.gen_fn_app("forward", args.as_slice())?;
                     write!(self.buf, "{}", out)?;
                     writeln!(self.buf, ")")?;
                 }
-                Item::Ident(name) => {
+                Item::SelfFnApp(var_name, fn_name, args) => {
                     self.indent()?;
-                    writeln!(self.buf, "return {}", name)?;
+                    match var_name {
+                        Some(v) => write!(self.buf, "{} = ", v)?,
+                        None => write!(self.buf, "return ")?,
+                    };
+                    write!(self.buf, "self.{}(", fn_name)?;
+                    let s = args.to_btreemap().unwrap().keys().cloned().collect::<Vec<_>>().join(", ");
+                    write!(self.buf, "{}", s)?;
+                    writeln!(self.buf, ")")?;
+                }
+                Item::Ident(ret, name) => {
+                    if ret {
+                        self.indent()?;
+                        writeln!(self.buf, "return {}", name)?;
+                    }
+                }
+                Item::ViewFn(var_name, ty) => {
+                    self.indent()?;
+                    match var_name {
+                        Some(name) => {
+                            writeln!(self.buf, "{} = {}.view({})", name, name, ty.as_string())?;
+                        }
+                        None => {
+                            writeln!(self.buf, "NONE")?;
+                            // ...
+                        }
+                    }
                 }
             }
         }
@@ -172,11 +201,26 @@ impl Module {
     }
 
     fn collect_fn_app(&mut self, fn_app: &TyFnApp, var_name: Option<String>) -> Result<(), Diag> {
-        self.fn_call_stack.push_back(Item::FnApp(
-            var_name,
-            fn_app.orig_name.clone().unwrap().to_owned(),
-            fn_app.args.clone()
-        ));
+        if fn_app.mod_name == Some("view".to_owned()) {
+            self.codegen_stack.push_back(Item::ViewFn(
+                var_name,
+                fn_app.ret_ty.clone(),
+            ))
+        } else {
+            if fn_app.orig_name == Some("self".to_owned())  {
+                self.codegen_stack.push_back(Item::SelfFnApp(
+                    var_name,
+                    fn_app.name.as_str().to_owned(),
+                    fn_app.args.clone()
+                ));
+            } else {
+                self.codegen_stack.push_back(Item::FnApp(
+                    var_name,
+                    fn_app.orig_name.clone().unwrap().to_owned(),
+                    fn_app.args.clone()
+                ));
+            }
+        }
 
         for arg in fn_app.args.iter() {
             self.collect_term(&arg.arg, arg.name.clone())?;
@@ -232,13 +276,16 @@ impl Module {
                     &Alias::Variable(init.mod_name.as_str().to_owned())
                 )
                 .unwrap()
-                .as_str().to_owned();
+                .as_string();
             let core_cloned = self.core.clone();
             let core = core_cloned.borrow();
             let op = core.find_mod(&module_name).unwrap();
-            write!(self.buf, "{}", op.generate_fn_call_params(&init.fn_name, init.fn_args.as_slice())?)?;
+            write!(self.buf, "{}", op.gen_fn_app(&init.fn_name, init.fn_args.as_slice())?)?;
             writeln!(self.buf, "")?;
         }
+        self.indent()?;
+        writeln!(self.buf, "# TODO: generate `fn new()` body")?;
+        //...
         self.shift_tab();
         Ok(())
     }

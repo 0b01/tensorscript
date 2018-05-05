@@ -5,6 +5,7 @@ use span::CSpan;
 use std::collections::BTreeMap;
 use typing::type_env::Alias;
 use typing::Type;
+use std::fmt::Write;
 
 /// typed AST nodes
 #[derive(Debug, PartialEq, Clone)]
@@ -28,18 +29,22 @@ pub enum TyTerm {
 }
 
 /// convenience functions and getters for a bunch of attributes
-pub trait Ty {
+pub trait Conversion {
     /// get the type of AST node
     fn ty(&self) -> Type;
     /// get the span of AST node
     fn span(&self) -> ByteSpan;
     /// get integer value of Integer node
-    fn int(&self) -> Option<i64> {
+    fn as_num(&self) -> Option<i64> {
+        None
+    }
+    /// convert ty term to string
+    fn as_str(&self) -> Option<String> {
         None
     }
 }
 
-impl Ty for TyTerm {
+impl Conversion for TyTerm {
     fn span(&self) -> ByteSpan {
         use self::TyTerm::*;
         match self {
@@ -76,17 +81,40 @@ impl Ty for TyTerm {
         }
     }
 
-    fn int(&self) -> Option<i64> {
-        // panic!("{:#?}", self);
+    fn as_num(&self) -> Option<i64> {
+        use self::TyTerm::*;
         match self {
-            TyTerm::TyInteger(_, i, _) => Some(*i),
-            TyTerm::TyExpr(ref items, ..) => items.int(),
+            TyInteger(_, i, _) => Some(*i),
+            TyExpr(ref items, ..) => items.as_num(),
+            TyIdent(ref t, ..) => t.as_num(),
             _ => None,
         }
     }
+
+    fn as_str(&self) -> Option<String> {
+        use self::TyTerm::*;
+        let mut s = String::new();
+        match self {
+            TyInteger(..) => write!(s, "{}", self.as_num()?),
+            TyExpr(ref items, ..) => write!(s, "{}", items.as_str()?),
+            TyIdent(ref t, ..) => write!(s, "{}", t.as_string()),
+            TyFloat(_, f, ..) => write!(s, "{}", f),
+            TyTuple(_, ref ts, _) => {
+                write!(s, "(");
+                write!(s, "{}", ts
+                    .iter()
+                    .map(|t| t.as_str())
+                    .collect::<Option<Vec<_>>>()?.join(", ")
+                );
+                write!(s, ")")
+            }
+            _ => panic!("{:?}", self),
+        };
+        Some(s)
+    }
 }
 
-impl Ty for TyFieldAccess {
+impl Conversion for TyFieldAccess {
     fn span(&self) -> ByteSpan {
         self.span
     }
@@ -95,7 +123,7 @@ impl Ty for TyFieldAccess {
     }
 }
 
-impl Ty for TyFnApp {
+impl Conversion for TyFnApp {
     fn span(&self) -> ByteSpan {
         self.span
     }

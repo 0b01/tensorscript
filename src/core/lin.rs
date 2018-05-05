@@ -1,7 +1,7 @@
 use core::{MethodName, Op};
 use errors::Diag;
 use span::CSpan;
-use typing::typed_term::{ArgsVecInto, Ty, TyFnAppArg, TyTerm};
+use typing::typed_term::{ArgsVecInto, Conversion, TyFnAppArg, TyTerm};
 use typing::{Type, TypeEnv};
 use std::fmt::Write;
 
@@ -109,14 +109,14 @@ impl Op for Linear {
         }
     }
 
-    fn generate_fn_call_params(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {
             "new" => {
                 write!(buf, "{}(", self.get_name());
                 let map = args.to_btreemap().unwrap();
-                write!(buf, "{:?}, ", map["in"].int().unwrap());
-                write!(buf, "{:?})", map["out"].int().unwrap());
+                write!(buf, "in_features={:?}, ", map["in"].as_num().unwrap());
+                write!(buf, "out_features={:?})", map["out"].as_num().unwrap());
                 Ok(buf)
             }
             "forward" => {
@@ -131,7 +131,7 @@ impl Op for Linear {
 
 fn unwrap_dim(in_dim: &TyTerm) -> Option<i64> {
     match in_dim.ty() {
-        Type::INT(_) => in_dim.int(),
+        Type::INT(_) => in_dim.as_num(),
         Type::ResolvedDim(num, _) => Some(num),
         _ => panic!("{:?} is not a numeric value!", in_dim),
     }

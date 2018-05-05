@@ -3,7 +3,7 @@ use parsing::term::{Decl, FieldAccess, FnApp, FnAppArg, FnDecl, FnDeclParam, FnT
                    Term, ViewFn, WeightsAssign};
 use span::CSpan;
 use typing::type_env::{Alias, ModName, TypeEnv};
-use typing::typed_term::{ArgsVecInto, Ty};
+use typing::typed_term::{ArgsVecInto, Conversion};
 use typing::typed_term::{TyDecl, TyFieldAccess, TyFnApp, TyFnAppArg, TyFnDecl, TyFnDeclParam,
                             TyGraphDecl, TyNodeDecl, TyTerm, TyUseStmt, TyWeightsAssign,
                             TyWeightsDecl, TyAliasAssign};
@@ -137,8 +137,7 @@ impl Annotator {
                                     self.tenv.borrow().resolve_type(&ModName::Global, &Alias::Variable(id.clone()))
                                 })
                                 .unwrap()
-                                .as_str()
-                                .to_owned(),
+                                .as_string(),
                         ),
                         orig_name: Some(id.to_owned()),
                         name: Alias::Function("forward".to_owned()),
@@ -156,8 +155,7 @@ impl Annotator {
                             self.tenv.borrow().resolve_type(&module, &typed_fn_app.name)
                                 .or_else(||self.tenv.borrow().resolve_type(&ModName::Global, &typed_fn_app.name))
                                 .unwrap()
-                                .as_str()
-                                .to_owned(),
+                                .as_string()
                         );
                         typed_fn_app.name = Alias::Function("forward".to_owned());
                     }

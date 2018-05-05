@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 
 use typing::type_env::{Alias, ModName, TypeEnv};
-use typing::typed_term::Ty;
 use typing::typed_term::*;
 use typing::Type;
 use std::rc::Rc;
@@ -198,7 +197,6 @@ impl Constraints {
                 span: w_a.span,
             },
         );
-        ()
     }
 
     fn collect_fn_app(&mut self, fn_app: &TyFnApp) {
@@ -240,7 +238,7 @@ impl Constraints {
             }
         };
 
-        let symbol_modname = ModName::Named(symbol_mod_ty.as_str().to_owned()); // Linear
+        let symbol_modname = ModName::Named(symbol_mod_ty.as_string()); // Linear
         let fn_name = &fn_app.name; // F(forward)
         let resolved_ty = self.tenv.borrow().resolve_type(&symbol_modname, &fn_name) // function / Unresolved
                     .or_else(|| self.tenv.borrow().resolve_type(&ModName::Global, &fn_name));
@@ -305,11 +303,14 @@ impl Constraints {
                             };
                             let sp = ty.span();
 
-                            self.tenv.borrow_mut().replace_type(
-                                &current_mod,
-                                &Alias::Variable(fn_app.orig_name.clone().unwrap().to_owned()),
-                                Type::Module(symbol_name.to_owned(), Some(box ty), sp),
-                            );
+                            if fn_app.orig_name.is_some() {
+                                // only replace forward calls
+                                self.tenv.borrow_mut().replace_type(
+                                    &current_mod,
+                                    &Alias::Variable(fn_app.orig_name.clone().unwrap().to_owned()),
+                                    Type::Module(symbol_name.to_owned(), Some(box ty), sp),
+                                );
+                            }
                             // println!("{:#?}", self.tenv);
                             // panic!();
                         }

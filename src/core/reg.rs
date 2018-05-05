@@ -1,8 +1,10 @@
 use core::{MethodName, Op};
 use errors::Diag;
 use span::CSpan;
-use typing::typed_term::TyFnAppArg;
+use typing::typed_term::{TyFnAppArg, Conversion};
 use typing::{Type, TypeEnv};
+use typing::typed_term::ArgsVecInto;
+use std::fmt::Write;
 
 #[derive(Debug, Clone)]
 pub struct Dropout2d;
@@ -44,6 +46,24 @@ impl Op for Dropout2d {
                 Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty)))
             }
             _ => unimplemented!(),
+        }
+    }
+
+    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+        let mut buf = String::new();
+        match name {
+            "new" => {
+                write!(buf, "{}(", self.get_name());
+                let map = args.to_btreemap().unwrap();
+                write!(buf, "p={}), ", map["p"].as_str().unwrap());
+                Ok(buf)
+            }
+            "forward" => {
+                let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
+                write!(buf, "{}", args.join(", "));
+                Ok(buf)
+            }
+            _ => panic!("{} is not implemented", name),
         }
     }
 }
