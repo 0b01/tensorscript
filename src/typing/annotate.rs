@@ -419,13 +419,15 @@ impl Annotator {
     }
 
     fn annotate_fn_decl(&self, f: &FnDecl) -> TyFnDecl {
-        let module = self.tenv.borrow().module();
-        self.tenv.borrow_mut().push_scope(&module);
-        let mod_ty = self.tenv.borrow().resolve_type(
+        let module = self.tenv.borrow().module().clone();
+        { self.tenv.borrow_mut().push_scope(&module); }
+        let mod_ty = { self.tenv.borrow().resolve_type(
             &ModName::Global,
             &Alias::Variable(module.as_str().to_owned()),
-        ).unwrap().clone().with_span(&f.span);
+        ).unwrap().clone().with_span(&f.span) };
 
+        let arg_ty = self.tenv.borrow_mut().fresh_var(&f.span);
+        let ret_ty = self.tenv.borrow_mut().fresh_var(&f.span);
         let mut decl = TyFnDecl {
             name: Alias::Function(f.name.clone()),
             fn_params: {
@@ -442,8 +444,8 @@ impl Annotator {
                     }
                 }
             },
-            // fn_ty: tenv.fresh_var(),
-            fn_ty: self.tenv.borrow_mut().fresh_var(&f.span),
+            arg_ty,
+            ret_ty,
             func_block: Box::new(TyTerm::TyNone),  // same here
             span: f.span,
         };
@@ -451,20 +453,15 @@ impl Annotator {
         match f.name.as_str() {
             // special function signatures
             "new" => {
-                decl.fn_ty = Type::FUN(
-                    module.as_str().to_owned(),
-                    "new".to_owned(),
-                    box decl.fn_params.to_ty(&f.span),
-                    box mod_ty.clone(),
-                    f.span
-                );
+                decl.arg_ty = decl.fn_params.to_ty(&f.span);
+                decl.ret_ty = mod_ty.clone();
             }
             "forward" => {
                 let name0 = match decl.fn_params.get(0) {
                     Some(e) => e.name.clone(),
                     None => "x".to_string(),
                 };
-                if let Type::Module(ref modn, Some(box Type::FUN(_,_,ref p, ref r, _)), _) = mod_ty.clone() {
+                if let Type::Module(ref modn, Some(box Type::FUN(_,_,ref p, box ref r, _)), _) = mod_ty.clone() {
                     let ty_sig = *p.clone();
 
                     // type the first parameter
@@ -480,13 +477,8 @@ impl Annotator {
                     }
 
                     // // type the function return parameter
-                    decl.fn_ty = Type::FUN(
-                        modn.to_owned(),
-                        "forward".to_owned(),
-                        box decl.fn_params.to_ty(&f.span),
-                        r.clone(),
-                        f.span
-                    );
+                    decl.arg_ty = decl.fn_params.to_ty(&f.span);
+                    decl.ret_ty = r.clone();
 
                 // type the function itself...
                 // decl.fn_ty = Type::FUN(p.clone(), r.clone());
@@ -495,7 +487,8 @@ impl Annotator {
                 };
             }
             _ => {
-                // decl.return_ty = tenv.resolve_tensor(&module, &f.return_ty, &f.span);
+                decl.ret_ty = self.tenv.borrow_mut().resolve_tensor(&module, &f.return_ty.clone().unwrap(), &f.span);
+                decl.arg_ty = decl.fn_params.to_ty(&f.span);
                 // decl.fn_ty = Type::FUN(box decl.param_ty.clone(), box decl.return_ty.clone());
             }
         };
@@ -514,7 +507,13 @@ impl Annotator {
         self.tenv.borrow_mut().add_type(
             &module,
             &Alias::Function(f.name.clone()),
-            decl.fn_ty.clone(),
+            Type::FUN(
+                module.as_str().to_owned(),
+                f.name.clone(),
+                box decl.arg_ty.clone(),
+                box decl.ret_ty.clone(),
+                decl.span.clone()
+            )
         )
         .unwrap_or_else(|e|self.emitter.borrow_mut().add(e));
 

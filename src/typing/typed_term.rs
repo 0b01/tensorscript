@@ -286,7 +286,8 @@ impl ArgsVecInto for [TyFnDeclParam] {
 pub struct TyFnDecl {
     pub name: Alias,
     pub fn_params: Vec<TyFnDeclParam>,
-    pub fn_ty: Type, // must be a fun!
+    pub arg_ty: Type, // args!()
+    pub ret_ty: Type, // any type
     pub func_block: Box<TyTerm>,
     pub span: ByteSpan,
 }

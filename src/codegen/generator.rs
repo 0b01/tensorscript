@@ -240,8 +240,8 @@ impl Module {
     fn generate_fn_decl(&mut self, func: &TyFnDecl) -> Result<(), Diag> {
         self.generate_fn_decl_head(func.name.as_str(), func)?;
         self.tab();
-        self.indent()?;
-        writeln!(self.buf, "'''{:?}'''", func.fn_ty)?;
+        // self.indent()?;
+        // writeln!(self.buf, "'''{:?}'''", func.fn_ty)?;
         self.collect_term(&func.func_block, None)?;
         self.generate_fn()?;
         self.shift_tab();

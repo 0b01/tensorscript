@@ -57,7 +57,7 @@ impl Diag {
             SymbolNotFound(msg, sp) => {
                 Diagnostic::new(
                     Severity::Error,
-                    format!("Cannot find symbol `{}` in scope", msg),
+                    format!("Symbol `{}` not in scope", msg),
                 )
                 .with_label(Label::new_primary(*sp))
             }

@@ -120,23 +120,14 @@ impl Constraints {
         self.tenv.borrow_mut().push_scope_collection(&module);
 
         self.collect(&decl.func_block);
-        let func =
-            Type::FUN(
-                module.as_str().to_owned(),
-                decl.name.as_str().to_owned(),
-                box decl.fn_params.to_ty(&decl.span),
-                box decl.func_block.ty(),
-                decl.span
-                );
+        self.add(decl.func_block.ty(), decl.ret_ty.clone());
 
-        self.add(decl.fn_ty.clone(), func.clone());
 
         // if decl.name == Alias::Function("forward".to_owned()) {
         //     panic!("{:?}, {:?}", decl.fn_ty, func);
         // }
 
         self.tenv.borrow_mut().pop_scope(&module);
-        // ...
     }
 
     fn collect_node_decl(&mut self, decl: &TyNodeDecl) {
