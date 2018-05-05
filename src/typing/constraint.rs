@@ -18,17 +18,15 @@ pub struct Constraints {
     pub set: BTreeSet<Equals>,
     pub emitter: Rc<RefCell<Emitter>>,
     pub tenv: Rc<RefCell<TypeEnv>>,
-    pub unresolved: Rc<RefCell<Vec<TyTerm>>>,
 }
 
 impl Constraints {
 
-    pub fn new(emitter: Rc<RefCell<Emitter>>, tenv: Rc<RefCell<TypeEnv>>, unresolved: Rc<RefCell<Vec<TyTerm>>>) -> Self {
+    pub fn new(emitter: Rc<RefCell<Emitter>>, tenv: Rc<RefCell<TypeEnv>>) -> Self {
         Constraints {
             set: BTreeSet::new(),
             emitter,
             tenv,
-            unresolved,
         }
     }
 
@@ -257,9 +255,6 @@ impl Constraints {
         // );
 
         if let Type::UnresolvedModuleFun(..) = ty {
-            // iteratively check a subset of AST because of bad algo
-            // (instead of checking raw ast again and again)
-            self.unresolved.borrow_mut().push(TyTerm::TyFnApp(box fn_app.clone()));
             let resolution = if fn_app.orig_name.is_none() { // this is a weight assign fn
                 // println!("{:?}, {:?}", &fn_app.mod_name.clone().unwrap().as_str(), fn_app.name);
                 self.tenv.borrow_mut().resolve_unresolved(

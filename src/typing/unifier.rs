@@ -13,16 +13,14 @@ use typing::substitution::Substitution;
 pub struct Unifier {
     pub emitter: Rc<RefCell<Emitter>>,
     pub tenv: Rc<RefCell<TypeEnv>>,
-    pub unresolved: Rc<RefCell<Vec<TyTerm>>>,
 }
 
 impl Unifier {
 
-    pub fn new(emitter: Rc<RefCell<Emitter>>, tenv: Rc<RefCell<TypeEnv>>, unresolved: Rc<RefCell<Vec<TyTerm>>>) -> Unifier {
+    pub fn new(emitter: Rc<RefCell<Emitter>>, tenv: Rc<RefCell<TypeEnv>>) -> Unifier {
         Unifier {
             emitter,
             tenv,
-            unresolved,
         }
     }
 
@@ -32,10 +30,9 @@ impl Unifier {
         } else {
             let emitter = cs.emitter.clone();
             let tenv = cs.tenv.clone();
-            let unresolved = cs.unresolved.clone();
             let mut it = cs.set.into_iter();
             let mut subst = self.unify_one(it.next().unwrap());
-            let subst_tail = subst.apply(&Constraints {set: it.collect(), emitter, tenv, unresolved});
+            let subst_tail = subst.apply(&Constraints {set: it.collect(), emitter, tenv});
             let subst_tail: Substitution = self.unify(subst_tail);
             subst.compose(subst_tail)
         }
@@ -46,7 +43,6 @@ impl Unifier {
         // println!("{:?}", eq);
         let emitter = Rc::clone(&self.emitter);
         let tenv = Rc::clone(&self.tenv);
-        let unresolved = Rc::clone(&self.unresolved);
         match eq {
             Equals(Unit(_), Unit(_)) => Substitution::empty(),
             Equals(INT(_), INT(_)) => Substitution::empty(),
@@ -76,7 +72,6 @@ impl Unifier {
                     set: v1.into_iter().zip(v2).map(|(i, j)| Equals(i, j)).collect(),
                     emitter,
                     tenv,
-                    unresolved,
                 },
             ),
 
@@ -87,7 +82,6 @@ impl Unifier {
                             set: btreeset!{ Equals(*ty1, *ty2)},
                             emitter,
                             tenv,
-                            unresolved,
                         },
                         )
                 } else {
@@ -105,7 +99,6 @@ impl Unifier {
                             },
                             emitter,
                             tenv,
-                            unresolved,
                         },
                     )
                 } else {
@@ -119,7 +112,6 @@ impl Unifier {
                     set: vs1.into_iter().zip(vs2).map(|(i,j)| Equals(i,j)).collect(),
                     emitter,
                     tenv,
-                    unresolved,
                 },
             ),
 
@@ -141,7 +133,6 @@ impl Unifier {
                                 .collect(),
                             emitter,
                             tenv,
-                            unresolved,
                         };
                         self.unify(cons)
                     } else {
@@ -164,7 +155,6 @@ impl Unifier {
                     },
                     emitter,
                     tenv,
-                    unresolved,
                 },
             ),
 
