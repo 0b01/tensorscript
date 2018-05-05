@@ -1,5 +1,5 @@
 use typing::{Type, TypeEnv};
-use typing::type_env::TypeId;
+use typing::type_env::{ModName, TypeId, ScopeAction};
 use span::CSpan;
 use errors::{Emitter, Diag };
 use std::rc::Rc;
@@ -7,18 +7,18 @@ use std::cell::RefCell;
 use std::process::exit;
 use typing::typed_term::TyTerm;
 
-use typing::constraint::{Constraints, Equals};
+use typing::constraint::{Constraints, Equals, UnresolvedModule};
 use typing::substitution::Substitution;
 
 pub struct Unifier {
     pub emitter: Rc<RefCell<Emitter>>,
     pub tenv: Rc<RefCell<TypeEnv>>,
-    pub unresolved: Rc<RefCell<Vec<TyTerm>>>,
+    pub unresolved: Rc<RefCell<Vec<UnresolvedModule>>>,
 }
 
 impl Unifier {
 
-    pub fn new(emitter: Rc<RefCell<Emitter>>, tenv: Rc<RefCell<TypeEnv>>, unresolved: Rc<RefCell<Vec<TyTerm>>>) -> Unifier {
+    pub fn new(emitter: Rc<RefCell<Emitter>>, tenv: Rc<RefCell<TypeEnv>>, unresolved: Rc<RefCell<Vec<UnresolvedModule>>>) -> Unifier {
         Unifier {
             emitter,
             tenv,

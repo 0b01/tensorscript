@@ -1,6 +1,6 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, VecDeque};
 
-use typing::type_env::{Alias, ModName, TypeEnv};
+use typing::type_env::{Alias, ModName, TypeEnv, ScopeAction};
 use typing::typed_term::*;
 use typing::Type;
 use std::rc::Rc;
@@ -13,17 +13,19 @@ use span::CSpan;
 #[derive(Debug, Hash, Eq, PartialEq, Clone, PartialOrd, Ord)]
 pub struct Equals(pub Type, pub Type);
 
+pub type UnresolvedModule = (TyTerm, ModName, VecDeque<ScopeAction>);
+
 #[derive(Debug, Clone)]
 pub struct Constraints {
     pub set: BTreeSet<Equals>,
     pub emitter: Rc<RefCell<Emitter>>,
     pub tenv: Rc<RefCell<TypeEnv>>,
-    pub unresolved: Rc<RefCell<Vec<TyTerm>>>,
+    pub unresolved: Rc<RefCell<Vec<UnresolvedModule>>>,
 }
 
 impl Constraints {
 
-    pub fn new(emitter: Rc<RefCell<Emitter>>, tenv: Rc<RefCell<TypeEnv>>, unresolved: Rc<RefCell<Vec<TyTerm>>>) -> Self {
+    pub fn new(emitter: Rc<RefCell<Emitter>>, tenv: Rc<RefCell<TypeEnv>>, unresolved: Rc<RefCell<Vec<UnresolvedModule>>>) -> Self {
         Constraints {
             set: BTreeSet::new(),
             emitter,
@@ -55,6 +57,8 @@ impl Constraints {
             TyList(ref terms) => terms.iter().map(|t| self.collect(&t)).collect(),
             TyTuple(_, ref terms, _) => terms.iter().map(|t| self.collect(&t)).collect(),
             TyIdent(ref t, ref name, ref sp) => {
+                println!("{:?} :: {}", module, name.as_str());
+                println!("{:#?}", self.tenv);
                 let ty =  self.tenv.borrow()
                     .resolve_type(&module, &name)
                     .or_else(|| self.tenv.borrow().resolve_type(&ModName::Global, &name))
@@ -259,7 +263,13 @@ impl Constraints {
         if let Type::UnresolvedModuleFun(..) = ty {
             // iteratively check a subset of AST because of bad algo
             // (instead of checking raw ast again and again)
-            self.unresolved.borrow_mut().push(TyTerm::TyFnApp(box fn_app.clone()));
+            self.unresolved.borrow_mut().push(
+                (
+                    TyTerm::TyFnApp(box fn_app.clone()),
+                    current_mod.clone(),
+                    self.tenv.borrow().get_scope_actions(),
+                )
+            );
             let resolution = if fn_app.orig_name.is_none() { // this is a weight assign fn
                 // println!("{:?}, {:?}", &fn_app.mod_name.clone().unwrap().as_str(), fn_app.name);
                 self.tenv.borrow_mut().resolve_unresolved(

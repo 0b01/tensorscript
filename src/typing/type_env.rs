@@ -20,6 +20,12 @@ use self::ModName::*;
 
 pub type TypeId = usize;
 
+#[derive(Debug, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
+pub enum ScopeAction {
+    Push,
+    Pop
+}
+
 #[derive(Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub enum ModName {
     Global,
@@ -68,6 +74,7 @@ pub struct TypeEnv {
     var_counter: TypeId,
     current_mod: ModName,
     modules: BTreeMap<ModName, (VecDeque<Scope>, VecDeque<Scope>, InitMap)>,
+    scope_actions: VecDeque<ScopeAction>,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
@@ -102,6 +109,7 @@ impl TypeEnv {
             var_counter: 0,
             current_mod: Global,
             modules: BTreeMap::new(),
+            scope_actions: VecDeque::new(),
         };
 
         // import basic functions such as view
@@ -133,6 +141,7 @@ impl TypeEnv {
     pub fn push_scope_collection(&mut self, mod_name: &ModName) {
         let stack = self.modules.get_mut(mod_name).unwrap();
         let scp = stack.1.pop_front().unwrap();
+        self.scope_actions.push_back(ScopeAction::Push);
         stack.0.push_back(scp);
     }
 
@@ -140,7 +149,32 @@ impl TypeEnv {
     pub fn pop_scope(&mut self, mod_name: &ModName) {
         let stack = self.modules.get_mut(mod_name).unwrap();
         let popped = stack.0.pop_back().unwrap();
+        self.scope_actions.pop_front();
         stack.1.push_back(popped);
+    }
+
+    /// unfortunately I just realized this will not work ...
+    pub fn enter_scope(&mut self, mod_name: &ModName, v: &VecDeque<ScopeAction>) {
+        println!("{:#?}", v);
+        for a in v.iter() {
+            match a {
+                ScopeAction::Push => self.push_scope_collection(mod_name),
+                ScopeAction::Pop => self.pop_scope(mod_name),
+            }
+        }
+    }
+
+    pub fn exit_scope(&mut self, mod_name: &ModName, v: &VecDeque<ScopeAction>) {
+        for a in v.iter() {
+            match a {
+                ScopeAction::Pop => self.push_scope_collection(mod_name),
+                ScopeAction::Push => self.pop_scope(mod_name),
+            }
+        }
+    }
+
+    pub fn get_scope_actions(&self) -> VecDeque<ScopeAction> {
+        self.scope_actions.clone()
     }
 
     pub fn resolve_init(&self, mod_name: &ModName, alias: &str) -> Option<Vec<TyFnAppArg>> {

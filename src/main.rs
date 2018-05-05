@@ -67,7 +67,7 @@ use typing::constraint::Constraints;
 use typing::unifier::Unifier;
 use typing::annotate::Annotator;
 use codegen::generator::Generator;
-use typing::type_env::TypeEnv;
+use typing::type_env::{TypeEnv, ModName};
 use typing::inferred_ast::subs;
 use errors::{Emitter};
 use parsing::ast_builder::ASTBuilder;
@@ -135,34 +135,49 @@ fn main() {
     // println!("{:#?}", last_sub);
 
     // ------------ resolve module constraints until it stabilizes ----------
-    let mut last_ast = subs(&ast, &mut last_sub);;
+    let mut last_u : Vec<_> = {
+        unresolved.borrow_mut().iter_mut()
+            .map(|(ref mut u, m, s)| (subs(&u, &mut last_sub), m.clone(), s.clone()))
+            .collect()
+    };
+    let mut last_ast = subs(&ast, &mut last_sub);
     let em_clone = emitter.clone();
     let tenv_clone = tenv.clone();
-    let resolve_ast = move || {
+    let _resolve = move || {
         loop {
             // collect constraints
-            let mut new_cs = Constraints::new(Rc::clone(&em_clone), Rc::clone(&tenv_clone), unresolved.clone());
-            new_cs.collect(&last_ast);
-            em_clone.borrow().print_errs();
+            let mut new_cs = Constraints::new(
+                Rc::clone(&emitter),
+                Rc::clone(&tenv),
+                unresolved.clone()
+            );
+            last_u.iter().map(|(t,m,s)| {
+                tenv.borrow_mut().set_module(m.clone());
+                tenv.borrow_mut().enter_scope(&m, &s);
+                new_cs.collect(&t);
+                tenv.borrow_mut().exit_scope(&m, &s);
+            }).collect::<Vec<_>>();
+            emitter.borrow().print_errs();
             // unify constraints
-            let mut new_unifier = Unifier::new(Rc::clone(&em_clone), Rc::clone(&tenv_clone), unresolved.clone());
+            let mut new_unifier = Unifier::new(Rc::clone(&emitter), Rc::clone(&tenv), unresolved.clone());
             let mut new_sub = new_unifier.unify(new_cs.clone());
-            em_clone.borrow().print_errs();
-            let temp_ast = subs(&last_ast, &mut new_sub);
-            if temp_ast != last_ast {
-                last_ast = temp_ast;
+            emitter.borrow().print_errs();
+            let temp_u = last_u.iter().map(|(t,m,s)| (subs(&t, &mut new_sub), m.clone(), s.clone())).collect();
+            last_ast = subs(&last_ast, &mut last_sub);
+            if temp_u != last_u {
+                last_u = temp_u;
                 continue;
             }
             return last_ast;
         }
     };
-    let final_ast = resolve_ast();
+    let final_ast = _resolve();
     if matches.is_present("print_ast") {
         println!("{:#?}", final_ast);
         exit(0);
     }
     // ---------------------------- code gen -----------------------------------
-    let mut generator = Generator::new(emitter.clone(), tenv.clone(), core.clone());
+    let mut generator = Generator::new(em_clone.clone(), tenv_clone.clone(), core.clone());
     generator.generate(&final_ast).unwrap();
     println!("{}", generator.buf);
 }
