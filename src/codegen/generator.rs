@@ -153,16 +153,17 @@ impl Module {
                         None => write!(self.buf, "return ")?,
                     };
 
-                    if is_global {
-                        write!(self.buf, "{}(",  fn_name)?;
-                    } else {
-                        write!(self.buf, "self.{}(", fn_name)?;
-                    }
-
                     let core_cloned = self.core.clone();
                     let core = core_cloned.borrow();
                     let op = core.find_mod(&module_name).unwrap();
                     let out = op.gen_fn_app("forward", args.as_slice())?;
+
+                    if is_global {
+                        write!(self.buf, "{}(",  op.gen_import())?;
+                    } else {
+                        write!(self.buf, "self.{}(", fn_name)?;
+                    }
+
                     write!(self.buf, "{}", out)?;
                     writeln!(self.buf, ")")?;
                 }
@@ -178,7 +179,7 @@ impl Module {
                     writeln!(self.buf, ")")?;
                 }
                 Item::Ident(ret, name) => {
-                    if ret {
+                    if ret && name != "self" {
                         self.indent()?;
                         writeln!(self.buf, "return {}", name)?;
                     }
@@ -265,6 +266,8 @@ impl Module {
     fn generate_init_fn(&mut self, init_fn: &TyFnDecl) -> Result<(), Diag> {
         self.generate_fn_decl_head("__init__", init_fn)?;
         self.tab();
+        self.indent()?;
+        writeln!(self.buf, "super({}, self).__init__()", self.name)?;
         let inits = self.inits.clone();
         for init in inits.borrow().iter() {
             self.indent()?;
@@ -283,9 +286,11 @@ impl Module {
             write!(self.buf, "{}", op.gen_fn_app(&init.fn_name, init.fn_args.as_slice())?)?;
             writeln!(self.buf, "")?;
         }
-        self.indent()?;
-        writeln!(self.buf, "# TODO: generate `fn new()` body")?;
-        //...
+
+        let fn_new = self.fns.borrow().get("new").unwrap().clone();
+        self.collect_term(&fn_new.func_block, None)?;
+        self.generate_fn()?;
+
         self.shift_tab();
         Ok(())
     }
@@ -337,12 +342,12 @@ impl Generator {
         writeln!(self.buf, "import torch.nn.functional as F")?;
         writeln!(self.buf, "import torch.optim as optim")?;
         writeln!(self.buf, "")?;
-        writeln!(self.buf, "# import ops")?;
 
-        for (path_name, mod_name) in self.imports.iter() {
-            let import_stmt = self.core.borrow().gen_import(path_name, mod_name);
-            writeln!(self.buf, "import {} as {}", import_stmt.unwrap(), mod_name)?;
-        }
+        // writeln!(self.buf, "# import ops")?;
+        // for (path_name, mod_name) in self.imports.iter() {
+        //     let import_stmt = self.core.borrow().gen_import(path_name, mod_name);
+        //     writeln!(self.buf, "import {} as {}", import_stmt.unwrap(), mod_name)?;
+        // }
 
         Ok(())
     }

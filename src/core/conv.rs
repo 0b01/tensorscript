@@ -134,7 +134,7 @@ impl Op for Conv2d {
         let mut buf = String::new();
         match name {
             "new" => {
-                write!(buf, "{}(", self.get_name());
+                write!(buf, "{}(", self.gen_import());
                 let map = args.to_btreemap().unwrap();
                 write!(buf, "in_channels={}, ", map["in_ch"].as_str().unwrap());
                 write!(buf, "out_channels={}, ", map["out_ch"].as_str().unwrap());
@@ -227,7 +227,7 @@ impl Op for maxpool2d {
         let mut buf = String::new();
         match name {
             "new" => {
-                write!(buf, "{}(", self.get_name());
+                write!(buf, "{}(", self.gen_import());
                 let map = args.to_btreemap().unwrap();
                 write!(buf, "in_channels={}, ", map["in_ch"].as_str().unwrap());
                 write!(buf, "out_channels={}, ", map["out_ch"].as_str().unwrap());

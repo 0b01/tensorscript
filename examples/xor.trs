@@ -1,5 +1,5 @@
 use lin::Linear;
-use nonlin::sigmoid;
+use nonlin::{sigmoid, relu};
 
 node Xor<[?,2] -> [?,1]> {
 }
@@ -14,12 +14,9 @@ graph Xor<[?,2] -> [?,1]> {
         self
     }
 
-    def a(x: [100, 1]) -> [100,1] {
-        x
-    }
-
     def forward {
-        x |> fc1 |> fc2 |> sigmoid
+        x |> fc1 |> relu
+          |> fc2 |> relu |> sigmoid
     }
 }
 

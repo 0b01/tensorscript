@@ -113,7 +113,7 @@ impl Op for Linear {
         let mut buf = String::new();
         match name {
             "new" => {
-                write!(buf, "{}(", self.get_name());
+                write!(buf, "{}(", self.gen_import());
                 let map = args.to_btreemap().unwrap();
                 write!(buf, "in_features={:?}, ", map["in"].as_num().unwrap());
                 write!(buf, "out_features={:?})", map["out"].as_num().unwrap());

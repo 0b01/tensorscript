@@ -11,6 +11,10 @@ macro_rules! impl_same_shape_op {
 
             fn is_stateful(&self) -> bool { $statefulness }
 
+            fn gen_import(&self) -> String {
+                format!("F.{}", self.get_name())
+            }
+
             fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
                 vec![
                     (
@@ -62,6 +66,10 @@ macro_rules! impl_same_shape_op {
                 stringify!($name)
             }
 
+            fn gen_import(&self) -> String {
+                format!("F.{}", self.get_name())
+            }
+
             fn is_stateful(&self) -> bool { $statefulness }
 
             fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
@@ -106,5 +114,3 @@ macro_rules! impl_same_shape_op {
         }
     };
 }
-
-                        // Some(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone()), arg!("p", int!())), ty))
