@@ -331,12 +331,7 @@ impl TypeEnv {
     }
 
     /// generate a tensor from untyped ast tensor signature
-    pub fn resolve_tensor(
-        &mut self,
-        mod_name: &ModName,
-        t: &TensorTy,
-        _span: &ByteSpan,
-    ) -> Type {
+    pub fn resolve_tensor(&mut self, mod_name: &ModName, t: &TensorTy) -> Type {
         match t {
             TensorTy::Generic(ref dims, ref sp) => {
                 self.create_tensor(mod_name, &dims, sp)

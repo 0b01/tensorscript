@@ -124,6 +124,12 @@ impl Op for Linear {
                 write!(buf, "{}", args.join(", "));
                 Ok(buf)
             }
+            "init_normal" => {
+                let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
+                write!(buf, "nn.init.normal_(");
+                write!(buf, "{}", args.join(", "));
+                Ok(buf)
+            }
             _ => panic!("{} is not implemented", name),
         }
     }

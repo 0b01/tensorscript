@@ -21,7 +21,7 @@ type VarName = String;
 type FnName = String;
 
 enum Item {
-    FnApp(Option<VarName>, FnName, Vec<TyFnAppArg>),
+    FnApp(Option<VarName>, FnName, Vec<TyFnAppArg>, bool, Option<ModName>),
     SelfFnApp(Option<VarName>, FnName, Vec<TyFnAppArg>),
     Ident(bool, String),
     ViewFn(Option<VarName>, Type),
@@ -101,27 +101,29 @@ impl Module {
         Ok(())
     }
 
-    fn collect_term(&mut self, term: &TyTerm, var: Option<String>) -> Result<(), Diag> {
+    fn collect_term(&mut self, term: &TyTerm, var: Option<String>, is_stmt: bool) -> Result<(), Diag> {
         use self::TyTerm::*;
         match term {
             TyBlock{stmts, ret, ..} => {
-                self.collect_term(&stmts, var.clone())?;
-                self.collect_term(&ret, var)?;
+                self.collect_term(&stmts, var.clone(), is_stmt)?;
+                self.collect_term(&ret, var, is_stmt)?;
             }
             TyList(terms) => terms
                 .iter()
-                .map(|t| self.collect_term(t, var.clone()))
+                .map(|t| self.collect_term(t, var.clone(), is_stmt))
                 .collect::<Result<_,_>>()?,
             TyExpr(t,ty,_) => {
-                self.collect_term(t, var)?;
+                self.collect_term(t, var, is_stmt)?;
             }
             TyFnApp(box fn_app) => {
-                self.collect_fn_app(fn_app, var)?;
+                self.collect_fn_app(fn_app, var, is_stmt)?;
             },
             TyIdent(_t,i,..) => self.codegen_stack
                 .push_back(Item::Ident(var.is_none(), i.as_str().to_owned())),
             TyInteger(..) => (),
             TyFloat(..) => (),
+            TyStmt(t, _) => self.collect_term(t, var, true)?,
+            TyNone => (),
             _ => panic!("{:#?}", term),
         }
         Ok(())
@@ -130,42 +132,61 @@ impl Module {
     fn generate_fn(&mut self) -> Result<(), Diag> {
         while let Some(item) = self.codegen_stack.pop_back() {
             match item {
-                Item::FnApp(var_name, fn_name, args) => {
+                Item::FnApp(var_name, fn_name, args, is_stmt, mod_name) => {
                     self.indent()?;
                     let mut is_global = false;
-                    let module_name = self.tenv.borrow()
-                        .resolve_type(
-                            &ModName::Named(self.name.to_owned()),
-                            &Alias::Variable(fn_name.to_owned()),
-                        )
-                        .unwrap_or_else(|| {
-                            is_global = true;
+                    let module_name = match mod_name {
+                        None =>
                             self.tenv.borrow()
-                                .resolve_type(
-                                    &ModName::Global,
-                                    &Alias::Variable(fn_name.to_owned()),
-                                ).unwrap()
-                        })
-                        .as_string();
+                            .resolve_type(
+                                &ModName::Named(self.name.to_owned()),
+                                &Alias::Variable(fn_name.to_owned()),
+                            )
+                            .unwrap_or_else(|| {
+                                is_global = true;
+                                self.tenv.borrow()
+                                    .resolve_type(
+                                        &ModName::Global,
+                                        &Alias::Variable(fn_name.to_owned()),
+                                    ).unwrap()
+                            })
+                            .as_string(),
+                        Some(ref mn) => mn.as_str().to_owned(),
+                    };
 
-                    match var_name {
-                        Some(v) => write!(self.buf, "{} = ", v)?,
-                        None => write!(self.buf, "return ")?,
+                    match (var_name, is_stmt) {
+                        (Some(v), false) => write!(self.buf, "{} = ", v)?,
+                        (None, false) => write!(self.buf, "return ")?,
+                        (None, true) => write!(self.buf, "")?,
+                        (Some(v), true) => write!(self.buf, "")?,
                     };
 
                     let core_cloned = self.core.clone();
                     let core = core_cloned.borrow();
                     let op = core.find_mod(&module_name).unwrap();
-                    let out = op.gen_fn_app("forward", args.as_slice())?;
+                    let out = {
+                        if mod_name.is_some() {
+                            op.gen_fn_app(&fn_name, args.as_slice())?
+                        } else {
+                            op.gen_fn_app("forward", args.as_slice())?
+                        }
+                    };
 
-                    if is_global {
-                        write!(self.buf, "{}(",  op.gen_import())?;
-                    } else {
-                        write!(self.buf, "self.{}(", fn_name)?;
+                    match (is_global, is_stmt) {
+                        (true, false) => {
+                            write!(self.buf, "{}(",  op.gen_import())?;
+                            writeln!(self.buf, "{})", out)?
+                        }
+                        (false, false) => {
+                            write!(self.buf, "self.{}(", fn_name)?;
+                            writeln!(self.buf, "{})", out)?
+                        }
+                        (true, true) => write!(self.buf, "")?,
+                        (false, true) => {
+                            write!(self.buf, "")?;
+                            writeln!(self.buf, "{}", out)?;
+                        }
                     }
-
-                    write!(self.buf, "{}", out)?;
-                    writeln!(self.buf, ")")?;
                 }
                 Item::SelfFnApp(var_name, fn_name, args) => {
                     self.indent()?;
@@ -201,12 +222,21 @@ impl Module {
         Ok(())
     }
 
-    fn collect_fn_app(&mut self, fn_app: &TyFnApp, var_name: Option<String>) -> Result<(), Diag> {
+    fn collect_fn_app(&mut self, fn_app: &TyFnApp, var_name: Option<String>, is_stmt: bool) -> Result<(), Diag> {
+
         if fn_app.mod_name == Some("view".to_owned()) {
             self.codegen_stack.push_back(Item::ViewFn(
                 var_name,
                 fn_app.ret_ty.clone(),
             ))
+        } else if fn_app.name == Alias::Function("forward".to_owned()) {
+            self.codegen_stack.push_back(Item::FnApp(
+                var_name,
+                fn_app.orig_name.clone().unwrap().to_owned(),
+                fn_app.args.clone(),
+                is_stmt,
+                None,
+            ));
         } else {
             if fn_app.orig_name == Some("self".to_owned())  {
                 self.codegen_stack.push_back(Item::SelfFnApp(
@@ -214,17 +244,24 @@ impl Module {
                     fn_app.name.as_str().to_owned(),
                     fn_app.args.clone()
                 ));
-            } else {
+            } else { // init_normal
+                println!("{}", fn_app.name.as_str());
+                let mod_ty = self.tenv.borrow().resolve_type(
+                    &ModName::Named(self.name.to_owned()),
+                    &Alias::Variable(fn_app.orig_name.clone().unwrap().as_str().to_owned()),
+                ).unwrap();
                 self.codegen_stack.push_back(Item::FnApp(
-                    var_name,
-                    fn_app.orig_name.clone().unwrap().to_owned(),
-                    fn_app.args.clone()
+                    fn_app.mod_name.clone(),
+                    fn_app.name.as_str().to_owned(),
+                    fn_app.args.clone(),
+                    is_stmt,
+                    Some(mod_ty.as_mod_name()),
                 ));
             }
         }
 
         for arg in fn_app.args.iter() {
-            self.collect_term(&arg.arg, arg.name.clone())?;
+            self.collect_term(&arg.arg, arg.name.clone(), is_stmt)?;
         }
         Ok(())
     }
@@ -243,7 +280,7 @@ impl Module {
         self.tab();
         // self.indent()?;
         // writeln!(self.buf, "'''{:?}'''", func.fn_ty)?;
-        self.collect_term(&func.func_block, None)?;
+        self.collect_term(&func.func_block, None, false)?;
         self.generate_fn()?;
         self.shift_tab();
         Ok(())
@@ -288,7 +325,7 @@ impl Module {
         }
 
         let fn_new = self.fns.borrow().get("new").unwrap().clone();
-        self.collect_term(&fn_new.func_block, None)?;
+        self.collect_term(&fn_new.func_block, None, true)?;
         self.generate_fn()?;
 
         self.shift_tab();

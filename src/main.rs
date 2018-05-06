@@ -103,6 +103,7 @@ fn get_matches<'a>() -> ArgMatches<'a> {
 fn main() {
     // --------------- get command line options -----------------
     let matches = get_matches();
+    let print_ast = matches.is_present("print_ast");
     let fname = matches.value_of("input").unwrap();
     let mut file = File::open(fname).expect("Unable to open the file");
     let mut src = String::new();
@@ -110,7 +111,7 @@ fn main() {
     // -------------------- create emitter --------------------
     let mut code_map = CodeMap::new();
     let file_map = code_map.add_filemap(fname.to_owned().into(), src.clone());
-    let emitter = Rc::new(RefCell::new(Emitter::new(code_map)));
+    let emitter = Rc::new(RefCell::new(Emitter::new(code_map, print_ast)));
     // --------------- parse into untyped ast   -----------------
     let cspan = CSpan::new(file_map.span());
     let builder = ASTBuilder::new(Rc::clone(&emitter), cspan);
@@ -156,7 +157,7 @@ fn main() {
         }
     };
     let final_ast = resolve_ast();
-    if matches.is_present("print_ast") {
+    if print_ast {
         println!("{:#?}", final_ast);
         exit(0);
     }

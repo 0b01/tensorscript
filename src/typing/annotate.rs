@@ -487,8 +487,13 @@ impl Annotator {
                 };
             }
             _ => {
-                decl.ret_ty = self.tenv.borrow_mut().resolve_tensor(&module, &f.return_ty.clone().unwrap(), &f.span);
                 decl.arg_ty = decl.fn_params.to_ty(&f.span);
+                decl.ret_ty = self.tenv
+                    .borrow_mut()
+                    .resolve_tensor(
+                        &module,
+                        &f.return_ty.clone().unwrap(),
+                    );
                 // decl.fn_ty = Type::FUN(box decl.param_ty.clone(), box decl.return_ty.clone());
             }
         };
@@ -523,7 +528,7 @@ impl Annotator {
     fn annotate_fn_decl_param(&self, p: &FnDeclParam) -> TyFnDeclParam {
         let module = self.tenv.borrow().module();
         let name = p.name.clone();
-        let ty = self.tenv.borrow_mut().resolve_tensor(&module, &p.ty_sig, &p.span);
+        let ty = self.tenv.borrow_mut().resolve_tensor(&module, &p.ty_sig);
         self.tenv.borrow_mut()
             .add_type(&module, &Alias::Variable(name.clone()), ty.clone())
             .unwrap_or_else(|e| {

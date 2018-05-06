@@ -4,6 +4,7 @@ use std::fmt::{Debug, Error, Formatter};
 use std::hash::{Hash, Hasher};
 use typing::type_env::TypeId;
 use std::collections::BTreeMap;
+use typing::type_env::ModName;
 
 #[derive(Clone, Eq, PartialOrd, Ord)]
 pub enum Type {
@@ -229,6 +230,13 @@ impl Type {
         }
     }
 
+    pub fn as_mod_name(&self) -> ModName {
+        match self {
+            Type::Module(s,..) => ModName::Named(s.to_owned()),
+            _ => unimplemented!(),
+        }
+    }
+
     pub fn as_string(&self) -> String {
         use self::Type::*;
         match self {
@@ -236,7 +244,7 @@ impl Type {
             TSR(tys, _) => tys.iter().map(|t| t.as_string()).collect::<Vec<_>>().join(", "),
             DIM(_, _) => "-1".to_owned(),
             ResolvedDim(i, _) => format!("{}", i),
-            _ => unimplemented!(),
+            _ => panic!("{:?}", self),
         }
     }
 

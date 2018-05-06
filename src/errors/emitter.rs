@@ -9,13 +9,15 @@ use std::process::exit;
 pub struct Emitter {
     errs: Vec<Diag>,
     code_map: CodeMap,
+    print_ast: bool,
 }
 
 impl Emitter {
-    pub fn new(code_map: CodeMap) -> Self {
+    pub fn new(code_map: CodeMap, print_ast: bool) -> Self {
         Self {
             errs: vec![],
             code_map,
+            print_ast,
         }
     }
 
@@ -34,6 +36,6 @@ impl Emitter {
             if diagnostic.severity == Severity::Error { is_err = true }
             emit(&mut writer.lock(), &self.code_map, &diagnostic).unwrap();
         }
-        if is_err { exit(-1) }
+        if is_err && !self.print_ast { exit(-1) }
     }
 }

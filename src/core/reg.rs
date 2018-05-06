@@ -55,7 +55,7 @@ impl Op for Dropout2d {
             "new" => {
                 write!(buf, "{}(", self.get_name());
                 let map = args.to_btreemap().unwrap();
-                write!(buf, "p={}), ", map["p"].as_str().unwrap());
+                write!(buf, "p={})", map["p"].as_str().unwrap());
                 Ok(buf)
             }
             "forward" => {
