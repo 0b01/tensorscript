@@ -195,15 +195,11 @@ impl ASTBuilder {
                 let param = eat!(fn_sig_tokens, fn_decl_param, "Failed to parse fn_decl_param", sp)?;
                 let return_ty = {
                     let temp = eat!(fn_sig_tokens, ty_sig, "Function does not have a type signature", sp);
-                    if temp.is_err() {
-                        TensorTy::Generic(vec![], sp)
+                    let temp = temp?.into_inner().next().unwrap();
+                    if temp.as_rule() == ident {
+                        TensorTy::Tensor(temp.as_str().to_owned(), sp)
                     } else {
-                        let temp = temp?.into_inner().next().unwrap();
-                        if temp.as_rule() == cap_ident {
-                            TensorTy::Tensor(temp.as_str().to_owned(), sp)
-                        } else {
-                            TensorTy::Generic(to_idents!(temp), sp)
-                        }
+                        TensorTy::Generic(to_idents!(temp), sp)
                     }
                 };
 
