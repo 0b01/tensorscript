@@ -1,7 +1,7 @@
 use core::{MethodName, Op};
 use errors::Diag;
 use span::CSpan;
-use typing::typed_term::{ArgsVecInto, Conversion, TyFnAppArg, TyTerm};
+use typing::typed_term::{ArgsVecInto, TyFnAppArg, TyTerm};
 use typing::{Type, TypeEnv};
 use std::fmt::Write;
 
@@ -113,8 +113,8 @@ impl Op for Linear {
         let mut buf = String::new();
         match name {
             "new" => {
-                write!(buf, "{}(", self.gen_import());
                 let map = args.to_btreemap().unwrap();
+                write!(buf, "{}(", self.gen_import());
                 write!(buf, "in_features={:?}, ", map["in"].as_num().unwrap());
                 write!(buf, "out_features={:?})", map["out"].as_num().unwrap());
                 Ok(buf)
@@ -125,9 +125,10 @@ impl Op for Linear {
                 Ok(buf)
             }
             "init_normal" => {
-                let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
+                let map = args.to_btreemap().unwrap();
                 write!(buf, "nn.init.normal_(");
-                write!(buf, "{}", args.join(", "));
+                write!(buf, "std={}", map["std"].as_float().unwrap());
+                write!(buf, ")");
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),

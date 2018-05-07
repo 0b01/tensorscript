@@ -1,7 +1,7 @@
 use core::{MethodName, Op};
 use errors::Diag;
 use span::CSpan;
-use typing::typed_term::{ArgsVecInto, Conversion, TyFnAppArg, TyTerm};
+use typing::typed_term::{ArgsVecInto, TyFnAppArg, TyTerm};
 use typing::{Type, TypeEnv};
 
 use std::fmt::Write;

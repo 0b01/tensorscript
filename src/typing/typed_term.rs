@@ -28,41 +28,26 @@ pub enum TyTerm {
     TyStmt(Box<TyTerm>, ByteSpan),
 }
 
-/// convenience functions and getters for a bunch of attributes
-pub trait Conversion {
-    /// get the type of AST node
-    fn ty(&self) -> Type;
-    /// get the span of AST node
-    fn span(&self) -> ByteSpan;
-    /// get integer value of Integer node
-    fn as_num(&self) -> Option<i64> {
-        None
-    }
-    /// convert ty term to string
-    fn as_str(&self) -> Option<String> {
-        None
-    }
-}
-
-impl Conversion for TyTerm {
-    fn span(&self) -> ByteSpan {
-        use self::TyTerm::*;
+impl TyTerm {
+    pub fn as_float(&self) -> Option<f64> {
         match self {
-            TyNone => CSpan::fresh_span(),
-            TyProgram(_) => CSpan::fresh_span(),
-            TyInteger(_, _, ref s) => *s,
-            TyFloat(_, _, ref s) => *s,
-            TyIdent(_, _, ref s) => *s,
-            TyFieldAccess(ref f_a) => f_a.span(),
-            TyFnApp(ref f_a) => f_a.span(),
-            TyBlock {ref span, ..} => *span,
-            TyExpr(_, _, ref span) => *span,
-            TyStmt(_, ref span) => *span,
-            _ => panic!("{:?}", self),
+            TyTerm::TyFloat(_, i, _) => Some(*i),
+            TyTerm::TyExpr(ref items, ..) => items.as_float(),
+            _ => None,
         }
     }
 
-    fn ty(&self) -> Type {
+    pub fn as_num(&self) -> Option<i64> {
+        use self::TyTerm::*;
+        match self {
+            TyInteger(_, i, _) => Some(*i),
+            TyExpr(ref items, ..) => items.as_num(),
+            TyIdent(ref t, ..) => t.as_num(),
+            _ => None,
+        }
+    }
+
+    pub fn ty(&self) -> Type {
         use self::TyTerm::*;
         use self::Type::*;
         match self {
@@ -80,18 +65,24 @@ impl Conversion for TyTerm {
             TyTuple(ref t, ..) => t.clone(),
         }
     }
-
-    fn as_num(&self) -> Option<i64> {
+    pub fn span(&self) -> ByteSpan {
         use self::TyTerm::*;
         match self {
-            TyInteger(_, i, _) => Some(*i),
-            TyExpr(ref items, ..) => items.as_num(),
-            TyIdent(ref t, ..) => t.as_num(),
-            _ => None,
+            TyNone => CSpan::fresh_span(),
+            TyProgram(_) => CSpan::fresh_span(),
+            TyInteger(_, _, ref s) => *s,
+            TyFloat(_, _, ref s) => *s,
+            TyIdent(_, _, ref s) => *s,
+            TyFieldAccess(ref f_a) => f_a.span(),
+            TyFnApp(ref f_a) => f_a.span(),
+            TyBlock {ref span, ..} => *span,
+            TyExpr(_, _, ref span) => *span,
+            TyStmt(_, ref span) => *span,
+            _ => panic!("{:?}", self),
         }
     }
 
-    fn as_str(&self) -> Option<String> {
+    pub fn as_str(&self) -> Option<String> {
         use self::TyTerm::*;
         let mut s = String::new();
         match self {
@@ -114,20 +105,21 @@ impl Conversion for TyTerm {
     }
 }
 
-impl Conversion for TyFieldAccess {
-    fn span(&self) -> ByteSpan {
+impl TyFieldAccess {
+    pub fn span(&self) -> ByteSpan {
         self.span
     }
-    fn ty(&self) -> Type {
+
+    pub fn ty(&self) -> Type {
         self.ty.clone()
     }
 }
 
-impl Conversion for TyFnApp {
-    fn span(&self) -> ByteSpan {
+impl TyFnApp {
+    pub fn span(&self) -> ByteSpan {
         self.span
     }
-    fn ty(&self) -> Type {
+    pub fn ty(&self) -> Type {
         self.ret_ty.clone()
     }
 }

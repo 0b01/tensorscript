@@ -4,7 +4,7 @@ use codespan::ByteSpan;
 use span::CSpan;
 use typing::type_env::{Alias, ModName, TypeEnv};
 #[allow(unused_imports)]
-use typing::typed_term::{ArgsVecInto, Conversion};
+use typing::typed_term::ArgsVecInto;
 #[allow(unused_imports)]
 use typing::typed_term::{TyDecl, TyFieldAccess, TyFnApp, TyFnAppArg, TyFnDecl, TyFnDeclParam,
                             TyGraphDecl, TyNodeDecl, TyTerm, TyUseStmt, TyWeightsAssign,
