@@ -139,6 +139,7 @@ fn main() {
     let em_clone = emitter.clone();
     let tenv_clone = tenv.clone();
     let resolve_ast = move || {
+        let mut i = 0;
         loop {
             // collect constraints
             let mut new_cs = Constraints::new(Rc::clone(&em_clone), Rc::clone(&tenv_clone));
@@ -151,6 +152,12 @@ fn main() {
             let temp_ast = subs(&last_ast, &mut new_sub);
             if temp_ast != last_ast {
                 last_ast = temp_ast;
+                i += 1;
+                if i > 1_000_000 {
+                    println!("Error: does not halt");
+                    exit(1);
+                }
+
                 continue;
             }
             return last_ast;
