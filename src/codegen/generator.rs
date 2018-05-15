@@ -212,8 +212,7 @@ impl Module {
                             writeln!(self.buf, "{} = {}.view({})", name, name, ty.as_string())?;
                         }
                         None => {
-                            writeln!(self.buf, "NONE")?;
-                            // ...
+                            writeln!(self.buf, "return x.view({})", ty.as_string())?;
                         }
                     }
                 }
@@ -245,7 +244,6 @@ impl Module {
                     fn_app.args.clone()
                 ));
             } else { // init_normal
-                println!("{}", fn_app.name.as_str());
                 let mod_ty = self.tenv.borrow().resolve_type(
                     &ModName::Named(self.name.to_owned()),
                     &Alias::Variable(fn_app.orig_name.clone().unwrap().as_str().to_owned()),

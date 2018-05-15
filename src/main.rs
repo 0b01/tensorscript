@@ -1,4 +1,3 @@
-#![feature(const_fn)]
 #![feature(iterator_flatten)]
 #![feature(transpose_result)]
 #![feature(box_syntax)]

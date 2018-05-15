@@ -29,7 +29,7 @@ x = sigmoid(x)
 
 ## Development
 
-[![Build Status](https://travis-ci.org/rickyhan/tensorscript-compiler.svg?branch=master)](https://travis-ci.org/rickyhan/tensorscript-compiler)
+[![Build Status](https://travis-ci.org/rickyhan/tensorscript.svg?branch=master)](https://travis-ci.org/rickyhan/tensorscript)
 
 The language is not usable in production or development.
 

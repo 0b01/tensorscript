@@ -105,4 +105,24 @@ impl Op for BatchNorm1d {
             _ => unimplemented!(),
         }
     }
+
+
+    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+        let mut buf = String::new();
+        match name {
+            "new" => {
+                let map = args.to_btreemap().unwrap();
+                write!(buf, "{}(", self.gen_import());
+                write!(buf, "num_features={})",
+                    map["num_features"].as_num().unwrap());
+            }
+            "forward" => {
+                let map = args.to_btreemap().unwrap();
+                write!(buf, "x");
+            }
+            _ => unimplemented!(),
+        }
+
+        Ok(buf)
+    }
 }

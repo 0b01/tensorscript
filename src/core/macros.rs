@@ -1,5 +1,5 @@
 macro_rules! impl_same_shape_op {
-    ($path:ident, $name:ident, $statefulness:expr, $test:block) => {
+    ($path:ident, $name:ident, $statefulness:expr) => {
         #[allow(non_camel_case_types)]
         #[derive(Debug, Clone)]
         pub struct $name;
@@ -34,7 +34,6 @@ macro_rules! impl_same_shape_op {
             ) -> Option<Result<Type, Diag>> {
                 match fn_name {
                     "forward" => {
-                        { $test };
                         let ty = tenv.fresh_var(&CSpan::fresh_span());
                         Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty)))
                     }
@@ -46,66 +45,7 @@ macro_rules! impl_same_shape_op {
                 let mut buf = String::new();
                 match name {
                     "forward" => {
-                        let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
-                        write!(buf, "{}", args.join(", "));
-                        Ok(buf)
-                    }
-                    _ => panic!("{} is not implemented", name),
-                }
-            }
-        }
-    };
-
-    ($path:ident, $name:ident, $statefulness:expr, $test:block, $($additional_args:expr),* ) => {
-        #[allow(non_camel_case_types)]
-        #[derive(Debug, Clone)]
-        pub struct $name;
-
-        impl Op for $name {
-            fn get_name(&self) -> &'static str {
-                stringify!($name)
-            }
-
-            fn gen_import(&self) -> String {
-                format!("F.{}", self.get_name())
-            }
-
-            fn is_stateful(&self) -> bool { $statefulness }
-
-            fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-                vec![
-                    (
-                        "forward",
-                        UnresolvedModuleFun(stringify!($path), self.get_name(), "forward", CSpan::fresh_span())
-                    )
-                ]
-            }
-
-            fn resolve(
-                &self,
-                tenv: &mut TypeEnv,
-                fn_name: &str,
-                _arg_ty: Type,
-                _ret_ty: Type,
-                _args: Vec<TyFnAppArg>,
-                _inits: Option<Vec<TyFnAppArg>>,
-            ) -> Option<Result<Type, Diag>> {
-                match fn_name {
-                    "forward" => {
-                        { $test };
-                        let ty = tenv.fresh_var(&CSpan::fresh_span());
-                        Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone()), $($additional_args)* ), ty)))
-                    }
-                    _ => unimplemented!(),
-                }
-            }
-
-            fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
-                let mut buf = String::new();
-                match name {
-                    "forward" => {
-                        let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
-                        write!(buf, "{}", args.join(", "));
+                        write!(buf, "");
                         Ok(buf)
                     }
                     _ => panic!("{} is not implemented", name),
