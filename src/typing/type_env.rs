@@ -111,16 +111,15 @@ impl TypeEnv {
     }
 
     /// create new dimension type variable
-    pub fn fresh_dim(&mut self, span: &ByteSpan) -> Type {
+    pub fn fresh_dim(&mut self, span: ByteSpan) -> Type {
         self.dim_counter += 1;
-        Type::DIM(self.dim_counter, *span)
+        Type::DIM(self.dim_counter, span)
     }
 
     /// create new type variable
-    pub fn fresh_var(&mut self, span: &ByteSpan) -> Type {
+    pub fn fresh_var(&mut self, span: ByteSpan) -> Type {
         self.var_counter += 1;
-        // println!("new_var: {}", self.counter);
-        Type::VAR(self.var_counter, *span)
+        Type::VAR(self.var_counter, span)
     }
 
     /// push scope onto stack during tree traversal
@@ -260,7 +259,7 @@ impl TypeEnv {
     }
 
     /// tie an alias with a type variable dimension
-    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &Alias, span: &ByteSpan) -> Result<(), Diag> {
+    pub fn add_dim_alias(&mut self, mod_name: &ModName, alias: &Alias, span: ByteSpan) -> Result<(), Diag> {
         let tyvar = self.fresh_dim(span);
         self.add_type(mod_name, alias, tyvar)
     }
@@ -289,7 +288,7 @@ impl TypeEnv {
         for t in tsr.iter() {
             let alias = Alias::Variable(t.to_string());
             if !self.exists(mod_name, &alias) {
-                self.add_dim_alias(mod_name, &alias, span)?;
+                self.add_dim_alias(mod_name, &alias, *span)?;
             }
         }
 
@@ -314,7 +313,7 @@ impl TypeEnv {
                         let alias = Alias::Variable(t.to_string());
                         let ty = self.resolve_type(mod_name, &alias)
                             .or_else(|| self.resolve_type(&Global, &alias))
-                            .unwrap_or_else(|| self.fresh_dim(span))
+                            .unwrap_or_else(|| self.fresh_dim(*span))
                             .clone();
                         if let Type::TSR(vs, _) = ty {
                             vs
@@ -378,7 +377,7 @@ impl TypeEnv {
             for t in dims.iter().filter(|t| t.parse::<i64>().is_err()) {
                 let alias =  Alias::Variable(t.to_string());
                 if !self.exists(mod_name, &alias) {
-                    self.add_dim_alias(mod_name, &alias, span)?;
+                    self.add_dim_alias(mod_name, &alias, *span)?;
                 }
             }
         }

@@ -17,11 +17,11 @@ impl Op for sigmoid {
 
     fn is_stateful(&self) -> bool { false }
 
-    fn gen_import(&self) -> String {
+    fn pytorch_name(&self) -> String {
         format!("F.{}", self.get_name())
     }
 
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
                 "forward",
@@ -40,18 +40,18 @@ impl Op for sigmoid {
     ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                let ty = tenv.fresh_var(CSpan::fresh_span());
                 Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty)))
             }
             _ => unimplemented!(),
         }
     }
 
-    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+    fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {
             "forward" => {
-                write!(buf, "");
+                write!(buf, "").unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),
@@ -70,11 +70,11 @@ impl Op for tanh {
 
     fn is_stateful(&self) -> bool { false }
 
-    fn gen_import(&self) -> String {
+    fn pytorch_name(&self) -> String {
         format!("F.{}", self.get_name())
     }
 
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
                 "forward",
@@ -93,18 +93,18 @@ impl Op for tanh {
     ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                let ty = tenv.fresh_var(CSpan::fresh_span());
                 Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty)))
             }
             _ => unimplemented!(),
         }
     }
 
-    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+    fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {
             "forward" => {
-                write!(buf, "");
+                write!(buf, "").unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),
@@ -123,11 +123,11 @@ impl Op for relu {
 
     fn is_stateful(&self) -> bool { false }
 
-    fn gen_import(&self) -> String {
+    fn pytorch_name(&self) -> String {
         format!("F.{}", self.get_name())
     }
 
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
                 "forward",
@@ -146,18 +146,18 @@ impl Op for relu {
     ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                let ty = tenv.fresh_var(CSpan::fresh_span());
                 Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty)))
             }
             _ => unimplemented!(),
         }
     }
 
-    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+    fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {
             "forward" => {
-                write!(buf, "");
+                write!(buf, "").unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),
@@ -176,11 +176,11 @@ impl Op for leaky_relu {
 
     fn is_stateful(&self) -> bool { false }
 
-    fn gen_import(&self) -> String {
+    fn pytorch_name(&self) -> String {
         format!("F.{}", self.get_name())
     }
 
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
                 "forward",
@@ -199,18 +199,18 @@ impl Op for leaky_relu {
     ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                let ty = tenv.fresh_var(CSpan::fresh_span());
                 Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty)))
             }
             _ => unimplemented!(),
         }
     }
 
-    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+    fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {
             "forward" => {
-                write!(buf, "");
+                write!(buf, "").unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),
@@ -227,13 +227,13 @@ impl Op for log_softmax {
         "log_softmax"
     }
 
-    fn gen_import(&self) -> String {
+    fn pytorch_name(&self) -> String {
         format!("F.{}", self.get_name())
     }
 
     fn is_stateful(&self) -> bool { false }
 
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
                 "forward",
@@ -253,7 +253,7 @@ impl Op for log_softmax {
     ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                let ty = tenv.fresh_var(CSpan::fresh_span());
                 Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone()), arg!("dim", int!())), ty)))
             }
             _ => unimplemented!(),
@@ -265,7 +265,7 @@ impl Op for log_softmax {
         match name {
             "forward" => {
                 let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
-                write!(buf, "{}", args.join(", "));
+                write!(buf, "{}", args.join(", ")).unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),

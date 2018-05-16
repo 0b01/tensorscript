@@ -86,18 +86,18 @@ impl TyTerm {
         use self::TyTerm::*;
         let mut s = String::new();
         match self {
-            TyInteger(..) => write!(s, "{}", self.as_num()?),
-            TyExpr(ref items, ..) => write!(s, "{}", items.as_str()?),
-            TyIdent(ref t, ..) => write!(s, "{}", t.as_string()),
-            TyFloat(_, f, ..) => write!(s, "{}", f),
+            TyInteger(..) => write!(s, "{}", self.as_num()?).unwrap(),
+            TyExpr(ref items, ..) => write!(s, "{}", items.as_str()?).unwrap(),
+            TyIdent(ref t, ..) => write!(s, "{}", t.as_string()).unwrap(),
+            TyFloat(_, f, ..) => write!(s, "{}", f).unwrap(),
             TyTuple(_, ref ts, _) => {
-                write!(s, "(");
+                write!(s, "(").unwrap();
                 write!(s, "{}", ts
                     .iter()
                     .map(|t| t.as_str())
                     .collect::<Option<Vec<_>>>()?.join(", ")
-                );
-                write!(s, ")")
+                ).unwrap();
+                write!(s, ")").unwrap()
             }
             _ => panic!("{:?}", self),
         };

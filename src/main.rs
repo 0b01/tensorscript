@@ -65,7 +65,7 @@ mod codegen;
 use typing::constraint::Constraints;
 use typing::unifier::Unifier;
 use typing::annotate::Annotator;
-use codegen::generator::Generator;
+use codegen::pytorch::Generator;
 use typing::type_env::TypeEnv;
 use typing::inferred_ast::subs;
 use errors::{Emitter};

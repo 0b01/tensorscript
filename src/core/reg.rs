@@ -18,7 +18,7 @@ impl Op for Dropout2d {
 
     fn is_stateful(&self) -> bool { false }
 
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
                 "new",
@@ -42,7 +42,7 @@ impl Op for Dropout2d {
     ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                let ty = tenv.fresh_var(CSpan::fresh_span());
                 Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty)))
             }
             _ => unimplemented!(),
@@ -53,14 +53,14 @@ impl Op for Dropout2d {
         let mut buf = String::new();
         match name {
             "new" => {
-                write!(buf, "{}(", self.get_name());
+                write!(buf, "{}(", self.get_name()).unwrap();
                 let map = args.to_btreemap().unwrap();
-                write!(buf, "p={})", map["p"].as_str().unwrap());
+                write!(buf, "p={})", map["p"].as_str().unwrap()).unwrap();
                 Ok(buf)
             }
             "forward" => {
                 let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
-                write!(buf, "{}", args.join(", "));
+                write!(buf, "{}", args.join(", ")).unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),
@@ -75,7 +75,7 @@ impl Op for BatchNorm1d {
 
     fn is_stateful(&self) -> bool { true }
 
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
                 "new",
@@ -99,7 +99,7 @@ impl Op for BatchNorm1d {
     ) -> Option<Result<Type, Diag>> {
         match fn_name {
             "forward" => {
-                let ty = tenv.fresh_var(&CSpan::fresh_span());
+                let ty = tenv.fresh_var(CSpan::fresh_span());
                 Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty)))
             }
             _ => unimplemented!(),
@@ -112,13 +112,13 @@ impl Op for BatchNorm1d {
         match name {
             "new" => {
                 let map = args.to_btreemap().unwrap();
-                write!(buf, "{}(", self.gen_import());
+                write!(buf, "{}(", self.pytorch_name()).unwrap();
                 write!(buf, "num_features={})",
-                    map["num_features"].as_num().unwrap());
+                    map["num_features"].as_num().unwrap()).unwrap();
             }
             "forward" => {
-                let map = args.to_btreemap().unwrap();
-                write!(buf, "x");
+                // let map = args.to_btreemap().unwrap();
+                write!(buf, "x").unwrap();
             }
             _ => unimplemented!(),
         }

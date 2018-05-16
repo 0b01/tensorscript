@@ -174,7 +174,7 @@ impl Constraints {
     fn collect_weights_assign(&mut self, w_a: &TyWeightsAssign) {
         let mod_name = &w_a.mod_name;
         // convert into a fn_app and collect on `self.new` method
-        let ret_ty = self.tenv.borrow_mut().fresh_var(&w_a.span);
+        let ret_ty = self.tenv.borrow_mut().fresh_var(w_a.span);
         self.collect_fn_app(
             &TyFnApp {
                 mod_name: Some(mod_name.to_string()),

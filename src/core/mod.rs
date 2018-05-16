@@ -4,9 +4,6 @@ use typing::{Type, TypeEnv};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
-#[macro_use]
-mod macros;
-
 mod prelude;
 mod conv;
 mod lin;
@@ -16,9 +13,9 @@ mod nonlin;
 pub trait Op: Debug {
     fn get_name(&self) -> &'static str;
 
-    fn get_module_sig(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)>;
+    fn ty_sigs(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)>;
 
-    fn gen_import(&self) -> String {
+    fn pytorch_name(&self) -> String {
         format!("nn.{}", self.get_name())
     }
 
@@ -36,7 +33,7 @@ pub trait Op: Debug {
         unimplemented!();
     }
 
-    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+    fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         panic!("{:?}::{} function call is not yet implemented", self, name);
         // unimplemented!()
     }
@@ -81,12 +78,7 @@ impl Core {
     }
     pub fn import(&self, path_name: &str, mod_name: &str, tenv: &mut TypeEnv) -> Option<Vec<(MethodName, Type)>> {
         let op = self.find(path_name, mod_name)?;
-        Some(op.get_module_sig(tenv))
-    }
-
-    pub fn gen_import(&self, path_name: &str, mod_name: &str) -> Option<String> {
-        let op = self.find(path_name, mod_name)?;
-        Some(op.gen_import())
+        Some(op.ty_sigs(tenv))
     }
 
     pub fn find(&self, path_name: &str, mod_name: &str) -> Option<&Box<Op>> {

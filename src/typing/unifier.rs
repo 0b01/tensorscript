@@ -5,7 +5,6 @@ use errors::{Emitter, Diag };
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::process::exit;
-use typing::typed_term::TyTerm;
 
 use typing::constraint::{Constraints, Equals};
 use typing::substitution::Substitution;

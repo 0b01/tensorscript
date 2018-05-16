@@ -13,13 +13,13 @@ impl Op for view {
         "view"
     }
 
-    fn gen_import(&self) -> String {
+    fn pytorch_name(&self) -> String {
         unimplemented!()
     }
 
     fn is_stateful(&self) -> bool { false }
 
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         use self::Type::*;
         vec![
             (

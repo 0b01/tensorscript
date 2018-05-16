@@ -16,7 +16,7 @@ impl Op for Linear {
 
     fn is_stateful(&self) -> bool { true }
 
-    fn get_module_sig(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
+    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         use self::Type::*;
         vec![
             (
@@ -114,21 +114,21 @@ impl Op for Linear {
         match name {
             "new" => {
                 let map = args.to_btreemap().unwrap();
-                write!(buf, "{}(", self.gen_import());
-                write!(buf, "in_features={:?}, ", map["in"].as_num().unwrap());
-                write!(buf, "out_features={:?})", map["out"].as_num().unwrap());
+                write!(buf, "{}(", self.pytorch_name()).unwrap();
+                write!(buf, "in_features={:?}, ", map["in"].as_num().unwrap()).unwrap();
+                write!(buf, "out_features={:?})", map["out"].as_num().unwrap()).unwrap();
                 Ok(buf)
             }
             "forward" => {
                 let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
-                write!(buf, "{}", args.join(", "));
+                write!(buf, "{}", args.join(", ")).unwrap();
                 Ok(buf)
             }
             "init_normal" => {
                 let map = args.to_btreemap().unwrap();
-                write!(buf, "nn.init.normal_(");
-                write!(buf, "std={}", map["std"].as_float().unwrap());
-                write!(buf, ")");
+                write!(buf, "nn.init.normal_(").unwrap();
+                write!(buf, "std={}", map["std"].as_float().unwrap()).unwrap();
+                write!(buf, ")").unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),

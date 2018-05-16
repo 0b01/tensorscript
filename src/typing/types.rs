@@ -202,13 +202,6 @@ impl Type {
         }
     }
 
-    pub fn ret_ty(&self) -> Option<Type> {
-        match self {
-            Type::FUN(_,_,_,box ty,_) => Some(ty.clone()),
-            _ => None,
-        }
-    }
-
     /// modifies the span parameter in type to the most relevant
     pub fn with_span(&self, sp: &ByteSpan) -> Type {
         use self::Type::*;

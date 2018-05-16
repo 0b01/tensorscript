@@ -128,8 +128,8 @@ impl Annotator {
             let t = match t {
                 // this may be `fc1`
                 Term::Ident(ref id, ref span) => {
-                    let arg_ty = self.tenv.borrow_mut().fresh_var(span);
-                    let ret_ty = self.tenv.borrow_mut().fresh_var(span);
+                    let arg_ty = self.tenv.borrow_mut().fresh_var(*span);
+                    let ret_ty = self.tenv.borrow_mut().fresh_var(*span);
                     TyTerm::TyFnApp(box TyFnApp {
                         mod_name: Some(
                             self.tenv.borrow().resolve_type(&module, &Alias::Variable(id.clone()))
@@ -413,7 +413,7 @@ impl Annotator {
             name: Alias::Variable(name.to_owned()),
             arg_ty,
             args: t_args,
-            ret_ty: self.tenv.borrow_mut().fresh_var(&span),
+            ret_ty: self.tenv.borrow_mut().fresh_var(*span),
             span: *span,
         }
     }
@@ -426,8 +426,8 @@ impl Annotator {
             &Alias::Variable(module.as_str().to_owned()),
         ).unwrap().clone().with_span(&f.span) };
 
-        let arg_ty = self.tenv.borrow_mut().fresh_var(&f.span);
-        let ret_ty = self.tenv.borrow_mut().fresh_var(&f.span);
+        let arg_ty = self.tenv.borrow_mut().fresh_var(f.span);
+        let ret_ty = self.tenv.borrow_mut().fresh_var(f.span);
         let mut decl = TyFnDecl {
             name: Alias::Function(f.name.clone()),
             fn_params: {
@@ -461,7 +461,7 @@ impl Annotator {
                     Some(e) => e.name.clone(),
                     None => "x".to_string(),
                 };
-                if let Type::Module(ref modn, Some(box Type::FUN(_,_,ref p, box ref r, _)), _) = mod_ty.clone() {
+                if let Type::Module(ref _modn, Some(box Type::FUN(_,_,ref p, box ref r, _)), _) = mod_ty.clone() {
                     let ty_sig = *p.clone();
 
                     // type the first parameter
@@ -550,7 +550,7 @@ impl Annotator {
                 None => TyTerm::TyFieldAccess(TyFieldAccess {
                     mod_name: f_a.mod_name.clone(),
                     field_name: f_a.field_name.clone(),
-                    ty: self.tenv.borrow_mut().fresh_var(&f_a.span),
+                    ty: self.tenv.borrow_mut().fresh_var(f_a.span),
                     span: f_a.span,
                 }),
                 Some(ref v) => {
@@ -563,7 +563,7 @@ impl Annotator {
                         name: Alias::Function(f_a.field_name.clone()),
                         arg_ty: args_ty,
                         args,
-                        ret_ty: self.tenv.borrow_mut().fresh_var(&f_a.span),
+                        ret_ty: self.tenv.borrow_mut().fresh_var(f_a.span),
                         span: f_a.span,
                     })
                 }
