@@ -44,8 +44,7 @@ pub struct Core {
     maps: HashMap<&'static str, HashMap<&'static str, Box<Op>>>,
 }
 
-type MethodName = &'static str;
-
+pub type MethodName = &'static str;
 
 impl Core {
     pub fn new() -> Self {

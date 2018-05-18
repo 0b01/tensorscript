@@ -1,0 +1,13 @@
+[package]
+name = "trsc_core_derive"
+version = "0.1.0"
+authors = ["ricky han <rickylqhan@gmail.com>"]
+
+[lib]
+proc-macro = true
+name = "trsc_core_derive"
+
+[dependencies]
+syn = "0.11.11"
+quote = "0.3.15"
+

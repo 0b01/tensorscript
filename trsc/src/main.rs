@@ -2,6 +2,8 @@
 #![feature(transpose_result)]
 #![feature(box_syntax)]
 #![feature(box_patterns)]
+#![feature(custom_attribute)]
+#![feature(attr_literals)]
 
 /// How it works:
 /// 1. PEG parser parses into token tree. The downside of PEG parser is that
@@ -43,6 +45,8 @@
 /// data structures such as AST nodes, types, etc...
 ///
 
+#[macro_use]
+extern crate trsc_core_derive;
 extern crate pest;
 #[macro_use]
 mod typing;
@@ -67,6 +71,7 @@ use typing::unifier::Unifier;
 use typing::annotate::Annotator;
 use codegen::pytorch::Generator;
 use typing::type_env::TypeEnv;
+use typing::Type;
 use typing::inferred_ast::subs;
 use errors::{Emitter};
 use parsing::ast_builder::ASTBuilder;
@@ -172,3 +177,8 @@ fn main() {
     generator.generate(&final_ast).unwrap();
     println!("{}", generator.buf);
 }
+
+use core::{Op, MethodName};
+#[derive(Debug, Op)]
+#[stateful = true]
+struct Blah;
