@@ -1,0 +1,53 @@
+use conv::{Conv2d, maxpool2d};
+use reg::Dropout2d;
+use nonlin::{relu, log_softmax};
+use lin::Linear;
+
+node Mnist<[?, IMAGE] -> LABELS> {
+    // this is where you declare type level constants
+    dim FC1 = 320;
+    dim FC2 = 50;
+
+    // Prediction
+    dim OUT = 10;
+    // Channel
+    dim C = 1;
+
+    dim W = 28;                 // Image Width
+    dim H = 28;                 // Image Height
+    tsr IMAGE = [C,H,W];        // Tensor alias
+
+    tsr LABELS = [?,OUT];
+}
+
+weights Mnist<[?, IMAGE] -> LABELS> {
+    conv1 = Conv2d::new(in_ch=1, out_ch=10, kernel_size=(5,5));
+    conv2 = Conv2d::new(in_ch=10, out_ch=20, kernel_size=5);
+    dropout = Dropout2d::new(p=0.5);
+    fc1 = Linear::<[?,FC1] -> [?,FC2]>::new(in=FC1, out=FC2);
+    fc2 = Linear::<[?,FC2] -> [?,OUT]>::new(in=FC2, out=OUT);
+}
+
+graph Mnist<[?, IMAGE] -> LABELS> {
+
+    def new() -> Self {
+        fc1.init_normal(std=1.);
+        fc2.init_normal(std=1.);
+        self
+    }
+
+    def forward {
+        x
+        |> conv1            |> maxpool2d(kernel_size=2) |> relu
+        |> conv2 |> dropout |> maxpool2d(kernel_size=2) |> relu
+        |> view(_, FC1)
+        |> fc1 |> relu
+        |> self.example()
+        |> log_softmax(dim=1)
+    }
+
+    def example(x: [?,FC2]) -> LABELS {
+        x |> fc2 |> relu
+    }
+
+}
