@@ -23,13 +23,12 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
 fn impl_op(ast: &syn::DeriveInput) -> quote::Tokens {
     let name = &ast.ident;
-    let stateful = &ast.attrs[0].value;
+    let attrs = &ast.attrs;
+    panic!("{:#?}", attrs);
 
     if let syn::Body::Enum(_) = ast.body {
-        panic!("Not defined for enum");
+        panic!("Cannot derive Op for `enum`");
     }
-
-    println!("{:#?}", stateful);
 
     quote! {
         impl Op for #name {

@@ -11,6 +11,11 @@ pub struct Dropout2d;
 #[derive(Debug, Clone)]
 pub struct BatchNorm1d;
 
+#[derive(Debug, Op)]
+#[stateful = true]
+#[output = "test * blah"]
+struct Blah;
+
 impl Op for Dropout2d {
     fn get_name(&self) -> &'static str {
         "Dropout2d"
