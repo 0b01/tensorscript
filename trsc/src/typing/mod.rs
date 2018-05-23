@@ -8,5 +8,4 @@ pub use self::type_env::TypeEnv;
 pub use self::types::Type;
 pub mod constraint;
 pub mod inferred_ast;
-pub mod substitution;
 pub mod unifier;

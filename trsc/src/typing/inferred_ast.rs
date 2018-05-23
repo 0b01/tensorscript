@@ -1,8 +1,8 @@
 /// Substitute inferred types back into AST
 use self::TyTerm::*;
-use typing::substitution::Substitution;
 use typing::typed_term;
 use typing::typed_term::*;
+use typing::unifier::Substitution;
 
 pub fn subs(typed_term: &TyTerm, s: &mut Substitution) -> TyTerm {
     // println!("{}", typed_term);
