@@ -1,4 +1,4 @@
-use core::{MethodName, Op};
+use core::{MethodName, Op, PyTorch};
 use errors::Diag;
 use span::CSpan;
 use typing::typed_term::{ArgsVecInto, TyFnAppArg, TyTerm};
@@ -107,6 +107,13 @@ impl Op for Linear {
             }
             _ => unimplemented!(),
         }
+    }
+
+}
+impl PyTorch for Linear {
+
+    fn pytorch_name(&self) -> &'static str {
+        "nn.Linear"
     }
 
     fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {

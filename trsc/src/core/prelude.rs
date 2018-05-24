@@ -1,4 +1,4 @@
-use core::{MethodName, Op};
+use core::{MethodName, Op, PyTorch};
 use errors::Diag;
 use span::CSpan;
 use typing::typed_term::TyFnAppArg;
@@ -11,10 +11,6 @@ pub struct view;
 impl Op for view {
     fn get_name(&self) -> &'static str {
         "view"
-    }
-
-    fn pytorch_name(&self) -> String {
-        unimplemented!()
     }
 
     fn is_stateful(&self) -> bool { false }
@@ -85,5 +81,11 @@ impl Op for view {
             }
             _ => unimplemented!(),
         }
+    }
+}
+
+impl PyTorch for view {
+    fn pytorch_name(&self) -> &'static str {
+        unimplemented!();
     }
 }

@@ -1,3 +1,4 @@
+#![recursion_limit="128"]
 extern crate proc_macro;
 extern crate syn;
 #[macro_use]
@@ -28,6 +29,10 @@ pub fn derive(input: TokenStream) -> TokenStream {
 }
 
 fn impl_op(ast: &syn::DeriveInput) -> quote::Tokens {
+    if let syn::Body::Enum(_) = ast.body {
+        panic!("Cannot derive Op for `enum`");
+    }
+
     let name = &ast.ident;
 
     let stateful = get_is_stateful(&ast.attrs);
@@ -36,10 +41,7 @@ fn impl_op(ast: &syn::DeriveInput) -> quote::Tokens {
     let path = get_path(&ast.attrs).unwrap_or_else(|| panic!("no path supplied"));
     let fn_decls = get_fn_decls(path, &fns);
     let ty_sigs = gen_ty_sigs(&fn_decls);
-
-    if let syn::Body::Enum(_) = ast.body {
-        panic!("Cannot derive Op for `enum`");
-    }
+    let resolution = gen_resolution(&fn_decls);
 
     quote! {
         impl Op for #name {
@@ -54,6 +56,18 @@ fn impl_op(ast: &syn::DeriveInput) -> quote::Tokens {
 
             fn is_stateful(&self) -> bool {
                 #stateful
+            }
+
+            fn resolve(
+                &self,
+                tenv: &mut TypeEnv,
+                fn_name: &str,
+                _arg_ty: Type,
+                _ret_ty: Type,
+                _args: Vec<TyFnAppArg>,
+                _inits: Option<Vec<TyFnAppArg>>,
+            ) -> Option<Result<Type, Diag>> {
+                #resolution
             }
 
         }
@@ -73,6 +87,18 @@ fn gen_ty_sigs(decls: &[FnDecl]) -> quote::Tokens {
         vec![
             #(#ty_sigs),*
         ]
+    }
+}
+
+fn gen_resolution(decls: &[FnDecl]) -> quote::Tokens {
+    quote! {
+        match fn_name {
+            "forward" => {
+                let ty = tenv.fresh_var(CSpan::fresh_span());
+                Some(Ok(fun!(self.get_name(), "forward", args!(arg!("x", ty.clone())), ty)))
+            }
+            _ => unimplemented!(),
+        }
     }
 }
 

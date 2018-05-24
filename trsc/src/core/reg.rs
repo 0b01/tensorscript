@@ -1,4 +1,4 @@
-use core::{MethodName, Op};
+use core::{MethodName, Op, PyTorch};
 use errors::Diag;
 use span::CSpan;
 use typing::typed_term::TyFnAppArg;
@@ -57,24 +57,30 @@ pub struct Dropout2d;
 //         }
 //     }
 
-//     fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
-//         let mut buf = String::new();
-//         match name {
-//             "new" => {
-//                 write!(buf, "{}(", self.get_name()).unwrap();
-//                 let map = args.to_btreemap().unwrap();
-//                 write!(buf, "p={})", map["p"].as_str().unwrap()).unwrap();
-//                 Ok(buf)
-//             }
-//             "forward" => {
-//                 let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
-//                 write!(buf, "{}", args.join(", ")).unwrap();
-//                 Ok(buf)
-//             }
-//             _ => panic!("{} is not implemented", name),
-//         }
-//     }
-// }
+impl PyTorch for Dropout2d {
+
+    fn pytorch_name(&self) -> &'static str {
+        "nn.Dropout2d"
+    }
+
+    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+        let mut buf = String::new();
+        match name {
+            "new" => {
+                write!(buf, "{}(", self.get_name()).unwrap();
+                let map = args.to_btreemap().unwrap();
+                write!(buf, "p={})", map["p"].as_str().unwrap()).unwrap();
+                Ok(buf)
+            }
+            "forward" => {
+                let args: Vec<_> = args.iter().map(|i| i.name.clone().unwrap()).collect();
+                write!(buf, "{}", args.join(", ")).unwrap();
+                Ok(buf)
+            }
+            _ => panic!("{} is not implemented", name),
+        }
+    }
+}
 
 impl Op for BatchNorm1d {
     fn get_name(&self) -> &'static str {
@@ -114,6 +120,12 @@ impl Op for BatchNorm1d {
         }
     }
 
+}
+impl PyTorch for BatchNorm1d {
+
+    fn pytorch_name(&self) -> &'static str {
+        "nn.BatchNorm1d"
+    }
 
     fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();

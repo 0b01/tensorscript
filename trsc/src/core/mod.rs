@@ -10,14 +10,10 @@ mod lin;
 mod reg;
 mod nonlin;
 
-pub trait Op: Debug {
+pub trait Op: PyTorch {
     fn get_name(&self) -> &'static str;
 
     fn ty_sigs(&self, tenv: &mut TypeEnv) -> Vec<(MethodName, Type)>;
-
-    fn pytorch_name(&self) -> String {
-        format!("nn.{}", self.get_name())
-    }
 
     fn is_stateful(&self) -> bool;
 
@@ -32,6 +28,12 @@ pub trait Op: Debug {
     ) -> Option<Result<Type, Diag>> {
         panic!("{} is not yet implemented", fn_name);
     }
+
+}
+
+pub trait PyTorch : Debug {
+
+    fn pytorch_name(&self) -> &'static str;
 
     fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         panic!("{:?}::{} function call is not yet implemented", self, name);

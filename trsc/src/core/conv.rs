@@ -1,4 +1,4 @@
-use core::{MethodName, Op};
+use core::{MethodName, Op, PyTorch};
 use errors::Diag;
 use span::CSpan;
 use typing::typed_term::{ArgsVecInto, TyFnAppArg, TyTerm};
@@ -130,6 +130,14 @@ impl Op for Conv2d {
         }
     }
 
+}
+
+impl PyTorch for Conv2d {
+    
+    fn pytorch_name(&self) -> &'static str {
+        "nn.Conv2d"
+    }
+
     fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {
@@ -221,6 +229,14 @@ impl Op for maxpool2d {
             },
             _ => None,
         }
+    }
+
+}
+
+impl PyTorch for maxpool2d {
+
+    fn pytorch_name(&self) -> &'static str {
+        "F.maxpool2d"
     }
 
     fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {

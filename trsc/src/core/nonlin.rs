@@ -1,5 +1,5 @@
 use self::Type::*;
-use core::{MethodName, Op};
+use core::{MethodName, Op, PyTorch};
 use std::fmt::Write;
 use span::CSpan;
 use typing::typed_term::TyFnAppArg;
@@ -16,10 +16,6 @@ impl Op for sigmoid {
     }
 
     fn is_stateful(&self) -> bool { false }
-
-    fn pytorch_name(&self) -> String {
-        format!("F.{}", self.get_name())
-    }
 
     fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
@@ -47,11 +43,19 @@ impl Op for sigmoid {
         }
     }
 
+}
+
+impl PyTorch for sigmoid {
+
+    fn pytorch_name(&self) -> &'static str {
+        "F.sigmoid"
+    }
+
     fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {
             "forward" => {
-                write!(buf, "").unwrap();
+                // write!(buf, "").unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),
@@ -70,10 +74,6 @@ impl Op for tanh {
 
     fn is_stateful(&self) -> bool { false }
 
-    fn pytorch_name(&self) -> String {
-        format!("F.{}", self.get_name())
-    }
-
     fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
@@ -98,6 +98,14 @@ impl Op for tanh {
             }
             _ => unimplemented!(),
         }
+    }
+
+}
+
+impl PyTorch for tanh {
+
+    fn pytorch_name(&self) -> &'static str {
+        "F.tanh"
     }
 
     fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
@@ -123,10 +131,6 @@ impl Op for relu {
 
     fn is_stateful(&self) -> bool { false }
 
-    fn pytorch_name(&self) -> String {
-        format!("F.{}", self.get_name())
-    }
-
     fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
@@ -152,6 +156,15 @@ impl Op for relu {
             _ => unimplemented!(),
         }
     }
+
+}
+
+impl PyTorch for relu {
+
+    fn pytorch_name(&self) -> &'static str {
+        "F.relu"
+    }
+
 
     fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
@@ -176,10 +189,6 @@ impl Op for leaky_relu {
 
     fn is_stateful(&self) -> bool { false }
 
-    fn pytorch_name(&self) -> String {
-        format!("F.{}", self.get_name())
-    }
-
     fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
         vec![
             (
@@ -206,6 +215,13 @@ impl Op for leaky_relu {
         }
     }
 
+}
+impl PyTorch for leaky_relu {
+
+    fn pytorch_name(&self) -> &'static str {
+        "F.leaky_relu"
+    }
+
     fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {
@@ -225,10 +241,6 @@ pub struct log_softmax;
 impl Op for log_softmax {
     fn get_name(&self) -> &'static str {
         "log_softmax"
-    }
-
-    fn pytorch_name(&self) -> String {
-        format!("F.{}", self.get_name())
     }
 
     fn is_stateful(&self) -> bool { false }
@@ -258,6 +270,14 @@ impl Op for log_softmax {
             }
             _ => unimplemented!(),
         }
+    }
+
+}
+
+impl PyTorch for log_softmax {
+
+    fn pytorch_name(&self) -> &'static str {
+        "F.log_softmax"
     }
 
     fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
