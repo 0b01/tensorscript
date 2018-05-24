@@ -236,7 +236,7 @@ impl Op for maxpool2d {
 impl PyTorch for maxpool2d {
 
     fn pytorch_name(&self) -> &'static str {
-        "F.maxpool2d"
+        "F.max_pool2d"
     }
 
     fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
