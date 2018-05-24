@@ -24,13 +24,13 @@ pub trait Op: Debug {
     fn resolve(
         &self,
         _tenv: &mut TypeEnv,
-        _fn_name: &str,
+        fn_name: &str,
         _arg_ty: Type,
         _ret_ty: Type,
         _args: Vec<TyFnAppArg>,
         _inits: Option<Vec<TyFnAppArg>>,
     ) -> Option<Result<Type, Diag>> {
-        unimplemented!();
+        panic!("{} is not yet implemented", fn_name);
     }
 
     fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
