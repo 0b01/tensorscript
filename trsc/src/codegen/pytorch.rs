@@ -155,10 +155,10 @@ impl Module {
                     };
 
                     match (var_name, is_stmt) {
-                        (Some(v), false) => write!(self.buf, "{} = ", v)?,
-                        (None, false) => write!(self.buf, "return ")?,
-                        (None, true) => write!(self.buf, "")?,
-                        (Some(_), true) => write!(self.buf, "<unimplemented!>")?,
+                        (Some(v), false) => write!(self.buf, "{} = ", v)?,  // assignment
+                        (None, false) => write!(self.buf, "return ")?,      // return
+                        (None, true) => write!(self.buf, "")?,              // 
+                        (Some(_), true) => write!(self.buf, "")?,           // nn.init.normal_(..)
                     };
 
                     let core_cloned = self.core.clone();
@@ -423,7 +423,6 @@ impl Generator {
                 let mut m = self.modules.get_mut(&decl.name).unwrap();
                 m.set_fns(&decl.fns)?;
             }
-            // _ => unimplemented!(),
             _ => (),
         }
         Ok(())

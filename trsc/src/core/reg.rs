@@ -1,4 +1,4 @@
-use core::{MethodName, Op};
+use core::{MethodName, Op, PyTorch, Resolve};
 use errors::Diag;
 use span::CSpan;
 use typing::typed_term::TyFnAppArg;
@@ -6,31 +6,13 @@ use typing::{Type, TypeEnv};
 use typing::typed_term::ArgsVecInto;
 use std::fmt::Write;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Op)]
+#[path = "reg"]
+#[new = "(p: float) -> self"]
+#[forward = "?(x: tsr0) -> tsr0"]
 pub struct Dropout2d;
-#[derive(Debug, Clone)]
-pub struct BatchNorm1d;
 
-impl Op for Dropout2d {
-    fn get_name(&self) -> &'static str {
-        "Dropout2d"
-    }
-
-    fn is_stateful(&self) -> bool { false }
-
-    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "new",
-                fun!(self.get_name(), "new", args!(arg!("p", float!())), module!(self.get_name())),
-            ),
-            (
-                "forward",
-                Type::UnresolvedModuleFun("reg", self.get_name(), "forward", CSpan::fresh_span()),
-            ),
-        ]
-    }
-
+impl Resolve for Dropout2d {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
@@ -47,6 +29,13 @@ impl Op for Dropout2d {
             }
             _ => unimplemented!(),
         }
+    }
+}
+
+impl PyTorch for Dropout2d {
+
+    fn pytorch_name(&self) -> &'static str {
+        "nn.Dropout2d"
     }
 
     fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
@@ -68,26 +57,14 @@ impl Op for Dropout2d {
     }
 }
 
-impl Op for BatchNorm1d {
-    fn get_name(&self) -> &'static str {
-        "BatchNorm1d"
-    }
+#[derive(Debug, Op)]
+#[path = "reg"]
+#[new = "(num_features: int) -> self"]
+#[forward = "?(x: tsr0) -> tsr0"]
+#[stateful]
+pub struct BatchNorm1d;
 
-    fn is_stateful(&self) -> bool { true }
-
-    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "new",
-                fun!(self.get_name(), "new", args!(arg!("num_features", int!())), module!(self.get_name())),
-            ),
-            (
-                "forward",
-                Type::UnresolvedModuleFun("reg", self.get_name(), "forward", CSpan::fresh_span()),
-            ),
-        ]
-    }
-
+impl Resolve for BatchNorm1d {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
@@ -105,8 +82,12 @@ impl Op for BatchNorm1d {
             _ => unimplemented!(),
         }
     }
+}
 
-
+impl PyTorch for BatchNorm1d {
+    fn pytorch_name(&self) -> &'static str {
+        "nn.BatchNorm1d"
+    }
     fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {

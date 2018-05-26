@@ -177,8 +177,3 @@ fn main() {
     generator.generate(&final_ast).unwrap();
     println!("{}", generator.buf);
 }
-
-use core::{Op, MethodName};
-#[derive(Debug, Op)]
-#[stateful = true]
-struct Blah;
