@@ -158,9 +158,7 @@ impl Unifier {
             ),
 
             Equals(u @ UnresolvedModuleFun(_, _, _, _), ty) => {
-                Substitution(btreemap!(
-                    u => ty,
-                ))
+                Substitution::empty()
             }
 
             _ => {
@@ -233,7 +231,7 @@ impl Substitution {
             if let Type::VAR(ref tvar, ref span) = ty {
                 substitute_tvar(result, tvar, &solution_type.with_span(span))
             } else {
-                substitute_ty(result, ty, solution_type)
+                panic!("Impossible!");
             }
         })
     }
@@ -250,24 +248,6 @@ impl Substitution {
 
     pub fn empty() -> Substitution {
         Substitution(BTreeMap::new())
-    }
-}
-
-/// magic...
-///
-/// basically, a workaround to replace UnresolvedModuleFunction...
-/// for more info take a look at unify_one
-///         Equals(u @ UnresolvedModuleFun(_, _, _, _), ty) => {..}
-/// which is the only place that calls it
-fn substitute_ty(ty: Type, _replaced: &Type, replacement: &Type) -> Type {
-    if let Type::FUN(m1,n1,_,_,_) = ty.clone() {
-    if let Type::FUN(m2,n2,_,_,_) = replacement.clone() {
-        if (m1 == m2) && (n1 == n2) {
-            // println!("----\n{:?}\n{:?}\n{:?}\n-----\n\n", ty, replaced, replacement);
-            ty.clone()
-        } else {ty}
-    } else {ty}} else {
-        ty
     }
 }
 
