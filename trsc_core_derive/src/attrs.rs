@@ -17,7 +17,7 @@ pub fn get_fns(attrs: &[syn::Attribute]) -> BTreeMap<&str, String> {
     for attr in attrs.iter() {
         if let syn::MetaItem::NameValue(key, val) = &attr.value {
             let key = key.as_ref();
-            if "name" == key { continue; }
+            if "path" == key { continue; }
             let val = if let syn::Lit::Str(s,..) = val { s }
                       else { continue };
 

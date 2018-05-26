@@ -1,4 +1,4 @@
-use core::{MethodName, Op, PyTorch};
+use core::{MethodName, Op, PyTorch, Resolve};
 use errors::Diag;
 use span::CSpan;
 use typing::typed_term::{ArgsVecInto, TyFnAppArg, TyTerm};
@@ -7,11 +7,6 @@ use typing::{Type, TypeEnv};
 use std::fmt::Write;
 
 use self::TyTerm::*;
-#[derive(Debug, Clone)]
-pub struct Conv2d;
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone)]
-pub struct maxpool2d;
 
 
 macro_rules! read_2_tuple {
@@ -39,26 +34,14 @@ macro_rules! read_from_init {
     };
 }
 
-impl Op for Conv2d {
-    fn get_name(&self) -> &'static str {
-        "Conv2d"
-    }
+#[derive(Debug, Op)]
+#[path = "conv"]
+#[forward = "?() -> unit"]
+#[new = "?() -> unit"]
+#[stateful]
+pub struct Conv2d;
 
-    fn is_stateful(&self) -> bool { true }
-
-    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "new",
-                Type::UnresolvedModuleFun("conv", self.get_name(), "new", CSpan::fresh_span()),
-            ),
-            (
-                "forward",
-                Type::UnresolvedModuleFun("conv", self.get_name(), "forward", CSpan::fresh_span()),
-            ),
-        ]
-    }
-
+impl Resolve for Conv2d {
     fn resolve( &self,
         tenv: &mut TypeEnv,
         fn_name: &str,
@@ -123,7 +106,7 @@ impl Op for Conv2d {
                         arg!("out_ch", int!()),
                         arg!("kernel_size", tenv.fresh_var(CSpan::fresh_span()))
                     ),
-                    module!(self.get_name())
+                    module!("Conv2d")
                 )))
             }
             _ => unimplemented!(),
@@ -160,22 +143,14 @@ impl PyTorch for Conv2d {
 
 }
 
-impl Op for maxpool2d {
-    fn get_name(&self) -> &'static str {
-        "maxpool2d"
-    }
+#[allow(non_camel_case_types)]
+#[derive(Debug, Op)]
+#[path = "conv"]
+#[forward = "?() -> unit"]
+pub struct maxpool2d;
 
-    fn is_stateful(&self) -> bool { false }
 
-    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "forward",
-                Type::UnresolvedModuleFun("conv", self.get_name(), "forward", CSpan::fresh_span()),
-            )
-        ]
-    }
-
+impl Resolve for maxpool2d {
     fn resolve(
         &self,
         _tenv: &mut TypeEnv,

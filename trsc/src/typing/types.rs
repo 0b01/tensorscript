@@ -359,6 +359,12 @@ macro_rules! int {
     };
 }
 
+macro_rules! tuple {
+    (int 2) => {
+        Type::Tuple(vec![int!(), int!()], CSpan::fresh_span())
+    };
+}
+
 macro_rules! module {
     ($e1:expr) => {
         Type::Module($e1.to_owned(), None, CSpan::fresh_span())

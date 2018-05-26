@@ -6,6 +6,7 @@ pub enum Type {
     Int,
     Tsr,
     SelfTy,
+    Unit,
     //...
 }
 
@@ -16,6 +17,7 @@ impl Type {
             "float" => Float,
             "int" => Int,
             "self" => SelfTy,
+            "unit" => Unit,
             "tsr0" => Tsr,
             _ => panic!("Unknown type"),
         }
@@ -27,6 +29,9 @@ impl ToTokens for Type {
         use self::Type::*;
         match self {
             Float => tokens.append(quote!{float!()}),
+            Int => tokens.append(quote!{int!()}),
+            Unit => tokens.append(quote!{unit!()}),
+            SelfTy => tokens.append(quote!{module!(self.get_name())}),
             _ => unimplemented!(),
         }
     }
@@ -54,7 +59,6 @@ pub enum Token {
 }
 
 pub fn parse_decl(path: &str, name: &str, decl: &str) -> FnDecl {
-    println!("{}", decl);
     let tokens = lex(decl);
     parse(path, name, &tokens)
 }
@@ -113,6 +117,8 @@ fn parse(path: &str, name: &str, toks: &[Token]) -> FnDecl {
             } else {
                 panic!("No ret ty specified");
             }
+        } else {
+            it.next();
         }
     }
 
@@ -145,7 +151,7 @@ fn lex(decl: &str) -> Vec<Token> {
             'A'...'z' => {
                 let mut buf = String::new();
                 while let Some(ch) = it.peek().cloned() {
-                    if ch.is_alphanumeric() {
+                    if ch.is_alphanumeric() || ch == '_' {
                         buf.push(ch);
                         it.next();
                     } else {

@@ -1,5 +1,5 @@
 use self::Type::*;
-use core::{MethodName, Op, PyTorch};
+use core::{MethodName, Op, PyTorch, Resolve};
 use std::fmt::Write;
 use span::CSpan;
 use typing::typed_term::TyFnAppArg;
@@ -7,24 +7,12 @@ use typing::{Type, TypeEnv};
 use errors::Diag;
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Op)]
+#[path = "nonlin"]
+#[forward = "?()"]
 pub struct sigmoid;
 
-impl Op for sigmoid {
-    fn get_name(&self) -> &'static str {
-        "sigmoid"
-    }
-
-    fn is_stateful(&self) -> bool { false }
-
-    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "forward",
-                UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
-            )
-        ]
-    }
+impl Resolve for sigmoid {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
@@ -42,17 +30,14 @@ impl Op for sigmoid {
             _ => unimplemented!(),
         }
     }
-
 }
 
 impl PyTorch for sigmoid {
-
     fn pytorch_name(&self) -> &'static str {
         "F.sigmoid"
     }
-
     fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
-        let mut buf = String::new();
+        let buf = String::new();
         match name {
             "forward" => {
                 // write!(buf, "").unwrap();
@@ -64,24 +49,12 @@ impl PyTorch for sigmoid {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Op)]
+#[path = "nonlin"]
+#[forward = "?()"]
 pub struct tanh;
 
-impl Op for tanh {
-    fn get_name(&self) -> &'static str {
-         "tanh"
-    }
-
-    fn is_stateful(&self) -> bool { false }
-
-    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "forward",
-                UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
-            )
-        ]
-    }
+impl Resolve for tanh {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
@@ -99,15 +72,12 @@ impl Op for tanh {
             _ => unimplemented!(),
         }
     }
-
 }
 
 impl PyTorch for tanh {
-
     fn pytorch_name(&self) -> &'static str {
         "F.tanh"
     }
-
     fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {
@@ -121,24 +91,12 @@ impl PyTorch for tanh {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Op)]
+#[path = "nonlin"]
+#[forward = "?()"]
 pub struct relu;
 
-impl Op for relu {
-    fn get_name(&self) -> &'static str {
-        "relu"
-    }
-
-    fn is_stateful(&self) -> bool { false }
-
-    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "forward",
-                UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
-            )
-        ]
-    }
+impl Resolve for relu {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
@@ -156,16 +114,12 @@ impl Op for relu {
             _ => unimplemented!(),
         }
     }
-
 }
 
 impl PyTorch for relu {
-
     fn pytorch_name(&self) -> &'static str {
         "F.relu"
     }
-
-
     fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {
@@ -179,24 +133,12 @@ impl PyTorch for relu {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Op)]
+#[path = "nonlin"]
+#[forward = "?()"]
 pub struct leaky_relu;
 
-impl Op for leaky_relu {
-    fn get_name(&self) -> &'static str {
-        "leaky_relu"
-    }
-
-    fn is_stateful(&self) -> bool { false }
-
-    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "forward",
-                UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
-            )
-        ]
-    }
+impl Resolve for leaky_relu {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
@@ -214,14 +156,12 @@ impl Op for leaky_relu {
             _ => unimplemented!(),
         }
     }
-
 }
-impl PyTorch for leaky_relu {
 
+impl PyTorch for leaky_relu {
     fn pytorch_name(&self) -> &'static str {
         "F.leaky_relu"
     }
-
     fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {
@@ -235,25 +175,12 @@ impl PyTorch for leaky_relu {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Op)]
+#[path = "nonlin"]
+#[forward = "?()"]
 pub struct log_softmax;
 
-impl Op for log_softmax {
-    fn get_name(&self) -> &'static str {
-        "log_softmax"
-    }
-
-    fn is_stateful(&self) -> bool { false }
-
-    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        vec![
-            (
-                "forward",
-                UnresolvedModuleFun("nonlin", self.get_name(), "forward", CSpan::fresh_span())
-            )
-        ]
-    }
-
+impl Resolve for log_softmax {
     fn resolve(
         &self,
         tenv: &mut TypeEnv,
@@ -271,15 +198,12 @@ impl Op for log_softmax {
             _ => unimplemented!(),
         }
     }
-
 }
 
 impl PyTorch for log_softmax {
-
     fn pytorch_name(&self) -> &'static str {
         "F.log_softmax"
     }
-
     fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
         let mut buf = String::new();
         match name {

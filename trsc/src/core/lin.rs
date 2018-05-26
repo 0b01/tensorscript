@@ -1,43 +1,19 @@
-use core::{MethodName, Op, PyTorch};
+use core::{MethodName, Op, PyTorch, Resolve};
 use errors::Diag;
 use span::CSpan;
 use typing::typed_term::{ArgsVecInto, TyFnAppArg, TyTerm};
 use typing::{Type, TypeEnv};
 use std::fmt::Write;
 
-// #[allow(non_camel_case_types)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Op)]
+#[path = "lin"]
+#[new = "(in: int, out: int) -> self"]
+#[forward = "?(x: tsr0) -> tsr0"]
+#[init_normal = "(std: float) -> unit"]
+#[stateful]
 pub struct Linear;
 
-impl Op for Linear {
-    fn get_name(&self) -> &'static str {
-        "Linear"
-    }
-
-    fn is_stateful(&self) -> bool { true }
-
-    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        use self::Type::*;
-        vec![
-            (
-                "init_normal",
-                fun!("Linear", "init_normal", args!(arg!("std", float!())), unit!())
-            ),
-            (
-                "new",
-                fun!(
-                    "Linear", "new",
-                    args!(arg!("in", int!()), arg!("out", int!())),
-                    module!(self.get_name())
-                ),
-            ),
-            (
-                "forward",
-                UnresolvedModuleFun("lin", self.get_name(), "forward", CSpan::fresh_span()),
-            ),
-        ]
-    }
-
+impl Resolve for Linear {
     /// output same shape as input
     fn resolve(
         &self,

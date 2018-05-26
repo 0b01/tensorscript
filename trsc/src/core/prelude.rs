@@ -1,30 +1,16 @@
-use core::{MethodName, Op, PyTorch};
+use core::{MethodName, Op, PyTorch, Resolve};
 use errors::Diag;
 use span::CSpan;
 use typing::typed_term::TyFnAppArg;
 use typing::{Type, TypeEnv};
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Op)]
+#[path = "prelude"]
+#[forward = "?() -> unit"]
 pub struct view;
 
-impl Op for view {
-    fn get_name(&self) -> &'static str {
-        "view"
-    }
-
-    fn is_stateful(&self) -> bool { false }
-
-    fn ty_sigs(&self, _tenv: &mut TypeEnv) -> Vec<(MethodName, Type)> {
-        use self::Type::*;
-        vec![
-            (
-                "forward",
-                UnresolvedModuleFun("prelude", self.get_name(), "forward", CSpan::fresh_span())
-            )
-        ]
-    }
-
+impl Resolve for view {
     /// output same shape as input
     fn resolve(
         &self,
