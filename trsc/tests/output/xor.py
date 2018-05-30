@@ -13,9 +13,5 @@ class Xor(nn.Module):
         self.fc2 = nn.Linear(in_features=3, out_features=1)
     def forward(self, x):
         x = self.fc1(x)
-        x = F.relu()
-        x = self.fc2(x)
-        x = F.relu()
-        return F.sigmoid()
-
-
+        x = F.sigmoid(x)
+        return self.fc2(x)

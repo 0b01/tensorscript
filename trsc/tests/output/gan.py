@@ -15,11 +15,11 @@ class Discriminator(nn.Module):
     def forward(self, x):
         x = x.view(-1, 784)
         x = self.lin1(x)
-        x = F.leaky_relu()
+        x = F.leaky_relu(x)
         x = self.lin2(x)
-        x = F.leaky_relu()
+        x = F.leaky_relu(x)
         x = self.lin3(x)
-        return F.sigmoid()
+        return F.sigmoid(x)
 
 
 class Generator(nn.Module):
@@ -36,18 +36,18 @@ class Generator(nn.Module):
         self.lin5 = nn.Linear(in_features=1024, out_features=784)
     def forward(self, x):
         x = self.lin1(x)
-        x = F.leaky_relu()
+        x = F.leaky_relu(x)
         x = self.lin2(x)
         x = self.bn1(x)
-        x = F.leaky_relu()
+        x = F.leaky_relu(x)
         x = self.lin3(x)
         x = self.bn2(x)
-        x = F.leaky_relu()
+        x = F.leaky_relu(x)
         x = self.lin4(x)
         x = self.bn3(x)
-        x = F.leaky_relu()
+        x = F.leaky_relu(x)
         x = self.lin5(x)
-        x = F.tanh()
+        x = F.tanh(x)
         return x.view(-1, 1, 28, 28)
 
 

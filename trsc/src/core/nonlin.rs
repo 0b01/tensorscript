@@ -36,11 +36,11 @@ impl PyTorch for sigmoid {
     fn pytorch_name(&self) -> &'static str {
         "F.sigmoid"
     }
-    fn gen_fn_app(&self, name: &str, _args: &[TyFnAppArg]) -> Result<String, Diag> {
-        let buf = String::new();
+    fn gen_fn_app(&self, name: &str, args: &[TyFnAppArg]) -> Result<String, Diag> {
+        let mut buf = String::new();
         match name {
             "forward" => {
-                // write!(buf, "").unwrap();
+                write!(buf, "x").unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),
@@ -82,7 +82,7 @@ impl PyTorch for tanh {
         let mut buf = String::new();
         match name {
             "forward" => {
-                write!(buf, "").unwrap();
+                write!(buf, "x").unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),
@@ -124,7 +124,7 @@ impl PyTorch for relu {
         let mut buf = String::new();
         match name {
             "forward" => {
-                write!(buf, "").unwrap();
+                write!(buf, "x").unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),
@@ -166,7 +166,7 @@ impl PyTorch for leaky_relu {
         let mut buf = String::new();
         match name {
             "forward" => {
-                write!(buf, "").unwrap();
+                write!(buf, "x").unwrap();
                 Ok(buf)
             }
             _ => panic!("{} is not implemented", name),

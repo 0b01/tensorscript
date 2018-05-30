@@ -19,18 +19,18 @@ class Mnist(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         x = F.max_pool2d(x, kernel_size)
-        x = F.relu()
+        x = F.relu(x)
         x = self.conv2(x)
         x = self.dropout(x)
         x = F.max_pool2d(x, kernel_size)
-        x = F.relu()
+        x = F.relu(x)
         x = x.view(-1, 320)
         x = self.fc1(x)
-        x = F.relu()
+        x = F.relu(x)
         x = self.example(x)
         return F.log_softmax(x, dim)
     def example(self, x):
         x = self.fc2(x)
-        return F.relu()
+        return F.relu(x)
 
 
