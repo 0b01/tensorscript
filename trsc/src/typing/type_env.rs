@@ -59,6 +59,8 @@ impl Scope {
     }
 }
 
+type ScopeStack = VecDeque<Scope>;
+type ScopeQueue = VecDeque<Scope>;
 type InitMap = BTreeMap<String, Vec<TyFnAppArg>>;
 
 #[derive(Debug)]
@@ -67,7 +69,7 @@ pub struct TypeEnv {
     dim_counter: TypeId,
     var_counter: TypeId,
     current_mod: ModName,
-    modules: BTreeMap<ModName, (VecDeque<Scope>, VecDeque<Scope>, InitMap)>,
+    modules: BTreeMap<ModName, (ScopeStack, ScopeQueue, InitMap)>,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
