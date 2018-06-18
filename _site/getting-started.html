@@ -1,0 +1,1325 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Getting Started</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link rel="stylesheet" href="stylesheets/prism.css" />
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <div class="title">
+        <a href="index.html"><h1 class="title"><img width="30px" src="logo.png">TensorScript</h1></a>
+        <p>A shape-checked DSL for tensor programming</p>
+        </div>
+        <div class="links">
+            
+        <a href="/"  >home</a>
+        <a href="https://github.com/rickyhan/tensorscript/releases" >downloads</a>
+        <a href="http://github.com/rickyhan/tensorscript" >source</a>
+        <a href="getting-started.html" class='current'>getting started</a>
+        <a href="api.html" >api reference</a>
+        <a href="http://rickyhan.com/about">contact</a>
+        </div>
+      </header>
+      <section class="language-terra">
+      <hr />
+
+<ul id="markdown-toc">
+  <li><a href="#setup" id="markdown-toc-setup">Setup</a>    <ul>
+      <li><a href="#installing-terra" id="markdown-toc-installing-terra">Installing Terra</a></li>
+      <li><a href="#running-terra" id="markdown-toc-running-terra">Running Terra</a></li>
+      <li><a href="#running-terras-test-suite" id="markdown-toc-running-terras-test-suite">Running Terra’s Test Suite</a></li>
+    </ul>
+  </li>
+  <li><a href="#the-terra-language" id="markdown-toc-the-terra-language">The Terra Language</a>    <ul>
+      <li><a href="#using-c-functions" id="markdown-toc-using-c-functions">Using C functions</a></li>
+      <li><a href="#variables-and-assignments" id="markdown-toc-variables-and-assignments">Variables and Assignments</a></li>
+      <li><a href="#control-flow" id="markdown-toc-control-flow">Control Flow</a>        <ul>
+          <li><a href="#if-statements" id="markdown-toc-if-statements">If Statements</a></li>
+          <li><a href="#loops" id="markdown-toc-loops">Loops</a></li>
+          <li><a href="#gotos" id="markdown-toc-gotos">Gotos</a></li>
+        </ul>
+      </li>
+      <li><a href="#functions" id="markdown-toc-functions">Functions</a>        <ul>
+          <li><a href="#mutual-recursion" id="markdown-toc-mutual-recursion">Mutual Recursion</a></li>
+          <li><a href="#defining-directly-in-tables" id="markdown-toc-defining-directly-in-tables">Defining Directly In Tables</a></li>
+          <li><a href="#terra-functions-are-lua-objects" id="markdown-toc-terra-functions-are-lua-objects">Terra Functions Are Lua Objects</a></li>
+        </ul>
+      </li>
+      <li><a href="#scoping-rules" id="markdown-toc-scoping-rules">Scoping Rules</a></li>
+      <li><a href="#types-and-operators" id="markdown-toc-types-and-operators">Types and Operators</a>        <ul>
+          <li><a href="#primitive-types" id="markdown-toc-primitive-types">Primitive Types</a></li>
+          <li><a href="#pointers" id="markdown-toc-pointers">Pointers</a></li>
+          <li><a href="#arrays" id="markdown-toc-arrays">Arrays</a></li>
+          <li><a href="#vectors" id="markdown-toc-vectors">Vectors</a></li>
+          <li><a href="#structs" id="markdown-toc-structs">Structs</a></li>
+          <li><a href="#tuples-and-anonymous-structs" id="markdown-toc-tuples-and-anonymous-structs">Tuples and Anonymous Structs</a></li>
+          <li><a href="#function-pointers" id="markdown-toc-function-pointers">Function Pointers</a></li>
+          <li><a href="#terra-types-as-lua-values" id="markdown-toc-terra-types-as-lua-values">Terra Types as Lua Values</a></li>
+        </ul>
+      </li>
+      <li><a href="#literals" id="markdown-toc-literals">Literals</a></li>
+      <li><a href="#methods" id="markdown-toc-methods">Methods</a></li>
+    </ul>
+  </li>
+  <li><a href="#lua-terra-interaction" id="markdown-toc-lua-terra-interaction">Lua-Terra Interaction</a></li>
+  <li><a href="#meta-programming-terra-with-lua" id="markdown-toc-meta-programming-terra-with-lua">Meta-programming Terra with Lua</a>    <ul>
+      <li><a href="#escapes" id="markdown-toc-escapes">Escapes</a></li>
+      <li><a href="#quotes" id="markdown-toc-quotes">Quotes</a></li>
+      <li><a href="#dynamically-generated-symbols" id="markdown-toc-dynamically-generated-symbols">Dynamically Generated Symbols</a></li>
+    </ul>
+  </li>
+  <li><a href="#additional-details" id="markdown-toc-additional-details">Additional Details</a>    <ul>
+      <li><a href="#assignments-and-expression-lists" id="markdown-toc-assignments-and-expression-lists">Assignments and Expression Lists</a></li>
+      <li><a href="#global-variables" id="markdown-toc-global-variables">Global Variables</a></li>
+      <li><a href="#macros" id="markdown-toc-macros">Macros</a></li>
+      <li><a href="#building-terra" id="markdown-toc-building-terra">Building Terra</a>        <ul>
+          <li><a href="#windows" id="markdown-toc-windows">Windows</a></li>
+          <li><a href="#linuxosx" id="markdown-toc-linuxosx">Linux/OSX</a></li>
+        </ul>
+      </li>
+      <li><a href="#embedding-terra-lua-inside-of-c" id="markdown-toc-embedding-terra-lua-inside-of-c">Embedding Terra-Lua inside of C</a></li>
+    </ul>
+  </li>
+  <li><a href="#more-information" id="markdown-toc-more-information">More Information</a></li>
+</ul>
+
+<h1 id="setup">Setup</h1>
+
+<h2 id="installing-terra">Installing Terra</h2>
+
+<p>Terra currently runs on Mac OS X, Linux, and 64-bit Windows. Binary releases for popular versions of these systems are available <a href="https://github.com/zdevito/terra/releases">online</a>, and we recommend you use them if possible because building Terra requires a working install of LLVM and Clang, which can be difficult to accomplish. The binaries do not require any dependencies for most operations. For interaction with the C ecosystem, such as including C header files or creating executable and shared libraries, you need to have the right development tools installed. On OSX, you need the Xcode Command Line Tools; On Linux you need the <code class="highlighter-rouge">gcc</code> toolchain (<code class="highlighter-rouge">build-essential</code> package in Ubuntu); and for Windows you need a copy of Microsoft Visual Studio 2013 installed.</p>
+
+<h2 id="running-terra">Running Terra</h2>
+
+<p>Similar to the design of Lua, Terra can be used as a standalone executable/read-eval-print-loop (REPL) and also as a library embedded in a C program. This design makes it easy to integrate with existing projects.</p>
+
+<p>To run the REPL:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cd &lt;path-to-terra-folder&gt;
+$ bin/terra
+
+Terra -- A low-level counterpart to Lua
+
+Stanford University
+zdevito@stanford.edu
+
+&gt;
+</code></pre></div></div>
+
+<p>Terra’s REPL behaves similar to Lua’s REPL. If you are familiar with other languages like Python, the one major difference is that expressions must be prefixed with <code class="highlighter-rouge">return</code> or <code class="highlighter-rouge">=</code> if you want to get their value:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; 3        --ERROR! it is expecting a statement
+stdin:1: unexpected symbol near 3
+&gt; return 3 -- OK!
+3
+&gt; = 3      -- syntax sugar in the REPL for 'return 3'
+3
+</code></pre></div></div>
+
+<p>You can also run it on already written files:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ bin/terra share/terra/tests/hello.t
+hello, world
+</code></pre></div></div>
+
+<h2 id="running-terras-test-suite">Running Terra’s Test Suite</h2>
+
+<p>A bunch of example scripts can be found in the <code class="highlighter-rouge">share/terra/tests/</code> directory. These examples are a good reference for how to use language features in more detail than they are covered in this tutorial.</p>
+
+<p>The <code class="highlighter-rouge">run</code> script in the directory can be used to run all of these languages tests to ensure that Terra is built correctly.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cd tests
+../terra run
+</code></pre></div></div>
+
+<p>Expect it to print a lot of junk out. At the end it will summarize the results:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>471 tests passed. 0 tests failed.
+</code></pre></div></div>
+
+<h1 id="the-terra-language">The Terra Language</h1>
+
+<p>The Terra language is embedded inside a normal Lua program. So a top-level statement like:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>print("hello, world")
+</code></pre></div></div>
+
+<p>is actually just a Lua statement. Top-level declarations in a Terra source code file are always run as normal Lua code.</p>
+
+<p>To actually begin writing Terra code, we introduce a Terra function with the keyword <code class="highlighter-rouge">terra</code>:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra addone(a : int)
+    return a + 1
+end
+
+print(addone(2)) --this outputs: 3
+</code></pre></div></div>
+
+<p>Unlike Lua, arguments to Terra functions are explicitly typed. Terra uses a simple static type propagation to infer the return type of the <code class="highlighter-rouge">addone</code> function. You can also explicitly specify it:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra addone(a : int) : int
+	return a + 1
+end
+</code></pre></div></div>
+
+<p>The last line of the first example invokes the Terra function from the top-level context. This is an example of the interaction between Terra and Lua.</p>
+
+<p>Terra code is JIT compiled to machine code when the function is first called. More information on the interface between Terra and Lua can be found in <a href="#lua-terra-interaction">Lua-Terra interaction</a>.</p>
+
+<h2 id="using-c-functions">Using C functions</h2>
+
+<p>Terra is backwards compatible with C. We frequently use C libraries directly from Terra.
+Here we can use <code class="highlighter-rouge">stdio</code> to print hello:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local C = terralib.includecstring [[
+   #include &lt;stdio.h&gt;
+]]
+
+terra main()
+    C.printf("hello, world\n")
+end
+
+main()
+</code></pre></div></div>
+
+<p>The function <code class="highlighter-rouge">terralib.includecstring</code> is a Lua function that invokes Terra’s backward compatibility layer to import C code. Here we include <code class="highlighter-rouge">stdio.h</code>. The return value is a Lua table of imported C functions. Since both clang (our C frontend) and Terra target the LLVM intermediate representation, there is no additional overhead in calling a C function. Terra can even inline across these calls if the source of the C function is available.</p>
+
+<p>The <code class="highlighter-rouge">local</code> keyword is a Lua construct. It introduces a locally scoped Lua variable named <code class="highlighter-rouge">C</code>. If omitted it would create a globally scoped variable.</p>
+
+<h2 id="variables-and-assignments">Variables and Assignments</h2>
+
+<p>Variables in Terra code are introduced with the <code class="highlighter-rouge">var</code> keyword:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra myfn()
+    var a : int = 3
+    var b : double
+end
+</code></pre></div></div>
+
+<p>Unlike Lua, all Terra variables must be declared.  Initializers are optional. <code class="highlighter-rouge">b</code>’s value above is undefined until it is assigned. If an initializer is specified, then Terra can infer the variables type automatically:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra myfn()
+    var a = 3.0 --a will have type double
+end
+</code></pre></div></div>
+
+<p>You can have multiple declarations on one line:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra myfn()
+    var a : int, b : double = 3, 4.5
+    var c : double, d       = 3, 4.5
+end
+</code></pre></div></div>
+
+<p>Lua and Terra are both whitespace invariant. However, there is no need for semicolons between statements. The above statement is equivalent to:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra myfn()
+    var a : int, b : double = 3, 4.5 var c : double, d = 3, 4.5
+end
+</code></pre></div></div>
+
+<p>If you want to put a semicolon in for clarity you can:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra myfn()
+    var a : int, b : double = 3, 4.5; var c : double, d = 3, 4.5
+end
+</code></pre></div></div>
+
+<p>Assignments have a similar form:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra myfn()
+    var a,b = 3.0, 4.5
+    a,b = b,a
+    -- a has value 4.5, b has value 3.0
+end
+</code></pre></div></div>
+
+<p>As in Lua, the right-hand side is executed before the assignments are performed, so the above example will swap the values of the two variables.</p>
+
+<p>Variables in Terra are always lexically scoped. The statement <code class="highlighter-rouge">do &lt;stmts&gt; end</code> introduces a new level of scoping (for the remainder of this guide, the enclosing <code class="highlighter-rouge">terra</code> declaration will be omitted when it is clear we are talking about Terra code):</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var a = 3.0
+do
+    var a = 4.0
+end
+-- a has value 3.0 now
+</code></pre></div></div>
+
+<h2 id="control-flow">Control Flow</h2>
+
+<p>Terra’s control flow is almost identical to Lua except for the behavior of <code class="highlighter-rouge">for</code> loops.</p>
+
+<h3 id="if-statements">If Statements</h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if a or b and not c then
+    C.printf("then\n")
+elseif c then
+    C.printf("elseif\n")
+else
+    C.printf("else\n")
+end
+</code></pre></div></div>
+
+<h3 id="loops">Loops</h3>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var a = 0
+while a &lt; 10 do
+    C.printf("loop\n")
+    a = a + 1
+end
+
+repeat
+    a = a - 1
+    C.printf("loop2\n")
+until a == 0
+
+while a &lt; 10 do
+    if a == 8 then
+        break
+    end
+    a = a + 1
+end
+</code></pre></div></div>
+
+<p>Terra also includes <code class="highlighter-rouge">for</code> loop. This example counts from 0 up to but not including 10:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>for i = 0,10 do
+    C.printf("%d\n",i)
+end
+</code></pre></div></div>
+
+<p>This is different from Lua’s behavior (which is inclusive of 10) since Terra uses 0-based indexing and pointer arithmetic in contrast with Lua’s 1-based indexing. Ideally, Lua and Terra would use the same indexing rules. However, Terra code needs to frequently do pointer arithmetic and interface with C code both of which are cumbersome with 1-based indexing. Alternatively, patching Lua to make it 0-based would make the flavor of Lua bundled with Terra incompatible with existing Lua code.</p>
+
+<p>Lua also has a <code class="highlighter-rouge">for</code> loop that operates using iterators. This is not yet implemented (NYI) in Terra, but a version will be added eventually.</p>
+
+<p>The loop may also specify an option step parameter:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>for i = 0,10,2 do
+    c.printf("%d\n",i) --0, 2, 4, ...
+end
+</code></pre></div></div>
+
+<h3 id="gotos">Gotos</h3>
+
+<p>Terra includes goto statements. Use them wisely. They are included since they can be useful when generating code for embedded languages.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>::loop::
+C.printf("y\n")
+goto loop
+</code></pre></div></div>
+
+<h2 id="functions">Functions</h2>
+
+<p>We have already seen some simple function definitions. In addition to taking multiple parameters, functions in Terra (and Lua) can return multiple values:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra sort2(a : int, b : int) : {int,int} --the return type is optional
+    if a &lt; b then   
+        return a, b
+    else
+        return b, a
+    end
+end
+
+terra doit()
+    -- the multiple returns are returned
+    -- in a 'tuple' of type {int,int}:
+    var ab : {int,int} = sort2(4,3)
+    -- tuples can be pattern matched,
+    -- splitting them into seperate variables
+    var a : int, b : int = sort2(4,3)
+    --now a == 3, b == 4
+end
+doit()
+</code></pre></div></div>
+
+<p>Multiple return values are packed into a <a href="getting-started.html#tuples-and-anonymous-functions">tuples</a>, which can be pattern matched in assignments, splitting them apart into multiple variables.</p>
+
+<p>Compilation occurs when functions are first called. In this example, when <code class="highlighter-rouge">doit()</code> is called, both <code class="highlighter-rouge">doit()</code> and <code class="highlighter-rouge">sort2</code> are compiled because <code class="highlighter-rouge">doit</code> refers to <code class="highlighter-rouge">sort2</code> and so it also needs to be compiled for <code class="highlighter-rouge">doit</code> to work.</p>
+
+<h3 id="mutual-recursion">Mutual Recursion</h3>
+
+<p>Functions are typechecked when they are defined. If they refer to other functions, those functions must already be defined, or
+you will get an error:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra iseven(n : uint32)
+    if n == 0 then
+        return true
+    else
+        -- ERROR! isodd has not been defined
+        return isodd(n - 1)
+    end
+end
+print(iseven)
+</code></pre></div></div>
+
+<p>To make mutual recursion easier, Terra allows multiple functions to be defined at once as long as there are no other Lua
+statements between the definitions:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra iseven(n : uint32)
+    if n == 0 then
+        return true
+    else
+    	-- OK! isodd defined at the same time.
+        return isodd(n - 1)
+    end
+end
+terra isodd(n : uint32)
+    if n == 0 then
+        return false
+    else
+        return iseven(n - 1)
+    end
+end
+</code></pre></div></div>
+
+<p>Alternatively, you can declare a function before defining it:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra isodd :: uint32 -&gt; bool
+
+terra iseven(n : uint32)
+    ...
+end
+terra isodd(n : uint32)
+   ...
+end
+</code></pre></div></div>
+
+<h3 id="defining-directly-in-tables">Defining Directly In Tables</h3>
+
+<p>Like Lua function definitions, Terra function definitions can insert directly into Lua tables.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local mytable = {}
+terra mytable.myfunction()
+	C.printf("myfunction in mytable\n")
+end
+</code></pre></div></div>
+
+<h3 id="terra-functions-are-lua-objects">Terra Functions Are Lua Objects</h3>
+
+<p>So far, we have been treating <code class="highlighter-rouge">terra</code> functions as special constructs in the top-level Lua code. In reality, Terra functions are actually just Lua values. In fact, the code:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra foo()
+end l Is just syntax sugar for\*:
+
+foo = terra()
+    --this is an anonymous terra function
+end
+</code></pre></div></div>
+
+<p>The symbol <code class="highlighter-rouge">foo</code> is just a Lua <em>variable</em> whose <em>value</em> is a Terra function. Lua is Terra’s meta-language, and you can use it to perform reflection on Terra functions. For instance, you can ask to see the disassembly for the function:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra add1(a : double)
+    return a + a
+end
+
+--this is Lua code:
+&gt; add1:disas()
+definition 	{double}-&gt;{double}
+
+define double @add111(double) {
+entry:
+  %1 = fadd double %0, %0
+  ret double %1
+}
+
+assembly for function at address 0xa2ef030
+0:		vaddsd	XMM0, XMM0, XMM0
+4:		ret
+</code></pre></div></div>
+
+<p>You can also force a function to be compiled:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>add1:compile()
+</code></pre></div></div>
+
+<p>Or look at a textual representation of the type-checked code</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; add1:printpretty()
+add1 = terra(a : double) : {double}
+	return a + a
+end
+</code></pre></div></div>
+
+<p>* The actual syntax sugar is slightly more complicated to support function declarations.
+See the <a href="api.html#function">API reference</a> for the full behavior.</p>
+
+<h2 id="scoping-rules">Scoping Rules</h2>
+
+<p>Like any language, Terra has a set of rules for how it resolves symbos like the function name <code class="highlighter-rouge">add1</code> when it sees them in an expression. Because Terra code is nested inside of Lua code, these scoping rules are more complicated that a non-embedded langauge.</p>
+
+<p>When the Terra compiler looks up a symbol like <code class="highlighter-rouge">add1</code> it first looks in the local (lexical) environment of the <code class="highlighter-rouge">terra</code> function. If it doesn’t find the symbol, then it continues the search in the enclosing (Lua) environment using Lua’s scoping rules for local/global variables. If the compiler finds a Lua value, then it converts it to a Terra value where possible. Let’s look at a few examples:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local N = 4
+terra powN(a : double)
+    var r = 1
+    for i = 0, N do
+        r = r * a
+    end
+    return r
+end
+N = 3
+--powN still computes the 4th power
+</code></pre></div></div>
+
+<p>Here <code class="highlighter-rouge">N</code> is a Lua value of type <code class="highlighter-rouge">number</code>. When <code class="highlighter-rouge">powN</code> is defined, the value of <code class="highlighter-rouge">N</code> is looked up in the Lua environment and inlined into the function as an <code class="highlighter-rouge">int</code> literal.</p>
+
+<p>Since <code class="highlighter-rouge">N</code> is resolved when <code class="highlighter-rouge">powN</code> is defined, changing <code class="highlighter-rouge">N</code> after <code class="highlighter-rouge">powN</code> is compiled will not change the behavior of <code class="highlighter-rouge">powN</code>.</p>
+
+<p>Think of <code class="highlighter-rouge">terra powN(...</code> as a <em>constructor</em> for a Terra function. It takes some initial values like <code class="highlighter-rouge">N</code> to create the and initialize the Terra function. Changing <code class="highlighter-rouge">N</code> after this constructor runs won’t change the constructed object.</p>
+
+<p>Of course, a single power function is boring. Instead we might want to create specialized versions of 10 power functions:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local mymath = {}
+for i = 1,10 do
+    mymath["pow"..tostring(i)] = terra(a : double)
+        var r = 1
+        for i = 0, i do
+            r = r * a
+        end
+        return r
+    end
+end
+
+mymath.pow1(2) -- 2
+mymath.pow2(2) -- 4
+mymath.pow3(2) -- 8
+</code></pre></div></div>
+
+<p>Again think of <code class="highlighter-rouge">terra(...</code> as a <em>constructor</em> for a Terra function. By nesting inside a loop, we are actually <em>constructing</em> ten different Terra functions, provided different arguments to the constructor by change the <code class="highlighter-rouge">i</code> variable.</p>
+
+<p>Here we use the fact that in Lua the select operator on tables (<code class="highlighter-rouge">a.b</code>) is equivalent to looking up the value in table (<code class="highlighter-rouge">a["b"]</code>).</p>
+
+<p>You can call these power functions from a Terra function:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra doit()
+    return mymath.pow3(3)
+end
+</code></pre></div></div>
+
+<p>Let’s examine what is happens when this function is compiled. The Terra compiler will resolve the <code class="highlighter-rouge">mymath</code> symbol to the Lua table holding the power functions. It will then see the select operator (<code class="highlighter-rouge">math.pow3</code>). Because <code class="highlighter-rouge">mymath</code> is a Lua table, the Terra compiler will perform this select operator at compile time, and resolve <code class="highlighter-rouge">mymath.pow3</code> to the third Terra function constructed inside the loop.  It will then insert a direct call to that function inside <code class="highlighter-rouge">doit</code>. This behavior is a form of <em>partial execution</em>. In general, Terra will resolve any chain of select operations <code class="highlighter-rouge">a.b.c.d</code> on Lua tables at compile time. This behavior enables Terra to use Lua tables to organize code into different namespaces. There is no need for a Terra-specific namespace mechanism!</p>
+
+<p>Recall how we can include C files:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local c = terralib.includec("stdio.h")
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">terralib.includec</code> is just a normal Lua function. It builds a Lua table that contains references to the Terra functions that represent calls to (in this case) the standard library functions. We can iterate through the table as well:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>for k,v in pairs(c) do
+    print(k)
+end
+--output:
+fseek
+gets
+printf
+puts
+FILE
+...
+</code></pre></div></div>
+
+<p>Terra allows you to use many types of Lua values in Terra functions. Here we saw two examples: the use of a Lua number <code class="highlighter-rouge">N</code> into a Terra number, and the use of a Terra function <code class="highlighter-rouge">mymath.pow3</code> in body of <code class="highlighter-rouge">doit</code>. Many Lua values can be converted into Terra values at compile time. The behavior depends on the value, and is described in  the <a href="api.html#compiletime-conversions">compile-time conversions</a> section of the API reference.</p>
+
+<p>Additionally, you may want to declare a Terra function as a <em>locally</em> scoped Lua variable. You can use the <code class="highlighter-rouge">local</code> keyword:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local terra foo()
+end
+</code></pre></div></div>
+
+<p>Which is just sugar for:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local foo; foo = terra()
+end
+</code></pre></div></div>
+
+<h2 id="types-and-operators">Types and Operators</h2>
+
+<p>Terra’s type system closely resembles the type system of C, with a few differences that make it interoperate better with the Lua language.</p>
+
+<p>Most importantly, Terra types are Lua values, just like how Terra functions are Lua values.
+We’ve already seen some basic Terra types like <code class="highlighter-rouge">int</code> or <code class="highlighter-rouge">double</code>.
+These are just Lua variables that are assigned to underlying Terra primitive types.</p>
+
+<p>Like functions, Types also have a <a href="api.html#types">reflection api</a>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>print(int)
+&gt; int32
+print(int:isprimitive())
+&gt; true
+print(int:isarithmetic())
+&gt; true
+</code></pre></div></div>
+
+<p>A corollary of Terra types being Lua values is that any Terra type annotations are really just Lua expressions</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local function an_integer_expression()
+    return int
+end
+terra foo(a : an_integer_expression())
+--            ~~~~~~~~~~~~~~~~~~~~~~~ any Lua expression can go here
+</code></pre></div></div>
+
+<p>And things like <code class="highlighter-rouge">typedef</code> are really just a Lua variable assignment:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local number = int -- no special typedef
+terra foo(a : number)
+
+end
+</code></pre></div></div>
+
+<h3 id="primitive-types">Primitive Types</h3>
+<p>Terra has the usual set of basic types:</p>
+
+<ul>
+  <li>Integers: <code class="highlighter-rouge">int</code> <code class="highlighter-rouge">int8</code> <code class="highlighter-rouge">int16</code> <code class="highlighter-rouge">int32</code> <code class="highlighter-rouge">int64</code></li>
+  <li>Unsigned integers: <code class="highlighter-rouge">uint</code> <code class="highlighter-rouge">uint8</code> <code class="highlighter-rouge">uint16</code> <code class="highlighter-rouge">uint32</code> <code class="highlighter-rouge">uint64</code></li>
+  <li>Boolean: <code class="highlighter-rouge">bool</code></li>
+  <li>Floating Point: <code class="highlighter-rouge">float</code> <code class="highlighter-rouge">double</code></li>
+</ul>
+
+<p>Integers are explicitly sized except for <code class="highlighter-rouge">int</code> and <code class="highlighter-rouge">uint</code> which should only be used when the particular size is not important. Most implicit conversions from C are also valid in Terra. The one major exception is the <code class="highlighter-rouge">bool</code> type. Unlike C, all control-flow explicitly requires a <code class="highlighter-rouge">bool</code> and integers are not explicitly convertible to <code class="highlighter-rouge">bool</code>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>if 3 then end -- ERROR 3 is not bool
+if 3 == 0 then end -- OK! 3 == 0 is bool
+</code></pre></div></div>
+
+<p>You can force the conversion from <code class="highlighter-rouge">int</code> to <code class="highlighter-rouge">bool</code> using an explicit cast:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var a : bool = [bool](3)
+</code></pre></div></div>
+
+<p>Primitive types have the standard operators defined:</p>
+
+<ul>
+  <li>Arithmetic: <code class="highlighter-rouge">- + * / %</code></li>
+  <li>Comparison: <code class="highlighter-rouge">&lt; &lt;= &gt; &gt;= == ~=</code></li>
+  <li>Logical: <code class="highlighter-rouge">and or not</code></li>
+  <li>Bitwise: <code class="highlighter-rouge">and or not ^ &lt;&lt; &gt;&gt;</code></li>
+</ul>
+
+<p>These behave the same C except for the logical operators, which are overloaded based on the type of the operators:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>true and false --Lazily evaluated logical and
+1 and 3        --Eagerly evaluated bitwise and
+</code></pre></div></div>
+
+<h3 id="pointers">Pointers</h3>
+
+<p>Pointers behave similarly to C, including pointer arithmetic. The syntax is slightly different to work with Lua’s grammar:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var a : int = 1
+var pa : &amp;int = &amp;a
+@pa = 4
+var b = @pa
+</code></pre></div></div>
+
+<p>You can read <code class="highlighter-rouge">&amp;int</code> as a value holding the <em>address</em> of an <code class="highlighter-rouge">int</code>, and <code class="highlighter-rouge">@a</code> as the value <em>at</em> address <code class="highlighter-rouge">a</code>. To get a pointer to heap-allocated memory you can use stdlib’s <code class="highlighter-rouge">malloc</code>:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C = terralib.includec("stdlib.h")
+terra doit()
+    var a = [&amp;int](C.malloc(sizeof(int) * 2))
+    @a,@(a+1) = 1,2
+end
+</code></pre></div></div>
+
+<p>Indexing operators also work on pointers:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a[3] --syntax sugar for @(a + 3)
+</code></pre></div></div>
+
+<p>Pointers can be explicitly cast to integers that are large enough to hold them without loss of precision. The <code class="highlighter-rouge">intptr</code> is the smallest integer that can hold a pointer. The <code class="highlighter-rouge">ptrdiff</code> type is the signed integer type that results from subtracting two pointers.</p>
+
+<p>We extended Lua to make the type expression <code class="highlighter-rouge">&amp;int</code> a valid Lua expression, so it too can be used directly from Lua</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local int_ptr = &amp;int
+</code></pre></div></div>
+
+<h3 id="arrays">Arrays</h3>
+
+<p>You can construct statically sized arrays as well:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var a : int[4]
+a[0],a[1],a[2],a[3] = 0,1,2,3
+</code></pre></div></div>
+
+<p>In constrast to Lua, Terra uses 0-based indexing since everything is based on offsets. <code class="highlighter-rouge">&amp;int[3]</code> is a pointer to an array of length 3. <code class="highlighter-rouge">(&amp;int)[3]</code> is an array of three pointers to integers.</p>
+
+<p>The function <code class="highlighter-rouge">array</code> will construct an array from a variable number of arguments:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var a = array(1,2,3,4) -- a has type int[4]
+</code></pre></div></div>
+
+<p>If you want to specify a particular type for the elements of the array you can use <code class="highlighter-rouge">arrayof</code> function:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var a = arrayof(int,3,4.5,4) -- a has type int[3]
+                           -- 4.5 will be cast to an int
+</code></pre></div></div>
+
+<h3 id="vectors">Vectors</h3>
+
+<p>Vectors are like arrays, but also allow you to perform vector-wide operations:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra saxpy(a :float,  X : vector(float,3), Y : vector(float,3),)
+	return a*X + Y
+end
+</code></pre></div></div>
+
+<p>They serve as an abstraction of the SIMD instructions (like Intel’s SSE or Arm’s NEON ISAs), allowing you to write vectorized code. The constructors <code class="highlighter-rouge">vector</code> and <code class="highlighter-rouge">vectorof</code> create vectors, and behave similarly to arrays:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var a = vector(1,2,3,4) -- a has type vector(int,4)
+var a = vectorof(int,3,4.5,4) -- a has type vector(int,3)
+                              -- 4.5 will be cast to an int
+</code></pre></div></div>
+
+<h3 id="structs">Structs</h3>
+
+<p>You can create aggregate types using the <code class="highlighter-rouge">struct</code> keyword. Structs must be declared outside of Terra code:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct Complex { real : float; imag : float; }
+terra doit()
+    var c : Complex
+    c.real = 4
+    c.imag = 5
+end
+</code></pre></div></div>
+
+<p>Unlike C, you can use the select operator <code class="highlighter-rouge">a.b</code> on pointers. This has the effect of dereferencing the pointer once and then applying the select operator (similar to the <code class="highlighter-rouge">-&gt;</code> operator in C):</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra doit(c : Complex)
+    var pc = &amp;c
+    return pc.real --sugar for (@pc).real
+end
+</code></pre></div></div>
+
+<p>Like functions, symbols in struct definitions are resolved when the struct is defined, and can be linked together using <code class="highlighter-rouge">and</code>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct C --declaration
+struct A {
+	b : &amp;B
+--and is required since A refers to B
+} and struct B {
+	a : &amp;A
+	c : &amp;C
+--you can mix struct and function
+--definitions
+} and terra myfunc()
+end
+
+struct C { i : int }
+</code></pre></div></div>
+
+<p>Terra has no explicit union type. Instead, you can declare that you want two or more elements of the struct to share the same memory:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct MyStruct {
+    a : int; --unique memory
+    union {
+        b : double;  --memory for b and c overlap
+        c : int;
+    }
+}
+</code></pre></div></div>
+
+<h3 id="tuples-and-anonymous-structs">Tuples and Anonymous Structs</h3>
+
+<p>In Terra you can also <em>tuples</em>, which are a special kind of struct that contain a list of elements:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var a : tuple(float,float) -- a pair of floats
+</code></pre></div></div>
+
+<p>You can use a constructor syntax to quickly generate tuple values:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var a = { 1,2,3,4 } --has type tuple(int,int,int,int)
+</code></pre></div></div>
+
+<p>Tuples can be cast to other struct types, which will initialize fields of the struct in order:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var c = Complex { 3,4 }
+</code></pre></div></div>
+
+<p>You can also add names to constructor syntax to create <em>anonymous structs</em>, similar to those in languages such as C-sharp:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var b = { a = 3.0, b = 3 }
+</code></pre></div></div>
+
+<p>Terra allows you to cast any anonymous struct to another struct that has a superset of its fields.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct Complex { real : float, imag : float}
+var c = Complex { real = 3, imag = 1 }
+</code></pre></div></div>
+
+<p>Since constructors like <code class="highlighter-rouge">{1,2}</code> are first-class values, they can appear anywhere a Terra expression can appear. This is in contrast to struct initializers in C, which can only appear in a struct declaration.</p>
+
+<h3 id="function-pointers">Function Pointers</h3>
+
+<p>Terra also allows for function pointers:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra add(a : int, b : int) return a + b end
+terra sub(a : int, b : int) return a - b end
+terra doit(usesub : bool, v : int)
+    var a : {int,int} -&gt; int
+    if usesub then
+        a = sub
+    else
+        a = add
+    end
+    return a(v,v)
+end
+</code></pre></div></div>
+
+<p>Terra does not have a <code class="highlighter-rouge">void</code> type. Instead, functions may return zero arguments:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra zerorets() : {}
+end
+</code></pre></div></div>
+
+<h3 id="terra-types-as-lua-values">Terra Types as Lua Values</h3>
+
+<p>As noted earlier, expressions following a ‘:’ in declarations – are simply Lua expressions that resolve to a type. Any valid Lua expression (e.g. function calls) can appear as a type as long as it evaluates to a valid Terra type. This can be useful in many places:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function Complex(typ)
+    return struct { real : typ, imag : typ }
+end
+
+terra doit()
+    var intcomplex : Complex(int) = {1,2}
+    var dblcomplex : Complex(double) = { 1.0, 2.0 }
+end
+</code></pre></div></div>
+
+<p>Since types are just Lua expressions they can occur outside of Terra code. Here we make a type alias for a pointer to an <code class="highlighter-rouge">int</code> that can be used in Terra code:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local ptrint = &amp;int
+
+terra doit(a : int)
+    var pa : ptrint = &amp;a
+end
+</code></pre></div></div>
+
+<p>Making types Lua objects enables powerful behaviors such as templating. Here we create a template that returns a constructor for a dynamically sized array:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function Array(typ)
+    return terra(N : int)
+        var r : &amp;typ = [&amp;typ](C.malloc(sizeof(typ) * N))
+        return r
+    end
+end
+-- memoize caches the result of the Array function for argument typ and returns
+-- the cached value if it is called again.
+Array = terralib.memoize(Array)
+
+local NewIntArray = Array(int)
+
+terra doit(N : int)
+    var my_int_array = NewIntArray(N)
+    --use your new int array
+end
+</code></pre></div></div>
+
+<h2 id="literals">Literals</h2>
+
+<p>Here are some example literals:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">3</code> is an <code class="highlighter-rouge">int</code></li>
+  <li><code class="highlighter-rouge">3.</code> is a <code class="highlighter-rouge">double</code></li>
+  <li><code class="highlighter-rouge">3.f</code> is a <code class="highlighter-rouge">float</code></li>
+  <li><code class="highlighter-rouge">3LL</code> is an <code class="highlighter-rouge">int64</code></li>
+  <li><code class="highlighter-rouge">3ULL</code> is a <code class="highlighter-rouge">uint64</code></li>
+  <li><code class="highlighter-rouge">"a string"</code> or <code class="highlighter-rouge">[[ a multi-line long string ]]</code> is an <code class="highlighter-rouge">&amp;int8</code></li>
+  <li><code class="highlighter-rouge">nil</code> is the null pointer for any pointer type</li>
+  <li><code class="highlighter-rouge">true</code> and <code class="highlighter-rouge">false</code> are <code class="highlighter-rouge">bool</code></li>
+</ul>
+
+<h2 id="methods">Methods</h2>
+
+<p>Unlike languages like C++ or Scala, Terra does not provide a built-in class system that includes advanced features like inheritance or sub-typing. Instead, Terra provides the <em>mechanisms</em> for creating systems like these, and leaves it up to the user to choose to use or build such a system. One of the mechanisms Terra exposes is a method invocation syntax sugar similar to Lua’s <code class="highlighter-rouge">:</code> operator.</p>
+
+<p>In Lua, the statement:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>receiver:method(arg1,arg2)
+</code></pre></div></div>
+
+<p>is syntax sugar for:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>receiver.method(receiver,arg1,arg2)
+</code></pre></div></div>
+
+<p>The function <code class="highlighter-rouge">method</code> is looked up on the object <code class="highlighter-rouge">receiver</code> dynamically. In contrast, Terra looks up the function statically at compile time. Since the <em>value</em> of the <code class="highlighter-rouge">receiver</code> expression is not know at compile time, it looks up the method on its <em>type</em>.</p>
+
+<p>In Terra, the statement:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>receiver:method(arg1,arg2)
+</code></pre></div></div>
+
+<p>where <code class="highlighter-rouge">receiver</code> has type <code class="highlighter-rouge">T</code> is syntax sugar for:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>T.methods.method(receiver,arg1,arg2)
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">T.methods</code> is the <em>method table</em> of type <code class="highlighter-rouge">T</code>. Terra allows you to add methods to the method tables of named structural types:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct Complex { real : double, imag : double }
+Complex.methods.add = terra(self : &amp;Complex, rhs : Complex) : Complex
+    return {self.real + rhs.real, self.imag + rhs.imag}
+end
+
+terra doit()
+    var a : Complex, b : Complex = {1,1}, {2,1}
+    var c = a:add(b)
+    var ptra = &amp;a
+    var d = ptra:add(b) --also works
+end
+</code></pre></div></div>
+
+<p>The statement <code class="highlighter-rouge">a:add(b)</code> will normally desugar to <code class="highlighter-rouge">Complex.methods.add(a,b)</code>. Notice that <code class="highlighter-rouge">a</code> is a <code class="highlighter-rouge">Complex</code> but the <code class="highlighter-rouge">add</code> function expects a <code class="highlighter-rouge">&amp;Complex</code>. If necessary, Terra will insert one implicit address-of operator on the first argument of the method call. In this case <code class="highlighter-rouge">a:add(b)</code> will desugar to <code class="highlighter-rouge">Complex.methods.add(&amp;a,b)</code>.</p>
+
+<p>Like the <code class="highlighter-rouge">.</code> selection operator, the <code class="highlighter-rouge">:</code> method operator can also be used directly on pointers. In this case, the pointer is first dereferenced, and the normal rules for methods are applied. For instance, when using the <code class="highlighter-rouge">:</code> operator on a value of type <code class="highlighter-rouge">&amp;Complex</code> (e.g. <code class="highlighter-rouge">ptra</code>), it will first insert a dereference and desugar to <code class="highlighter-rouge">Complex.methods.add(@a,b)</code>.  Then to match the type of <code class="highlighter-rouge">add</code>, it will apply the implicit address-of operator to get <code class="highlighter-rouge">Complex.methods.add(&amp;@a,b)</code>.  This allows a single method definition to take as an argument either a type <code class="highlighter-rouge">T</code> or a pointer <code class="highlighter-rouge">&amp;T</code>, and still work when the method is called on value of type <code class="highlighter-rouge">T</code> or type <code class="highlighter-rouge">&amp;T</code>.</p>
+
+<p>To make defining methods easier, we provide a syntax sugar.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra Complex:add(rhs : Complex) : Complex
+	...
+end
+</code></pre></div></div>
+
+<p>is equivalent to</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra Complex.methods.add(self : &amp;Complex, rhs : Complex) : Complex
+    ...
+end
+</code></pre></div></div>
+
+<p>Terra also support <em>metamethods</em> similar to Lua’s operators like <code class="highlighter-rouge">__add</code>, which will allow you to overload operators like <code class="highlighter-rouge">+</code> on Terra types, or specify custom type conversion rules. See the <a href="api.html#structs">API reference on structs</a> for more information.</p>
+
+<h1 id="lua-terra-interaction">Lua-Terra Interaction</h1>
+
+<p>We’ve already seen examples of Lua code calling Terra functions. In general, you can call a Terra function anywhere a normal Lua function would go. When passing arguments into a terra function from Lua they are converted into Terra types. The <a href="api.html##converting-between-lua-values-and-terra-values">current rules</a> for this conversion are described in the API reference. Right now they match the behavior of <a href="http://luajit.org/ext_ffi_semantics.html">LuaJIT’s foreign-function interface</a>. Numbers are converted into doubles, tables into structs or arrays, Lua functions into function pointers, etc. Here are some examples:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct A { a : int, b : double }
+
+terra foo(a : A)
+    return a.a + a.b
+end
+
+assert( foo( {a = 1,b = 2.3} )== 3.3 )
+assert( foo( {1,2.3} ) == 3.3)
+assert( foo( {b = 1, a = 2.3} ) == 3 )
+</code></pre></div></div>
+
+<p>More examples are in <code class="highlighter-rouge">tests/luabridge*.t</code>.</p>
+
+<p>It is also possible to call Lua functions from Terra. Again, the translation from Terra objects to Lua uses LuaJITs conversion rules. Primitive types like <code class="highlighter-rouge">double</code> will be converted to their respective Lua type, while aggregate and derived types will be boxed in a LuaJIT <code class="highlighter-rouge">ctype</code> that can be modified from Lua:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function add1(a)
+    a.real = a.real + 1
+end
+struct Complex { real : double, imag : double }
+terra doit()
+    var a : Complex = {1,2}
+    add1(&amp;a)
+    return a
+end
+a = doit()
+print(a.real,a.imag) -- 2    1
+print(type(a)) -- cdata
+</code></pre></div></div>
+
+<p>The file <code class="highlighter-rouge">tests/terralua.t</code> includes more examples. The file <code class="highlighter-rouge">tests/terraluamethod.t</code> also demonstrate using Lua functions inside the method table of a terra object.</p>
+
+<p>since we cannot determine the Terra types that function will return, Lua functions do not return values to Terra functions by default. To convert a Lua function into a Terra function that does return a value, you first need to <code class="highlighter-rouge">cast</code> it to a Terra function type:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function luaadd(a,b) return a + b end
+terraadd = terralib.cast( {int,int} -&gt; int, luaadd)
+
+terra doit()
+	return terraadd(3,4)
+end
+</code></pre></div></div>
+
+<h1 id="meta-programming-terra-with-lua">Meta-programming Terra with Lua</h1>
+
+<p>In this guide we’ve already encountered instances of meta-programming, such as using a Lua loop to create an array of  Terra <code class="highlighter-rouge">pow</code> functions. In fact, Terra includes several operators that it make it possible to generate <em>any</em> code at runtime. For instance, you can implement an entire compiler by parsing an input string and constructing the Terra functions that implement the parsed code.</p>
+
+<p>The operators we provide are adapted from <a href="http://www.cs.rice.edu/~taha/MSP/">multi-stage programming</a>. An <em>escape</em> allows you to splice the result of a Lua expression into Terra. A <em>quote</em> allows you to generate a new Terra statement or expression which can then be spliced into Terra code using an escape. <em>Symbol</em> objects allow you to create unique names at compile time.</p>
+
+<h3 id="escapes">Escapes</h3>
+
+<p>Escapes allow you to splice the result of a Lua expression into Terra code. Here is an example:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function get5()
+	return 5
+end
+terra foobar()
+	return [ get5() + 1 ]
+end
+foobar:printpretty()
+&gt; output:
+&gt; foobar0 = terra() : {int32}
+&gt; 	return 6
+&gt; end
+</code></pre></div></div>
+
+<p>When the function is defined, the Lua expression inside the brackets (<code class="highlighter-rouge">[]</code>) is evaluated to the Lua value <code class="highlighter-rouge">6</code>  which is then used in the Terra code. The Lua value is converted to a Terra value based on the rules for <a href="api.html#compiletime-conversions">compile-time conversions</a> in the API reference (e.g. numbers are converted to Terra constants, global variables are converted into references to that global).</p>
+
+<p>Escapes can appear where any expression or statement normally appears. When they appear as statements or at the end of en expression list, multiple values can be spliced in place by returning a Lua array:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra return123()
+	--escape appends 2 values:
+	return 1, [ {2,3} ]
+end
+</code></pre></div></div>
+
+<p>You can also use escapes to programmatically choose fields or functions:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local myfield = "foo"
+local mymethod = "bar"
+terra fieldsandfunctions()
+	var fields = myobj.[myfield]
+	var methods = myobj:[mymethod]()
+end
+</code></pre></div></div>
+
+<p>Lua expressions inside an escape can refer to the variables defined inside a Terra function. For instance, this example chooses which variable to return based on a Lua parameter:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local choosefirst = true
+local function choose(a,b)
+	if choosefirst then
+		return a
+	else
+		return b
+	end
+end
+terra doit(a : double)
+	var first = C.sin(a)
+	var second = C.cos(a)
+	return [ choose(first,second) ]
+end
+</code></pre></div></div>
+
+<p>Since Lua and Terra can refer to the same set of variables, we say that they <em>share</em> the same lexical scope.</p>
+
+<p>What values should <code class="highlighter-rouge">first</code> and <code class="highlighter-rouge">second</code> have when used in an escape? Since escapes are evaluated when a function is <em>defined</em>, and not when a function is <em>run</em>, we don’t know the results of the <code class="highlighter-rouge">sin(a)</code> and <code class="highlighter-rouge">cos(a)</code> expressions when evaluating the escape. Instead, <code class="highlighter-rouge">first</code> and <code class="highlighter-rouge">second</code> will be <em>symbols</em>, an abstract data type representing a unique name used in Terra code.  Outside of a Terra expression, they do not have a concrete value. However, when placed in a Terra expression they become references to the original variable.  Going back to the example, the function <code class="highlighter-rouge">doit</code> will return either the value of <code class="highlighter-rouge">C.sin(a)</code> or <code class="highlighter-rouge">C.cos(a)</code> depending on which symbol is returned from the <code class="highlighter-rouge">choose</code> function and spliced into the code.</p>
+
+<p>Previously, we have seen that you can use Lua symbols directly in the Terra code. For example, we looked at this <code class="highlighter-rouge">powN</code> function:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local N = 4
+terra powN(a : double)
+    var r = 1
+    for i = 0, N do
+        r = r * a
+    end
+    return r
+end
+</code></pre></div></div>
+
+<p>This behavior is actually just syntax sugar for an escape expression.  In Terra, <em>any</em> name used in an expression (e.g. <code class="highlighter-rouge">a</code> or <code class="highlighter-rouge">r</code>) is treated as if it were an escape. Here is the same function de-sugared:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local N = 4
+terra powN(a : double)
+    var r = 1
+    for i = 0, N do
+        r = [r] * [a]
+    end
+    return [r]
+end
+</code></pre></div></div>
+
+<p>In this case <code class="highlighter-rouge">[a]</code> will resolve to the value <code class="highlighter-rouge">4</code> and then be converted to a Terra constant, while <code class="highlighter-rouge">[r]</code> will resolve to a <em>symbol</em> and be converted to a reference to the variable definition of <code class="highlighter-rouge">r</code> on the first line of the function.</p>
+
+<p>The syntax sugar also extends to field selection expressions such as <code class="highlighter-rouge">a.b.c</code>. In this case, if both <code class="highlighter-rouge">a</code> and <code class="highlighter-rouge">b</code> are Lua tables, then the expression will de-sugar to <code class="highlighter-rouge">[a.b.c]</code>. For instance, the call to <code class="highlighter-rouge">C.sin</code> and <code class="highlighter-rouge">C.cos</code> are de-sugared to <code class="highlighter-rouge">[C.sin]</code> and <code class="highlighter-rouge">[C.cos]</code> since <code class="highlighter-rouge">C</code> is a Lua table.</p>
+
+<h3 id="quotes">Quotes</h3>
+
+<p>A quote allows you to generate a single Terra expression or statement outside of a Terra function. They are frequently used in combination with escapes to generate code. Quotes create the individual expressions and escapes are used stitch them together.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function addone(a)
+	--return quotation that
+	--represents adding 1 to a    
+	return `a + 1
+end
+terra doit()
+	var first = 1
+	--call addone to generate
+	--expression first + 1 + 1
+	return [ addone(addone(first)) ]
+end
+</code></pre></div></div>
+
+<p>If you want to create a group of statements rather than expressions, you can using the <code class="highlighter-rouge">quote</code> keyword:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local printit = quote
+	C.printf("a quotestatement")
+end
+
+terra doit()
+	--print twice
+	printit
+	printit
+end
+</code></pre></div></div>
+
+<p>The <code class="highlighter-rouge">quote</code> keyword can also include an optional <code class="highlighter-rouge">in</code> statement that creates an expression:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>myquote = quote
+    var a = foo()
+    var b = bar()
+in
+    a + b
+end
+</code></pre></div></div>
+
+<p>When used as an expression this quote will produce that value.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra doit()
+    var one,two = myquote
+end
+</code></pre></div></div>
+
+<p>When a variable is used in an escape, it is sometimes ambiguous what value it should have.
+For example, consider what value this function should return:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function makeexp(arg)
+    return quote
+        var a = 2
+        return arg + a
+    end
+end
+terra client()
+    var a = 1;
+    [ makeexp(a) ];
+end
+</code></pre></div></div>
+
+<p>The variable name <code class="highlighter-rouge">a</code> is defined twice: once in the function and once in the quotation. A reference to <code class="highlighter-rouge">a</code> is then passed the <code class="highlighter-rouge">makeexp</code> function, where it is used inside the quote after <code class="highlighter-rouge">a</code> is defined. In the return statement, should <code class="highlighter-rouge">arg</code> have the value <code class="highlighter-rouge">1</code> or <code class="highlighter-rouge">2</code>? If you were using C’s macro preprocessor, the equivalent statement might be something like</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#define MAKEEXP(arg) \
+    int a = 2; \
+    return arg + a; \
+
+int scoping() {
+    int a = 1;
+    MAKEEXP(a)
+}
+</code></pre></div></div>
+
+<p>In C, the function would return <code class="highlighter-rouge">4</code>. But this seems wrong – <code class="highlighter-rouge">MAKEEXP</code> may have been written by a library writer, so the writer of <code class="highlighter-rouge">scoping</code> might not even know that <code class="highlighter-rouge">a</code> is used in <code class="highlighter-rouge">MAKEEXP</code>. This behavior is normally call <em>unhygienic</em> since it is possible for the body of the quotation to accidentally redefine a variable in the expression. It makes it difficult to write reusable functions that generate code and is one of the reasons macros are discouraged in C.</p>
+
+<p>Instead, Terra ensures that variable references are <em>hygienic</em>. The reference to <code class="highlighter-rouge">a</code> in <code class="highlighter-rouge">makeexp(a)</code> refers uniquely to the definition of <code class="highlighter-rouge">a</code> in the same <a href="http://en.wikipedia.org/wiki/Scope_%28computer_science%29#Lexical_scoping_and_dynamic_scoping">lexical scope</a> (in this case, the definition of <code class="highlighter-rouge">a</code> in the <code class="highlighter-rouge">client</code> function). This relationship is maintained regardless of where the symbol eventually ends up in the code, so the <code class="highlighter-rouge">scoping</code> function will correctly return the value <code class="highlighter-rouge">3</code>.</p>
+
+<p>This hygiene problem occurs in all languages that have meta-programming.
+Wikipedia has <a href="http://en.wikipedia.org/wiki/Hygienic_macro">more discussion</a>. By maintaining hygiene and using lexical scoping, we guarantee that you can always inspect a string of Terra code and match variables to their definitions without knowing how the functions will execute.</p>
+
+<h3 id="dynamically-generated-symbols">Dynamically Generated Symbols</h3>
+
+<p>For the most part, hygiene and lexical scoping are good properties. However, you may want to occasionally violate lexical scoping rules when generating code.  For instance, you may want one quotation to introduce a local variable, and another separate quotation to refer to it. Terra provides a controlled way of violating lexical scoping using the <code class="highlighter-rouge">symbol()</code> function, which returns a unique variable name (a <em>symbol</em>) each time it is called (this is the Terra equivalent of Common Lisp’s <code class="highlighter-rouge">gensym</code>).  Here is an example that creates a new symbol, defines the symbol in one quotation and then uses it in another.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local a = symbol()
+
+defineA = quote
+        var [a] = 3
+    end
+
+twiceA = `2*a
+
+terra doit()
+    defineA
+    return twiceA
+end
+</code></pre></div></div>
+
+<p>The symbol function can also take a type as an argument <code class="highlighter-rouge">symbol(int)</code>. This has the same effect as when you write <code class="highlighter-rouge">var a : int</code> in a declaration. It is optional when the type of the definition can be inferred (e.g. when it is local variable with an initializer), but required when it cannot be inferred (e.g. when it is a parameter to a function).</p>
+
+<p>Notice that the declaration of the symbol uses the escape <code class="highlighter-rouge">[a]</code> in place of <code class="highlighter-rouge">a</code>. Using just <code class="highlighter-rouge">a</code> would make a local variable with name <code class="highlighter-rouge">a</code> that is not in scope outside of that quotation. In this context, the escape instructs the Terra compiler to parse that part as a Lua expression, evaluate it, and drop the result in place. In this case, the result of evaluation <code class="highlighter-rouge">a</code>  is the symbol generated by the <code class="highlighter-rouge">symbol()</code> function. Similarly the reference to <code class="highlighter-rouge">a</code> in the expression <code class="highlighter-rouge">2*a</code> will evaluate to the same symbol object. If we had omitted the escape, then we would receive a compilation error reporting that <code class="highlighter-rouge">2*a</code> refers to an undefined variable.</p>
+
+<p>A list of symbols can also be spliced onto the end of parameter lists to generate functions with a configurable number of arguments:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local rest = {symbol(int),symbol(int)}
+
+terra doit(first : int, [rest])
+    return first + [rest[1]] + [rest[2]]
+end
+</code></pre></div></div>
+
+<h1 id="additional-details">Additional Details</h1>
+
+<h2 id="assignments-and-expression-lists">Assignments and Expression Lists</h2>
+
+<p>When a function returns multiple values, it implicitly creates a tuple of those values as the return type:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra returns2() return 1,2 end
+terra example()
+    var a = returns2() -- has type tuple(int,int)
+    C.printf("%d %d\n",a._0,a._1)
+end
+</code></pre></div></div>
+
+<p>To make it easier to use functions that return multiple values, we allow a tuple that is the last element of an expression list to match multiple variables on the left the left-hand size.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>terra example2()
+    var a,b,c = 1,returns2()
+    var a,b,c = returns2(),1 --Error: returns2 is not the last element
+end
+</code></pre></div></div>
+
+<h2 id="global-variables">Global Variables</h2>
+<p>Terra Variables can be declared outside <code class="highlighter-rouge">terra</code> functions as well using the <code class="highlighter-rouge">global</code> function:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a = global(double,3.0)
+terra myfn()
+    a = a + 1
+    return a
+end
+print(myfn()) -- 4
+print(a:get()) -- 4, :get() accesses the value of the global from Lua
+</code></pre></div></div>
+
+<p>This makes <code class="highlighter-rouge">a</code> a <em>global</em> variable that is visible to multiple Terra functions. The <code class="highlighter-rouge">global</code> function is part of Terra’s Lua-based <a href="api.html#global-variables">API</a>. It initializes <code class="highlighter-rouge">a</code> to the value <code class="highlighter-rouge">3.0</code>.</p>
+
+<h2 id="macros">Macros</h2>
+<p>It is sometimes useful to have a construct in Terra that looks like a function call but haves like an escaped called to a Lua function. These are called macros in Terra, and create one with the <code class="highlighter-rouge">macro</code>  function which takes a normal Lua function and returns a macro:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local times2 = macro(function(a)
+    -- a is a Terra quote
+    return `a + a
+end)
+
+terra doit()
+    var a = times2(3)
+    -- a == 6
+end
+</code></pre></div></div>
+
+<p>Unlike a normal function, which works on Terra values, the arguments to Terra macros are passed to the macro as <em>quotes</em>.</p>
+
+<p>Since macros take quotes rather than values, they have different behavior than function calls. For instance:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>var c = 0
+terra up()
+    c = c + 1
+    return c
+end
+
+terra doit()
+    return times2(up()) --returns 1 + 2 == 3
+end
+</code></pre></div></div>
+
+<p>The example returns <code class="highlighter-rouge">3</code> because <code class="highlighter-rouge">up()</code> is evaluated twice</p>
+
+<p>Some built-in operators are implemented as macros. For instance the <code class="highlighter-rouge">sizeof</code> operator is just a macro that inserts a special intrinsic that looks up the size of a type.</p>
+
+<p>Macros can also be used to create useful patterns like a C++ style new operator:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>new = macro(function(typquote)
+    local typ = typquote:astype()
+    return `[&amp;typ](C.malloc(sizeof(typ)))
+end)
+
+terra doit()
+    var a = new(int)
+end
+</code></pre></div></div>
+
+<p>In general, macros are just syntax sugar for escapes where each argument to the escape is quoted:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local function foo ...
+local mfoo = macro(foo)
+
+terra f()
+    var a,b = 1,2
+    [ foo(`a,`b,`3) ]
+    -- equivlent
+    mfoo(a,b,3)
+end
+</code></pre></div></div>
+
+<h2 id="building-terra">Building Terra</h2>
+
+<p>If the binary releases are not appropriate, then you can also build Terra from source. Terra uses LLVM 3.5, Clang 3.5 (the C/C++ frontend for LLVM), and LuaJIT 2.0.3 – a tracing-JIT for Lua code.  Terra will download and compile LuaJIT for you, but you will need to install Clang and LLVM.</p>
+
+<h3 id="windows">Windows</h3>
+
+<p>For instructions on installing Terra in Windows see this <a href="https://github.com/zdevito/terra/blob/master/msvc/README.md">readme</a>. You will need a built copy of LLVM and Clang 3.5, as well as a copy of the LuaJIT sources.</p>
+
+<h3 id="linuxosx">Linux/OSX</h3>
+
+<p>The easiest way to get a working LLVM/Clang install is to download the download the <em>Clang Binaries</em> (which also include LLVM binaries) from the
+<a href="http://llvm.org/releases/download.html">LLVM download</a> page, and unzip this package.</p>
+
+<p>Now get the Terra sources:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://github.com/zdevito/terra
+</code></pre></div></div>
+
+<p>To point the Terra build to the version of LLVM and Clang you downloaded, create a new file <code class="highlighter-rouge">Makefile.inc</code> in the <code class="highlighter-rouge">terra</code> source directory that points to your LLVM install by including the following contents:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>LLVM_CONFIG = &lt;path-to-llvm-install&gt;/bin/llvm-config
+</code></pre></div></div>
+
+<p>Now run make in the <code class="highlighter-rouge">terra</code> directory to download LuaJIT and build Terra:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ make
+</code></pre></div></div>
+
+<p>If you do not create a <code class="highlighter-rouge">Makefile.inc</code>, the Makefile will look for the LLVM config script and Clang using these values:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>LLVM_CONFIG = $(shell which llvm-config)
+LLVM_COMPILER_BIN = $(shell $(LLVM_CONFIG) --bindir)
+LLVM_CXX = $(LLVM_COMPILER_BIN)/clang++
+LLVM_CC  = $(LLVM_COMPILER_BIN)/clang
+</code></pre></div></div>
+
+<p>If your installation has these files in a different place, you can override these defaults in the <code class="highlighter-rouge">Makefile.inc</code> that you created in the <code class="highlighter-rouge">terra</code> directory.</p>
+
+<h2 id="embedding-terra-lua-inside-of-c">Embedding Terra-Lua inside of C</h2>
+
+<p>Terra can also be used as a library from C by linking against <code class="highlighter-rouge">libterra.a</code> (windows:  <code class="highlighter-rouge">terra.dll</code>). The interface is very similar that of the <a href="http://queue.acm.org/detail.cfm?id=1983083">Lua interpreter</a>.
+A simple example initializes Terra and then runs code from the file specified in each argument:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//simple.cpp
+#include &lt;stdio.h&gt;
+#include "terra.h"
+
+int main(int argc, char ** argv) {
+    lua_State * L = luaL_newstate(); //create a plain lua state
+    luaL_openlibs(L);                //initialize its libraries
+    //initialize the terra state in lua
+    terra_init(L);
+    for(int i = 1; i &lt; argc; i++)
+    	//run the terra code in each file
+        if(terra_dofile(L,argv[i]))  
+            return 1; //error
+    return 0;
+}
+</code></pre></div></div>
+
+<p>This program can then be compiled by linking against the Terra library</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Linux
+c++ simple.cpp -o simple -I&lt;path-to-terra-folder&gt;/terra/include \
+-L&lt;path-to-terra-folder&gt;/lib -lterra -ldl -pthread
+
+# OSX
+c++ simple.cpp -o simple -I&lt;path-to-terra-folder&gt;/terra/include \
+-L&lt;path-to-terra-folder&gt;/lib -lterra \
+-pagezero_size 10000 -image_base 100000000
+</code></pre></div></div>
+
+<p>Note the extra <code class="highlighter-rouge">pagezero_size</code> and <code class="highlighter-rouge">image_base</code> arguments on OSX. These are necessary for LuaJIT to run on OSX.</p>
+
+<p>In addition to these modes, Terra code can be compiled to <code class="highlighter-rouge">.o</code> files which can be linked into an executable, or even compiled to an executable directly.</p>
+
+<h1 id="more-information">More Information</h1>
+
+<p>More details about the interaction of Terra and Lua can be found in the <a href="api.html">API reference</a>. The <a href="TerraForCPP.html">Terra For C Programmers</a> (currently incomplete, but still useful) shows C/C++ code along-side equivalent Terra code to help you get started understanding the language. The best place to look for more examples of Terra features is the <code class="highlighter-rouge">tests/</code> directory, which contains the set of up-to-date language tests for the implementation. Grep through the tests to find examples of particular features you want to use.</p>
+
+      </section>
+    </div>
+  </body>
+</html>

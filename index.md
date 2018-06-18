@@ -1,50 +1,29 @@
 ---
 layout: post
-title: Terra
+title: TensorScript
 ---
-__Terra__ is a low-level system programming language that is embedded in and meta-programmed by the __Lua__ programming language:
+TensorScript is a high-level Domain Specific Language(DSL) for specifying finite-dimensioned tensor computation.
 
-    -- This top-level code is plain Lua code.
-    function printhello()
-        -- This is a plain Lua function
-        print("Hello, Lua!")
-    end
-    printhello()
+```rust
+use lin::Linear;
+use nonlin::{sigmoid, relu};
 
-    -- Terra is backwards compatible with C, we'll use C's io library in our example.
-    C = terralib.includec("stdio.h")
-    
-    -- The keyword 'terra' introduces a new Terra function.
-    terra hello(argc : int, argv : &rawstring)
-        -- Here we call a C function from Terra
-        C.printf("Hello, Terra!\n")
-        return 0
-    end
-    
-    -- You can call Terra functions directly from Lua, they are JIT compiled 
-    -- using LLVM to create machine code
-    hello(0,nil)
+node Xor<[?,2] -> [?,1]> { }
+weights Xor<[?,2] -> [?,1]> {
+    fc1 = Linear::new(in=2, out=3);
+    fc2 = Linear::<[?,3]->[?,1]>::new(in=3, out=1);
+}
+graph Xor<[?,2] -> [?,1]> {
+    def forward {
+        x |> fc1 |> sigmoid
+        |> fc2
+    }
+}
+```
 
-    -- Terra functions are first-class values in Lua, and can be introspected 
-    -- and meta-programmed using it
-    hello:disas()
-    --[[ output:
-        assembly for function at address 0x60e6010
-        0x60e6010(+0):		push	rax
-        0x60e6011(+1):		movabs	rdi, 102129664
-        0x60e601b(+11):		movabs	rax, 140735712154681
-        0x60e6025(+21):		call	rax
-        0x60e6027(+23):		xor	eax, eax
-        0x60e6029(+25):		pop	rdx
-        0x60e602a(+26):		ret
-    ]]
-    
-    -- You can save Terra code as executables, object files, or shared libraries 
-    -- and link them into existing programs
-    terralib.saveobj("helloterra",{ main = hello })
-{: id="introcode"}
+## Site under construction
 
-Like C/C++, Terra is a  **statically-typed**, **compiled language** with manual memory management. 
+<!-- Like C/C++, Terra is a  **statically-typed**, **compiled language** with manual memory management. 
 But unlike C/C++, it is designed from the beginning to be **meta-programmed from Lua**. 
 
 The design of Terra comes from the realization that C/C++ is really composed of multiple "languages." It has a core language of operators, control-flow, and functions calls, but surrounding this language is a meta-language composed of a mix of features such as the pre-processor, templating system, and struct definitions. Templates alone are Turing-complete and have been used to produce optimized libraries such as [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page), but are horrible to use in practice. 
@@ -525,4 +504,4 @@ As shown in the templating example, Terra allows you to define methods on `struc
     end
 
 The functions `J.extends` and `J.implements` are Lua functions that generate the appropriate Terra code to implement a class system. More information is available in our [PLDI Paper](/publications.html). The file [lib/javalike.t](https://github.com/zdevito/terra/blob/master/tests/lib/javalike.t) has one possible implementation of a Java-like class system, while the file [lib/golike.t](https://github.com/zdevito/terra/blob/master/tests/lib/golike.t) is more similar to Google's Go language.
-
+ -->

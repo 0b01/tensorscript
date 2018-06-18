@@ -14,21 +14,17 @@
     <div class="wrapper">
       <header>
         <div class="title">
-        <a href="index.html"><h1 class="title"><img  src="logo.png"></h1></a>
+        <a href="index.html"><h1 class="title"><img width="30px" src="logo.png">TensorScript</h1></a>
         <p>A shape-checked DSL for tensor programming</p>
         </div>
         <div class="links">
         {% assign current = page.url | downcase | split: '/' %}    
-        <!--<p><a href="demo.html">Try Terra Online</a></p>-->
         <a href="/" {% if page.url == '/' %}class='current'{% endif %} >home</a>
-        <a href="https://github.com/zdevito/terra/releases" >downloads</a>
-        <a href="http://github.com/zdevito/terra" >source</a>
+        <a href="https://github.com/rickyhan/tensorscript/releases" >downloads</a>
+        <a href="http://github.com/rickyhan/tensorscript" >source</a>
         <a href="getting-started.html" {% if current[1] == 'getting-started.html' %}class='current'{% endif %}>getting started</a>
         <a href="api.html" {% if current[1] == 'api.html' %}class='current'{% endif %}>api reference</a>
-        <a href="publications.html" {% if current[1] == 'publications.html' %}class='current'{% endif %}>publications</a>
-        <a href="list.html" {% if current[1] == 'list.html' %}class='current'{% endif %}>mailing list</a>
-        <a href="http://cs.stanford.edu/~zdevito">contact</a>
-        <!-- <p><a href="about.html" >About Us</a></p> -->
+        <a href="http://rickyhan.com/about">contact</a>
         </div>
       </header>
       <section class="language-terra">
