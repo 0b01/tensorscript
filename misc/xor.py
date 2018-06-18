@@ -32,9 +32,9 @@ targets = list(map(lambda s: Variable(torch.Tensor([s])), [
 ]))
 
 criterion = nn.MSELoss()
-optimizer = optim.SGD(net.parameters(), lr=0.01)
+optimizer = optim.SGD(net.parameters(), lr=0.1)
 
-EPOCHS_TO_TRAIN = 20000
+EPOCHS_TO_TRAIN = 2000
 print("Training loop:")
 for idx in range(0, EPOCHS_TO_TRAIN):
     for input, target in zip(inputs, targets):
@@ -43,9 +43,8 @@ for idx in range(0, EPOCHS_TO_TRAIN):
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()    # update
-    if idx % 5000 == 0:
-        print("loss: ", loss.data.numpy())
-        print("Epoch: ", idx)
+    if idx % 500 == 0:
+        print("Epoch:\t", idx, "\tloss:\t", loss.data.numpy())
 
 
 print("")
