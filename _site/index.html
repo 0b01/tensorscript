@@ -1,0 +1,578 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Terra</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link rel="stylesheet" href="stylesheets/prism.css" />
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <div class="title">
+        <a href="index.html"><h1 class="title"><img width="70px" src="logo.png">Terra</h1></a>
+        <p>A low-level counterpart to Lua</p>
+        </div>
+        <div class="links">
+            
+        <!--<p><a href="demo.html">Try Terra Online</a></p>-->
+        <a href="/" class='current' >home</a>
+        <a href="https://github.com/zdevito/terra/releases" >downloads</a>
+        <a href="http://github.com/zdevito/terra" >source</a>
+        <a href="getting-started.html" >getting started</a>
+        <a href="api.html" >api reference</a>
+        <a href="publications.html" >publications</a>
+        <a href="list.html" >mailing list</a>
+        <a href="http://cs.stanford.edu/~zdevito">contact</a>
+        <!-- <p><a href="about.html" >About Us</a></p> -->
+        </div>
+      </header>
+      <section class="language-terra">
+      <p><strong>Terra</strong> is a low-level system programming language that is embedded in and meta-programmed by the <strong>Lua</strong> programming language:</p>
+
+<div id="introcode" class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-- This top-level code is plain Lua code.
+function printhello()
+    -- This is a plain Lua function
+    print("Hello, Lua!")
+end
+printhello()
+
+-- Terra is backwards compatible with C, we'll use C's io library in our example.
+C = terralib.includec("stdio.h")
+
+-- The keyword 'terra' introduces a new Terra function.
+terra hello(argc : int, argv : &amp;rawstring)
+    -- Here we call a C function from Terra
+    C.printf("Hello, Terra!\n")
+    return 0
+end
+
+-- You can call Terra functions directly from Lua, they are JIT compiled 
+-- using LLVM to create machine code
+hello(0,nil)
+
+-- Terra functions are first-class values in Lua, and can be introspected 
+-- and meta-programmed using it
+hello:disas()
+--[[ output:
+    assembly for function at address 0x60e6010
+    0x60e6010(+0):		push	rax
+    0x60e6011(+1):		movabs	rdi, 102129664
+    0x60e601b(+11):		movabs	rax, 140735712154681
+    0x60e6025(+21):		call	rax
+    0x60e6027(+23):		xor	eax, eax
+    0x60e6029(+25):		pop	rdx
+    0x60e602a(+26):		ret
+]]
+
+-- You can save Terra code as executables, object files, or shared libraries 
+-- and link them into existing programs
+terralib.saveobj("helloterra",{ main = hello })
+</code></pre></div></div>
+
+<p>Like C/C++, Terra is a  <strong>statically-typed</strong>, <strong>compiled language</strong> with manual memory management. 
+But unlike C/C++, it is designed from the beginning to be <strong>meta-programmed from Lua</strong>.</p>
+
+<p>The design of Terra comes from the realization that C/C++ is really composed of multiple “languages.” It has a core language of operators, control-flow, and functions calls, but surrounding this language is a meta-language composed of a mix of features such as the pre-processor, templating system, and struct definitions. Templates alone are Turing-complete and have been used to produce optimized libraries such as <a href="http://eigen.tuxfamily.org/index.php?title=Main_Page">Eigen</a>, but are horrible to use in practice.</p>
+
+<p>In Terra, we just gave in to the trend of making the meta-language of C/C++ more powerful and replaced it with a real programming language, Lua.</p>
+
+<p>The combination of a low-level language meta-programmed by a high-level scripting language allows many behaviors that are not possible in other systems. Unlike C/C++, Terra code can be JIT-compiled and run interleaved with Lua evaluation, making it easy to write software libraries that depend on runtime code generation.</p>
+
+<p>Features of other languages such as conditional compilation and templating simply fall out of the combination of using Lua to meta-program Terra:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-- C++                    |  -- Lua/Terra
+int add(int a, int b) {   |  terra add(a : int,b : int) : int
+    return a + b;         |      return a + b
+}                         |  end
+                          |  
+                          |  -- Conditional compilation is done
+                          |  -- with  control-flow that 
+                          |  -- determines what code is defined
+#ifdef _WIN32             |  if iswindows() then
+void waitatend() {        |      terra waitatend()
+    getchar();            |          C.getchar()
+}                         |      end
+#else                     |  else
+void waitatend() {}       |      terra waitatend() end
+#endif                    |  end
+                          |  
+                          |  -- Templates become Lua functions
+                          |  -- that take a terra type T and 
+                          |  -- use it to generate new types 
+                          |  -- and code
+template&lt;class T&gt;         |  function Array(T)
+struct Array {            |      struct Array {
+    int N;                |          N : int
+    T* data;              |          data : &amp;T
+                          |      }
+    T get(int i) {        |      terra Array:get(i : int)
+        return data[i];   |          return self.data[i]
+    }                     |      end
+                          |      return Array
+};                        |  end
+typedef                   |  
+Array&lt;float&gt; FloatArray;  |  FloatArray = Array(float)
+</code></pre></div></div>
+
+<hr />
+
+<p>You can <strong>use</strong> Terra and Lua as…</p>
+
+<p><strong>An embedded JIT-compiler for building languages</strong>. We use techniques from multi-stage programming<a href="#footnote2"><sup>2</sup></a> to make it possible to <strong><a href="#generative-programming">meta-program</a></strong> Terra using Lua.  Terra expressions, types, and functions are all first-class Lua values, making it possible to generate arbitrary programs at runtime. This allows you to <strong><a href="#compiling-a-language">compile domain-specific languages</a></strong> (DSLs) written in Lua into high-performance Terra code. Furthermore, since Terra is built on the Lua ecosystem, it is easy to <strong><a href="#embedding-and-interoperability">embed</a></strong> Terra-Lua programs in other software as a library. This design allows you to add a JIT-compiler into your existing software. You can use it to add a JIT-compiled DSL to your application, or to auto-tune high-performance code dynamically.</p>
+
+<p><strong>A scripting-language with high-performance extensions</strong>. While the performance of Lua and other dynamic languages is always getting better, a low-level of abstraction gives you predictable control of performance when you need it. Terra programs use the same LLVM backend that Apple uses for its C compilers. This means that Terra code performs similarly to equivalent C code. For instance, our translations of the <code class="highlighter-rouge">nbody</code> and <code class="highlighter-rouge">fannhakunen</code> programs from the programming language benchmark game<a href="#footnote1"><sup>1</sup></a> perform within 5% of the speed of their C equivalents when compiled with Clang, LLVM’s C frontend. Terra also includes built-in support for SIMD operations, and other low-level features like non-temporal writes and prefetches. You can use Lua to organize and configure your application, and then call into Terra code when you need controllable performance.</p>
+
+<p><strong>A stand-alone low-level language</strong>. Terra was designed so that it can run independently from Lua. In fact, if your final program doesn’t need Lua, you can save Terra code into a .o file or executable. In addition to ensuring a clean separation between high- and low-level code, this design lets you use Terra as a stand-alone low-level language. In this use-case, Lua serves as a powerful meta-programming language.  Here it serves as a replacement for C++ template metaprogramming<a href="#footnote3"><sup>3</sup></a> or C preprocessor X-Macros<a href="#footnote4"><sup>4</sup></a> with better syntax and nicer properties such as hygiene<a href="#footnote5"><sup>5</sup></a>. Since Terra exists <em>only</em> as code embedded in a Lua meta-program, features that are normally built into low-level languages can be implemented as Lua libraries. This design keeps the core of Terra simple, while enabling powerful behavior such as conditional compilation, namespaces, templating, and even <strong>class systems</strong> <strong><a href="#simplicity">implemented as libraries</a></strong>.</p>
+
+<p>For more information about using Terra, see the <strong><a href="getting-started.html">getting started guide</a></strong> and <strong><a href="api.html">API reference</a></strong>. Our <strong><a href="publications.html">publications</a></strong> provide a more in-depth look at its design.</p>
+
+<hr />
+
+<p>[1] <a id="footnote1"> </a> <a href="http://benchmarksgame.alioth.debian.org">http://benchmarksgame.alioth.debian.org</a><br />
+[2] <a id="footnote2"> </a> <a href="http://www.cs.rice.edu/~taha/MSP/">http://www.cs.rice.edu/~taha/MSP/</a><br />
+[3] <a id="footnote3"> </a> <a href="http://en.wikipedia.org/wiki/Template_metaprogramming">http://en.wikipedia.org/wiki/Template_metaprogramming</a><br />
+[4] <a id="footnote4"> </a> <a href="http://en.wikipedia.org/wiki/X_Macro">http://en.wikipedia.org/wiki/X_Macro</a><br />
+[5] <a id="footnote5"> </a> <a href="http://en.wikipedia.org/wiki/Hygienic_macro">http://en.wikipedia.org/wiki/Hygienic_macro</a><br /></p>
+
+<hr />
+
+<h2 id="generative-programming">Generative Programming</h2>
+
+<p>Terra entities such as functions, types, variables and expressions are first-class Lua values — they can be stored in Lua variables and passed to or returned from Lua functions. Using constructs from multi-stage programming<a href="#footnote2"><sup>2</sup></a>, you can write Lua code to programmatically generate arbitrary Terra code.</p>
+
+<h3 id="multi-stage-operators">Multi-stage operators</h3>
+
+<p>Inside Terra code, you can use an <em>escape</em> operator (<code class="highlighter-rouge">[]</code>) to splice the result of a Lua expression into the Terra code:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local a = 5
+terra sin5()
+    return [ math.sin(a) ]
+end
+</code></pre></div></div>
+
+<p>An escape is evaluated when a Terra function is <em>compiled</em>, and the result is spliced into the Terra code. In this example, this means that <code class="highlighter-rouge">math.sin(5)</code> will be evaluated <em>once</em> and the code that implements the Terra function will return a constant. This can be verified by printing out the compiled version of the <code class="highlighter-rouge">sin5</code> function:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>--output a prettified representation of what this function does
+sin5:printpretty() 
+&gt; output:
+&gt; sin50 = terra() : {double}
+&gt;    return -0.95892427466314
+&gt; end
+</code></pre></div></div>
+
+<p>Escapes can also return other Terra entities such as a function:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>add4 = terra(a : int) return a + 4 end
+
+terra example()
+    return [add4](3) -- 7
+end
+</code></pre></div></div>
+
+<p>In this case, Terra will insert a call to the Terra function stored in the <code class="highlighter-rouge">add4</code> variable:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>example:printpretty()
+&gt; output:
+&gt; example4 = terra() : {int32}
+&gt;   return &lt;extract0&gt; #add43(3)#
+&gt; end
+</code></pre></div></div>
+
+<p>In fact, <em>any</em> name used in Terra code such as <code class="highlighter-rouge">add4</code> or <code class="highlighter-rouge">foo.bar</code> is treated as if it were escaped by default.</p>
+
+<p>Inside an escape, you can refer to variables defined in Terra:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>--a function to be called inside an escape
+function choosesecond(a,b)
+    -- prints false, 'a' is not a number:
+    print(a == 1) 
+    -- prints true, 'a' is a Terra symbol:
+    print(terralib.issymbol(a))
+    return b
+end
+
+terra example(input : int)
+    var a = input
+    var b = input+1
+    --create an escape that refers to 'a' and 'b'
+    return [ choosesecond(a,b) ] --returns the value of b
+end
+example(1) --returns 2
+</code></pre></div></div>
+
+<p>Since escapes are evaluated before a Terra function is compiled, variables <code class="highlighter-rouge">a</code> and <code class="highlighter-rouge">b</code> will not have concrete integer values inside the escape. Instead, inside the Lua code <code class="highlighter-rouge">a</code> and <code class="highlighter-rouge">b</code> are Terra <em>symbols</em> that represent references to Terra values. Since <code class="highlighter-rouge">choosesecond</code> returns the symbol <code class="highlighter-rouge">b</code>, the <code class="highlighter-rouge">example</code> function will return the value of Terra variable <code class="highlighter-rouge">b</code> when called.</p>
+
+<p>The <em>quotation</em> operator (a backtick) allows you to generate Terra statements and expression in Lua. They can then be spliced into Terra code using the escape operator.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function addtwo(a,b)
+    return `a + b
+end
+terra example(input : int)
+    var a = input
+    var b = input+1
+    return [ addtwo(a,b) ]
+end
+example(1) -- returns 3
+</code></pre></div></div>
+
+<p>To generate statements rather than expressions you can use the <code class="highlighter-rouge">quote</code> operator:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local printtwice = quote
+    C.printf("hello\n")
+    C.printf("hello\n")
+end
+terra print4()
+    [printtwice]
+    [printtwice]
+end
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="compiling-a-language">Compiling a Language</h3>
+
+<p>With these two operators, you can use Lua to generate <em>arbitrary</em> Terra code at compile-time. This makes the combination of Lua/Terra well suited for writing compilers for high-performance domain-specific languages. For instance, we can implement a <em>compiler</em> for <a href="http://en.wikipedia.org/wiki/Brainfuck">BF</a>, a minimal language that emulates a Turing machine. The Lua function <code class="highlighter-rouge">compile</code> will take a string of BF code, and a maximum tape size <code class="highlighter-rouge">N</code>. It then generates a Terra function that implements the BF code. Here is a skeleton that sets up the BF program:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local function compile(code,N)
+    local function body(data,ptr)
+        --&lt;&lt;implementation of body&gt;&gt;
+    end
+    return terra()
+        --an array to hold the tape
+        var data : int[N]
+        --clear the tape initially
+        for i = 0, N do
+            data[i] = 0
+        end
+        var ptr = 0
+        --generate the code for the body
+        [ body(data,ptr) ]
+    end
+end
+</code></pre></div></div>
+
+<p>The function <code class="highlighter-rouge">body</code> is responsible for generating body of the BF program given the code string:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local function body(data,ptr)
+    --the list of terra statements that make up the BF program
+    local stmts = terralib.newlist()
+
+    --loop over each character in the BF code
+    for i = 1,#code do
+        local c = code:sub(i,i)
+        local stmt
+        --generate the corresponding Terra statement
+        --for each BF operator
+        if c == "&gt;" then
+            stmt = quote ptr = ptr + 1 end
+        elseif c == "&lt;" then
+            stmt = quote ptr = ptr - 1 end
+        elseif c == "+" then
+            stmt = quote data[ptr] = data[ptr] + 1 end
+        elseif c == "-" then
+            stmt = quote data[ptr] = data[ptr] - 1 end
+        elseif c == "." then
+            stmt = quote C.putchar(data[ptr]) end
+        elseif c == "," then
+            stmt = quote data[ptr] = C.getchar() end
+        elseif c == "[" then
+            error("Implemented below")
+        elseif c == "]" then
+            error("Implemented below")
+        else
+            error("unknown character "..c)
+        end
+        stmts:insert(stmt)
+    end
+    return stmts
+end
+</code></pre></div></div>
+
+<p>It loops over the code string, and generates the corresponding Terra code for each character of BF (e.g. “&gt;” shifts the tape over by 1 and is implemented by the Terra code <code class="highlighter-rouge">ptr = ptr + 1</code>). We can now compile a BF function:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>add3 = compile(",+++.")
+</code></pre></div></div>
+
+<p>The result, <code class="highlighter-rouge">add3</code>, is a Terra function that adds3 to an input character and then prints it out:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>add3:printpretty()
+&gt; bf_t_46_1 = terra() : {}
+&gt; var data : int32[256]
+&gt; ...
+&gt; var ptr : int32 = 0
+&gt; data[ptr] = &lt;extract0&gt; #getchar()#
+&gt; data[ptr] = data[ptr] + 1
+&gt; data[ptr] = data[ptr] + 1
+&gt; data[ptr] = data[ptr] + 1
+&gt; &lt;extract0&gt; #putchar(data[ptr])#
+&gt; end
+</code></pre></div></div>
+
+<p>We can also use <code class="highlighter-rouge">goto</code> statements (<code class="highlighter-rouge">goto labelname</code>) and labels (<code class="highlighter-rouge">::labelname::</code>) to implement BF’s looping construct:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local function body(data,ptr)
+    local stmts = terralib.newlist()
+    
+    --add a stack to keep track of the beginning of each loop
+    local jumpstack = {}
+    
+    for i = 1,#code do
+        local c = code:sub(i,i)
+        local stmt
+        if ...
+        elseif c == "[" then
+            --generate labels to represent the beginning 
+            --and ending of the loop
+            --the 'symbol' function generates a globally unique
+            --name for the label
+            local target = { before = symbol(), after = symbol() }
+            table.insert(jumpstack,target)
+            stmt = quote 
+                --label for beginning of the loop
+                ::[target.before]:: 
+                if data[ptr] == 0 then
+                    goto [target.after] --exit the loop
+                end
+            end
+        elseif c == "]" then
+            --retrieve the labels that match this loop
+            local target = table.remove(jumpstack)
+            assert(target)
+            stmt = quote 
+                goto [target.before] --loop back edge
+                :: [target.after] :: --label for end of the loop
+            end
+        else
+            error("unknown character "..c)
+        end
+        stmts:insert(stmt)
+    end
+    return stmts
+end
+</code></pre></div></div>
+
+<p>We are using these generative programming constructs to implement domain-specific languages and auto-tuners. Our <a href="/publications.html">PLDI paper</a> describes our implementation of Orion, a language for image processing kernels, and we are in the process of porting the <a href="http://liszt.stanford.edu">Liszt language</a> for mesh-based PDE’s to Terra.</p>
+
+<hr />
+
+<h2 id="embedding-and-interoperability">Embedding and Interoperability</h2>
+
+<p>Programming languages don’t exist in a vacuum, and the generative programming features of Terra can be useful even in projects that are primarily implemented in other programming languages. We make it possible to integrate Terra with other projects so you can use it to generate low-level code, while keeping most of your project in a well-established language.</p>
+
+<p>First, we make it possible to pass values between Lua and Terra. Our implementation is built on top of LuaJIT’s <a href="http://luajit.org/ext_ffi_tutorial.html">foreign fuction interface</a>. You can call Terra functions directly from Lua (or vice-versa), and access Terra objects directly from Lua (more details in the <a href="http://localhost:4000/api.html#converting-between-lua-values-and-terra-values">API reference</a>).</p>
+
+<p>Furthermore, Lua-Terra is backwards compatible with both pure Lua and C, which makes it easy to use preexisting code. In Lua-Terra, you can use <code class="highlighter-rouge">require</code> or <code class="highlighter-rouge">loadfile</code> and it will treat the file as a Lua program (use <code class="highlighter-rouge">terralib.loadfile</code> to load a combined Lua-Terra file). You can use <code class="highlighter-rouge">terralib.includec</code> to import C functions from already existing header files.</p>
+
+<p>Finally, Lua-Terra can also be <em>embedded</em> in pre-existing applications by linking the application against <code class="highlighter-rouge">libterra.a</code> and using Terra’s C API. The interface is very similar to that of the <a href="http://queue.acm.org/detail.cfm?id=1983083">Lua interpreter</a>. A simple example initializes Terra and then runs code from the file specified in each argument:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#include &lt;stdio.h&gt;
+#include "terra.h"
+
+int main(int argc, char ** argv) {
+    lua_State * L = luaL_newstate(); //create a plain lua state
+    luaL_openlibs(L);                //initialize its libraries
+    //initialize the terra state in lua
+    terra_init(L);
+    for(int i = 1; i &lt; argc; i++)
+        //run the terra code in each file
+        if(terra_dofile(L,argv[i]))  
+            exit(1);
+    return 0;
+}
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="simplicity">Simplicity</h2>
+
+<p>The combination of a simple low-level language with a simple dynamic programming language means that many built-in features of statically-typed low-level languages can be implemented as libraries in the dynamic language. Here are just a few examples:</p>
+
+<h3 id="conditional-compilation">Conditional Compilation</h3>
+
+<p>Normally conditional compilation is accomplished using preprocessor directives (e.g., <code class="highlighter-rouge">#ifdef</code>),
+or custom build systems. Using Lua-Terra, we can write Lua code to decide how to construct a Terra function.
+Since Lua is a full programming language, it can do things that most preprocessors cannot, such as call external programs.
+In this example, we conditionally compile a Terra function differently on OSX and Linux by first calling <code class="highlighter-rouge">uname</code> to discover
+the operating system, and then using an <code class="highlighter-rouge">if</code> statement to instantiate a different version of the Terra function depending on the result:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>--run uname to figure out what OS we are running
+local uname = io.popen("uname","r"):read("*a")
+local C = terralib.includec("stdio.h")
+
+if uname == "Darwin\n" then
+    terra reportos()
+        C.printf("this is osx\n")
+    end
+elseif uname == "Linux\n" then
+    terra reportos()
+        C.printf("this is linux\n")
+    end
+else
+    error("OS Unknown")
+end
+
+--conditionally compiled to 
+--the right version for this os
+reportos()
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="namespaces">Namespaces</h3>
+
+<p>Statically-typed languages normally need constructs that specifically deal with the problem of namespaces (e.g., C++’s <code class="highlighter-rouge">namespace</code> keyword, or Java’s <code class="highlighter-rouge">import</code> constructs). For Terra, we just use Lua’s first-class tables as way to organize functions. When you use any “name” such as <code class="highlighter-rouge">myfunctions.add</code> inside a Terra function, the Terra will resolve it at <em>compile time</em> to the Terra value it holds. Here is an example of placing a Terra function inside a Lua table, and then calling it from another Terra function:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>local myfunctions = {}
+-- terra functions are first-class Lua values
+
+-- they can be stored in Lua tables
+terra myfunctions.add(a : int, b : int) : int
+    return a + b
+end
+
+-- and called from the tables as well
+terra myfunctions.add3(a : int)
+    return myfunctions.add(a,3)
+end
+
+--the declaration of myfunctions.add is just syntax sugar for:
+
+myfunctions["add"] = terra(a : int, b : int) : int
+    return a + b
+end
+
+print(myfunctions.add3(4))
+</code></pre></div></div>
+
+<p>In fact, you’ve already seen this behavior when we imported C functions:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C = terralib.includec("stdio.h")
+</code></pre></div></div>
+
+<p>The function <code class="highlighter-rouge">includec</code> just returns a Lua table (<code class="highlighter-rouge">C</code>) that contains the C functions. Since <code class="highlighter-rouge">C</code> is a Lua table, you can iterate through it if you want:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>for k,v in pairs(C) do
+    print(k,v)
+end
+
+&gt; seek   &lt;terra function&gt;
+&gt; asprintf    &lt;terra function&gt;
+&gt; gets    &lt;terra function&gt;
+&gt; size_t  uint64
+&gt; ...
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="templating">Templating</h3>
+
+<p>Since Terra types and functions are first class values, you can get functionality similar to a C++ template by simply creating a Terra type and defining a Terra function <em>inside</em> of a Lua function. Here is an example where we define the Lua function <code class="highlighter-rouge">MakeArray(T)</code> which takes a Terra type <code class="highlighter-rouge">T</code> and generates an <code class="highlighter-rouge">Array</code> object that can hold multiple <code class="highlighter-rouge">T</code> objects (i.e. a simple version of C++’s <code class="highlighter-rouge">std::vector</code>).</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>C = terralib.includec("stdlib.h")
+function MakeArray(T)
+    --create a new Struct type that contains a pointer 
+    --to a list of T's and a size N
+    local struct ArrayT {
+        --&amp;T is a pointer to T
+        data : &amp;T;
+        N : int;
+    } 
+    --add some methods to the type
+    terra ArrayT:init(N : int)
+        -- the syntax [&amp;T](...) is a cast,
+        -- the C equivalent is (T*)(...)
+        self.data = [&amp;T](C.malloc(sizeof(T)*N))
+        self.N = N
+    end
+    terra ArrayT:get(i : int)
+        return self.data[i]
+    end
+    terra ArrayT:set(i : int, v : T)
+        self.data[i] = v
+    end
+    --return the type as a 
+    return ArrayT
+end
+
+IntArray = MakeArray(int)
+DoubleArray = MakeArray(double)
+
+terra UseArrays()
+    var ia : IntArray
+    var da : DoubleArray
+    ia:init(1) 
+    da:init(1)
+    ia:set(0,3)
+    da:set(0,4.5)
+    return ia:get(0) + da:get(0)
+end
+</code></pre></div></div>
+
+<p>As shown in this example, Terra allows you to define methods on <code class="highlighter-rouge">struct</code> types.
+Unlike other statically-typed languages with classes, there are no built-in mechanisms for inheritance or runtime polymorphism.
+Methods declarations are just a syntax sugar that associates table of Lua methods with each type. Here the <code class="highlighter-rouge">get</code> method is equivalent to:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ArrayT.methods.get = terra(self : &amp;T, i : int)
+    return self.data[i]
+end
+</code></pre></div></div>
+
+<p>The object <code class="highlighter-rouge">ArrayT.methods</code> is a Lua table that holds the methods for type <code class="highlighter-rouge">ArrayT</code>.</p>
+
+<p>Similarly an invocation such as <code class="highlighter-rouge">ia:get(0)</code> is equivalent to <code class="highlighter-rouge">T.methods.get(&amp;ia,0)</code>.</p>
+
+<hr />
+
+<h3 id="specialization">Specialization</h3>
+
+<p>By nesting a Terra function inside a Lua function, you can compile different versions of a function. Here we generate different versions
+of the power function (e.g. pow2, or pow3):</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>--generate a power function for a specific N (e.g. N = 3)
+function makePowN(N)
+    local function emit(a,N)
+        if N == 0 then return 1
+      else return `a*[emit(a,N-1)]
+      end
+    end
+    return terra(a : double)
+        return [emit(a,N)]
+    end
+end
+
+--use it to fill in a table of functions
+local mymath = {}
+for n = 1,10 do
+    mymath["pow"..n] = makePowN(n)
+end
+print(mymath.pow3(2)) -- 8
+</code></pre></div></div>
+
+<hr />
+
+<h3 id="class-systems">Class Systems</h3>
+
+<p>As shown in the templating example, Terra allows you to define methods on <code class="highlighter-rouge">struct</code> types but does not provide any built-in mechanism for inheritance or polymorphism. Instead, normal class systems can be written as libraries.  For instance, a user might write:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>J = terralib.require("lib/javalike")
+Drawable = J.interface { draw = {} -&gt; {} }
+struct Square { length : int; }
+J.extends(Square,Shape)
+J.implements(Square,Drawable)
+terra Square:draw() : {}
+    --draw implementation
+end
+</code></pre></div></div>
+
+<p>The functions <code class="highlighter-rouge">J.extends</code> and <code class="highlighter-rouge">J.implements</code> are Lua functions that generate the appropriate Terra code to implement a class system. More information is available in our <a href="/publications.html">PLDI Paper</a>. The file <a href="https://github.com/zdevito/terra/blob/master/tests/lib/javalike.t">lib/javalike.t</a> has one possible implementation of a Java-like class system, while the file <a href="https://github.com/zdevito/terra/blob/master/tests/lib/golike.t">lib/golike.t</a> is more similar to Google’s Go language.</p>
+
+
+      </section>
+    </div>
+  </body>
+</html>
