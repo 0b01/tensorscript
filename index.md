@@ -2,7 +2,7 @@
 layout: post
 title: TensorScript
 ---
-TensorScript is a high-level Domain Specific Language(DSL) for specifying finite-dimensioned tensor computation.
+TensorScript is a high-level language for specifying finite-dimensioned tensor computation.
 
 # Example: XOR network
 
